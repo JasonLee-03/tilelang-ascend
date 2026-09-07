@@ -162,7 +162,6 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
             combined_tile = T.alloc_ub([ROWS, block_N], acc_dtype)
 
             gamma_1d = T.alloc_ub([block_N], dtype)
-            gamma_fp1d = T.alloc_ub([1, block_N], acc_dtype)
             gamma_bc = T.alloc_ub([ROWS, block_N], acc_dtype)
 
             y_q_fp32 = T.alloc_ub([ROWS, block_N], acc_dtype)
@@ -240,11 +239,7 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
                     if not is_aligned:
                         T.tile.fill(gamma_1d, 0.0)
                     T.copy(gamma[col_off : col_off + valid_n], gamma_1d[0:valid_n])
-                    if need_cast:
-                        T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
-                    else:
-                        T.copy(gamma_1d, gamma_fp1d)
-                    T.tile.broadcast(gamma_bc, gamma_fp1d)
+                    T.tile.broadcast(gamma_bc, gamma_1d)
                     T.tile.mul(tmp_fp32, xOut_fp32, gamma_bc)
                     T.tile.abs(xOut_fp32, tmp_fp32)
                     T.tile.max(abs_max_xg, abs_max_xg, xOut_fp32)
@@ -304,11 +299,7 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
                     if not is_aligned:
                         T.tile.fill(gamma_1d, 0.0)
                     T.copy(gamma[col_off : col_off + valid_n], gamma_1d[0:valid_n])
-                    if need_cast:
-                        T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
-                    else:
-                        T.copy(gamma_1d, gamma_fp1d)
-                    T.tile.broadcast(gamma_bc, gamma_fp1d)
+                    T.tile.broadcast(gamma_bc, gamma_1d)
                     T.tile.mul(y_q_fp32, xOut_fp32, gamma_bc)
                     T.tile.mul(y_q_fp32, y_q_fp32, combined_tile)
                     T.tile.clamp(y_clamped, y_q_fp32, -INT8_ABS_MAX, INT8_ABS_MAX, tile_elements)
