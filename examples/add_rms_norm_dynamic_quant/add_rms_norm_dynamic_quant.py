@@ -162,7 +162,7 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
             combined_tile = T.alloc_ub([ROWS, block_N], acc_dtype)
 
             gamma_1d = T.alloc_ub([block_N], dtype)
-            gamma_fp1d = T.alloc_ub([block_N], acc_dtype)
+            gamma_fp1d = T.alloc_ub([1, block_N], acc_dtype)
             gamma_bc = T.alloc_ub([ROWS, block_N], acc_dtype)
 
             y_q_fp32 = T.alloc_ub([ROWS, block_N], acc_dtype)
