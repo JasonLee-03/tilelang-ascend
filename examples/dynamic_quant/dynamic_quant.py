@@ -32,8 +32,8 @@ pass_configs = {
 # ── Block dispatch table ─────────────────────────────────────────────────────
 # (N_threshold, block_M, block_N)
 _DISPATCH = [
-    (128, 128, 128),   # Tiny:  N ≤ 128
-    (512, 64,  512),   # Small: 128 < N ≤ 512
+    (128, 128, 128),  # Tiny:  N ≤ 128
+    (512, 64, 512),  # Small: 128 < N ≤ 512
 ]
 _DEFAULT_BLOCK = (16, 1024)  # Large: N > 512
 
@@ -49,17 +49,17 @@ def _dynamic_quant_kernel(M, N, block_M, block_N, core_num, dtype="float16"):
 
     @T.prim_func
     def main(
-        x: T.Tensor([M, N], dtype),          # type: ignore
-        y_out: T.Tensor([M, N], "int8"),     # type: ignore
-        scale_out: T.Tensor([M], "float32"), # type: ignore
+        x: T.Tensor([M, N], dtype),  # type: ignore
+        y_out: T.Tensor([M, N], "int8"),  # type: ignore
+        scale_out: T.Tensor([M], "float32"),  # type: ignore
     ):
         with T.Kernel(core_num, is_npu=True) as (cid, vid):
-            a_ub    = T.alloc_ub([sub_block_M, block_N], dtype)
-            a_cal   = T.alloc_ub([sub_block_M, block_N], cal_dtype)
+            a_ub = T.alloc_ub([sub_block_M, block_N], dtype)
+            a_cal = T.alloc_ub([sub_block_M, block_N], cal_dtype)
             row_max = T.alloc_ub([sub_block_M, 1], cal_dtype)
             chunk_max = T.alloc_ub([sub_block_M, 1], cal_dtype)
-            scale   = T.alloc_ub([sub_block_M, 1], cal_dtype)
-            y_int8  = T.alloc_ub([sub_block_M, block_N], "int8")
+            scale = T.alloc_ub([sub_block_M, 1], cal_dtype)
+            y_int8 = T.alloc_ub([sub_block_M, block_N], "int8")
 
             for bx_idx in T.serial(single_core_load):
                 bx = cid * single_core_load + bx_idx
@@ -71,8 +71,7 @@ def _dynamic_quant_kernel(M, N, block_M, block_N, core_num, dtype="float16"):
                     for n_chunk in T.serial(n_num):
                         T.copy(
                             x[
-                                bx * block_M + vid * sub_block_M
-                                : bx * block_M + (vid + 1) * sub_block_M,
+                                bx * block_M + vid * sub_block_M : bx * block_M + (vid + 1) * sub_block_M,
                                 n_chunk * block_N : (n_chunk + 1) * block_N,
                             ],
                             a_ub,
@@ -93,8 +92,7 @@ def _dynamic_quant_kernel(M, N, block_M, block_N, core_num, dtype="float16"):
                     for n_chunk in T.serial(n_num):
                         T.copy(
                             x[
-                                bx * block_M + vid * sub_block_M
-                                : bx * block_M + (vid + 1) * sub_block_M,
+                                bx * block_M + vid * sub_block_M : bx * block_M + (vid + 1) * sub_block_M,
                                 n_chunk * block_N : (n_chunk + 1) * block_N,
                             ],
                             a_ub,
@@ -114,8 +112,7 @@ def _dynamic_quant_kernel(M, N, block_M, block_N, core_num, dtype="float16"):
                         T.copy(
                             y_int8,
                             y_out[
-                                bx * block_M + vid * sub_block_M
-                                : bx * block_M + (vid + 1) * sub_block_M,
+                                bx * block_M + vid * sub_block_M : bx * block_M + (vid + 1) * sub_block_M,
                                 n_chunk * block_N : (n_chunk + 1) * block_N,
                             ],
                         )
@@ -123,16 +120,14 @@ def _dynamic_quant_kernel(M, N, block_M, block_N, core_num, dtype="float16"):
                     # Write scale to GM (float32)
                     T.copy(
                         scale,
-                        scale_out[
-                            bx * block_M + vid * sub_block_M
-                            : bx * block_M + (vid + 1) * sub_block_M
-                        ],
+                        scale_out[bx * block_M + vid * sub_block_M : bx * block_M + (vid + 1) * sub_block_M],
                     )
 
     return main
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def dynamic_quant(M: int, N: int, dtype: str = "float16"):
     """Return a JIT-compiled dynamic-quantization kernel for [M, N] inputs.
@@ -152,7 +147,7 @@ def dynamic_quant(M: int, N: int, dtype: str = "float16"):
     """
     block_M, block_N = _DEFAULT_BLOCK
     for n_thresh, bm, bn in _DISPATCH:
-        if N <= n_thresh:
+        if n_thresh >= N:
             block_M, block_N = bm, bn
             break
 
@@ -164,6 +159,7 @@ def dynamic_quant(M: int, N: int, dtype: str = "float16"):
 
 # ── Golden reference (for __main__ quick-verify; authoritative version is in
 #    test_dynamic_quant.py::ref_dynamic_quant) ──────────────────────────────────
+
 
 def _golden_ref(x: torch.Tensor):
     """Per-token symmetric quantization reference (pure PyTorch)."""
@@ -183,7 +179,10 @@ if __name__ == "__main__":
     parser.add_argument("--m", type=int, default=1024, help="Row count M (number of tokens)")
     parser.add_argument("--n", type=int, default=512, help="Feature dimension N")
     parser.add_argument(
-        "--dtype", type=str, default="float16", choices=["float16", "bfloat16"],
+        "--dtype",
+        type=str,
+        default="float16",
+        choices=["float16", "bfloat16"],
         help="Input element dtype",
     )
     args = parser.parse_args()
@@ -209,8 +208,10 @@ if __name__ == "__main__":
 
     # Verify scale (float32): strict fp32 tolerance
     torch.testing.assert_close(
-        scale_out.cpu(), ref_scale,
-        rtol=2 ** -10, atol=2 ** -16,
+        scale_out.cpu(),
+        ref_scale,
+        rtol=2**-10,
+        atol=2**-16,
     )
     print(f"  scale  PASS  shape={ref_scale.shape}")
 
@@ -221,14 +222,10 @@ if __name__ == "__main__":
     OVERFLOW_LIMIT = 1
     MATCHED_REQUIRED = 0.99
     if max_diff <= OVERFLOW_LIMIT and matched >= MATCHED_REQUIRED:
-        print(
-            f"  y      PASS  max_diff={max_diff}  "
-            f"matched={matched:.4f} (>={MATCHED_REQUIRED})"
-        )
+        print(f"  y      PASS  max_diff={max_diff}  matched={matched:.4f} (>={MATCHED_REQUIRED})")
     else:
         raise AssertionError(
-            f"y precision FAIL: max_diff={max_diff} (limit {OVERFLOW_LIMIT}), "
-            f"matched={matched:.4f} (required >={MATCHED_REQUIRED})"
+            f"y precision FAIL: max_diff={max_diff} (limit {OVERFLOW_LIMIT}), matched={matched:.4f} (required >={MATCHED_REQUIRED})"
         )
 
     print("Kernel Output Match!")
