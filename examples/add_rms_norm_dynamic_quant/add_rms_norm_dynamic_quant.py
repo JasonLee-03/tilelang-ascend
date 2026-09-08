@@ -478,18 +478,20 @@ if __name__ == "__main__":
     failed_cases = []
     for i, (M, N, dt) in enumerate(test_configs):
         try:
-            print(f"[{i+1}/{len(test_configs)}] Testing M={M}, N={N}, dtype={dt}", flush=True)
+            print(f"[{i + 1}/{len(test_configs)}] Testing M={M}, N={N}, dtype={dt}", flush=True)
             x1 = torch.randn(M, N, device="npu", dtype=dt)
             x2 = torch.randn(M, N, device="npu", dtype=dt)
             g = torch.randn(N, device="npu", dtype=dt)
-            print(f"  Input stats: x1 mean={x1.float().mean().item():.6f} "
-                  f"std={x1.float().std().item():.6f}", flush=True)
+            print(f"  Input stats: x1 mean={x1.float().mean().item():.6f} std={x1.float().std().item():.6f}", flush=True)
             torch.npu.synchronize()
             y, xOut, scale = add_rms_norm_dynamic_quant(x1, x2, g)
             torch.npu.synchronize()
-            print(f"  Kernel output: y shape={y.shape} dtype={y.dtype} "
-                  f"xOut shape={xOut.shape} dtype={xOut.dtype} "
-                  f"scale shape={scale.shape} dtype={scale.dtype}", flush=True)
+            print(
+                f"  Kernel output: y shape={y.shape} dtype={y.dtype} "
+                f"xOut shape={xOut.shape} dtype={xOut.dtype} "
+                f"scale shape={scale.shape} dtype={scale.dtype}",
+                flush=True,
+            )
             y_ref, xOut_ref, scale_ref = golden_add_rms_norm_dynamic_quant(x1, x2, g)
             torch.testing.assert_close(y.cpu(), y_ref.cpu(), atol=2, rtol=0.02)
             torch.testing.assert_close(xOut.cpu(), xOut_ref.cpu(), rtol=2e-3, atol=2e-3)
