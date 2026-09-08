@@ -1,6 +1,3 @@
-# Copyright (c) Tile-AI Corporation.
-# Licensed under the MIT License.
-
 """Add + RMSNorm + Dynamic Quantization fused kernel for Ascend NPU.
 
 Operator semantics:
@@ -19,6 +16,8 @@ Plan A optimization:
 """
 
 import logging
+import sys
+import traceback
 
 import torch
 import tilelang
@@ -162,7 +161,7 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
             combined_tile = T.alloc_ub([ROWS, block_N], acc_dtype)
 
             gamma_1d = T.alloc_ub([block_N], dtype)
-            gamma_fp1d = T.alloc_ub([1, block_N], acc_dtype)
+            gamma_fp1d = T.alloc_ub([block_N], acc_dtype)
             gamma_bc = T.alloc_ub([ROWS, block_N], acc_dtype)
 
             y_q_fp32 = T.alloc_ub([ROWS, block_N], acc_dtype)
@@ -176,10 +175,48 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
             with T.Scope("V"):
                 row_start = cid * block_M + vid * ROWS
 
-                # --- M-direction validity bounds (Python-time for aligned, runtime for boundary) ---
+                # =============================================================
+                # PASS 1: sq_sum + amax(|xOut*gamma|) + write xOut
+                # =============================================================
+                T.tile.fill(sq_acc, 0.0)
+                T.tile.fill(abs_max_xg, 0.0)
+
                 if is_aligned:
-                    valid_rows = ROWS
+                    # --- FAST PATH: fixed-length T.copy, no zero-fill overhead ---
+                    for by in T.serial(n_num):
+                        col_off = by * block_N
+                        T.copy(x1[row_start : row_start + ROWS, col_off : col_off + block_N], in0_ub)
+                        T.copy(x2[row_start : row_start + ROWS, col_off : col_off + block_N], in1_ub)
+                        if need_cast:
+                            T.tile.cast(xOut_fp32, in0_ub, mode=CAST_MODE, count=tile_elements)
+                            T.tile.cast(tmp_fp32, in1_ub, mode=CAST_MODE, count=tile_elements)
+                        else:
+                            T.copy(in0_ub, xOut_fp32)
+                            T.copy(in1_ub, tmp_fp32)
+                        T.tile.add(xOut_fp32, xOut_fp32, tmp_fp32)
+                        T.tile.mul_add_dst(sq_acc, xOut_fp32, xOut_fp32)
+                        if need_cast:
+                            T.tile.cast(xOut_out_cast, xOut_fp32, mode="CAST_RINT", count=tile_elements)
+                            T.copy(
+                                xOut_out_cast,
+                                xOut[row_start : row_start + ROWS, col_off : col_off + block_N],
+                            )
+                        else:
+                            T.copy(
+                                xOut_fp32,
+                                xOut[row_start : row_start + ROWS, col_off : col_off + block_N],
+                            )
+                        T.copy(gamma[col_off : col_off + block_N], gamma_1d)
+                        if need_cast:
+                            T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
+                        else:
+                            T.copy(gamma_1d, gamma_fp1d)
+                        T.tile.broadcast(gamma_bc, gamma_fp1d)
+                        T.tile.mul(tmp_fp32, xOut_fp32, gamma_bc)
+                        T.tile.abs(xOut_fp32, tmp_fp32)
+                        T.tile.max(abs_max_xg, abs_max_xg, xOut_fp32)
                 else:
+                    # --- BOUNDARY PATH PASS 1: zero-fill + partial T.copy ---
                     remaining_rows = M_orig - cid * block_M
                     vid_offset = vid * ROWS
                     vid_remaining = T.if_then_else(
@@ -189,62 +226,49 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
                     )
                     valid_rows = T.min(ROWS, vid_remaining)
 
-                # =============================================================
-                # PASS 1: sq_sum + amax(|xOut*gamma|) + write xOut
-                # =============================================================
-                T.tile.fill(sq_acc, 0.0)
-                T.tile.fill(abs_max_xg, 0.0)
-
-                for by in T.serial(n_num):
-                    col_off = by * block_N
-                    # N-direction validity bounds
-                    if is_aligned:
-                        valid_n = block_N
-                    else:
+                    for by in T.serial(n_num):
+                        col_off = by * block_N
                         valid_n = T.min(block_N, N_orig - col_off)
 
-                    # Boundary tiles: zero-fill before partial T.copy
-                    if not is_aligned:
                         T.tile.fill(in0_ub, 0.0)
                         T.tile.fill(in1_ub, 0.0)
-
-                    # Unified copy with validity bounds
-                    T.copy(
-                        x1[row_start : row_start + valid_rows, col_off : col_off + valid_n],
-                        in0_ub[0:valid_rows, 0:valid_n],
-                    )
-                    T.copy(
-                        x2[row_start : row_start + valid_rows, col_off : col_off + valid_n],
-                        in1_ub[0:valid_rows, 0:valid_n],
-                    )
-                    if need_cast:
-                        T.tile.cast(xOut_fp32, in0_ub, mode=CAST_MODE, count=tile_elements)
-                        T.tile.cast(tmp_fp32, in1_ub, mode=CAST_MODE, count=tile_elements)
-                    else:
-                        T.copy(in0_ub, xOut_fp32)
-                        T.copy(in1_ub, tmp_fp32)
-                    T.tile.add(xOut_fp32, xOut_fp32, tmp_fp32)
-                    T.tile.mul_add_dst(sq_acc, xOut_fp32, xOut_fp32)
-                    if need_cast:
-                        T.tile.cast(xOut_out_cast, xOut_fp32, mode="CAST_RINT", count=tile_elements)
                         T.copy(
-                            xOut_out_cast[0:valid_rows, 0:valid_n],
-                            xOut[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            x1[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            in0_ub[0:valid_rows, 0:valid_n],
                         )
-                    else:
                         T.copy(
-                            xOut_fp32[0:valid_rows, 0:valid_n],
-                            xOut[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            x2[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            in1_ub[0:valid_rows, 0:valid_n],
                         )
-                    # Load gamma with unified boundary handling
-                    if not is_aligned:
+                        if need_cast:
+                            T.tile.cast(xOut_fp32, in0_ub, mode=CAST_MODE, count=tile_elements)
+                            T.tile.cast(tmp_fp32, in1_ub, mode=CAST_MODE, count=tile_elements)
+                        else:
+                            T.copy(in0_ub, xOut_fp32)
+                            T.copy(in1_ub, tmp_fp32)
+                        T.tile.add(xOut_fp32, xOut_fp32, tmp_fp32)
+                        T.tile.mul_add_dst(sq_acc, xOut_fp32, xOut_fp32)
+                        if need_cast:
+                            T.tile.cast(xOut_out_cast, xOut_fp32, mode="CAST_RINT", count=tile_elements)
+                            T.copy(
+                                xOut_out_cast[0:valid_rows, 0:valid_n],
+                                xOut[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            )
+                        else:
+                            T.copy(
+                                xOut_fp32[0:valid_rows, 0:valid_n],
+                                xOut[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            )
                         T.tile.fill(gamma_1d, 0.0)
-                    T.copy(gamma[col_off : col_off + valid_n], gamma_1d[0:valid_n])
-                    T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
-                    T.tile.broadcast(gamma_bc, gamma_fp1d)
-                    T.tile.mul(tmp_fp32, xOut_fp32, gamma_bc)
-                    T.tile.abs(xOut_fp32, tmp_fp32)
-                    T.tile.max(abs_max_xg, abs_max_xg, xOut_fp32)
+                        T.copy(gamma[col_off : col_off + valid_n], gamma_1d[0:valid_n])
+                        if need_cast:
+                            T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
+                        else:
+                            T.copy(gamma_1d, gamma_fp1d)
+                        T.tile.broadcast(gamma_bc, gamma_fp1d)
+                        T.tile.mul(tmp_fp32, xOut_fp32, gamma_bc)
+                        T.tile.abs(xOut_fp32, tmp_fp32)
+                        T.tile.max(abs_max_xg, abs_max_xg, xOut_fp32)
 
                 # =============================================================
                 # INTER-PASS: reduce, compute inv_rms, compute scale (common)
@@ -271,52 +295,99 @@ def _kernel_impl(M_orig, N_orig, M_padded, N_padded, block_M, block_N, eps=1e-6,
                 # =============================================================
                 # PASS 2: normalize + quantize, write y, scaleOut
                 # =============================================================
-                for by in T.serial(n_num):
-                    col_off = by * block_N
-                    if is_aligned:
-                        valid_n = block_N
-                    else:
+                if is_aligned:
+                    # --- FAST PATH ---
+                    for by in T.serial(n_num):
+                        col_off = by * block_N
+                        T.copy(x1[row_start : row_start + ROWS, col_off : col_off + block_N], in0_ub)
+                        T.copy(x2[row_start : row_start + ROWS, col_off : col_off + block_N], in1_ub)
+                        if need_cast:
+                            T.tile.cast(xOut_fp32, in0_ub, mode=CAST_MODE, count=tile_elements)
+                            T.tile.cast(tmp_fp32, in1_ub, mode=CAST_MODE, count=tile_elements)
+                        else:
+                            T.copy(in0_ub, xOut_fp32)
+                            T.copy(in1_ub, tmp_fp32)
+                        T.tile.add(xOut_fp32, xOut_fp32, tmp_fp32)
+                        T.copy(gamma[col_off : col_off + block_N], gamma_1d)
+                        if need_cast:
+                            T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
+                        else:
+                            T.copy(gamma_1d, gamma_fp1d)
+                        T.tile.broadcast(gamma_bc, gamma_fp1d)
+                        T.tile.mul(y_q_fp32, xOut_fp32, gamma_bc)
+                        T.tile.mul(y_q_fp32, y_q_fp32, combined_tile)
+                        T.tile.clamp(y_clamped, y_q_fp32, -INT8_ABS_MAX, INT8_ABS_MAX, tile_elements)
+                        T.tile.round(y_rounded, y_clamped, tile_elements)
+                        T.tile.cast(y_fp16, y_rounded, mode="CAST_RINT", count=tile_elements)
+                        T.tile.cast(y_i8, y_fp16, mode=CAST_MODE, count=tile_elements)
+                        T.copy(y_i8, y[row_start : row_start + ROWS, col_off : col_off + block_N])
+                else:
+                    # --- BOUNDARY PATH PASS 2 ---
+                    remaining_rows = M_orig - cid * block_M
+                    vid_offset = vid * ROWS
+                    vid_remaining = T.if_then_else(
+                        remaining_rows > vid_offset,
+                        remaining_rows - vid_offset,
+                        0,
+                    )
+                    valid_rows = T.min(ROWS, vid_remaining)
+
+                    for by in T.serial(n_num):
+                        col_off = by * block_N
                         valid_n = T.min(block_N, N_orig - col_off)
 
-                    # Boundary tiles: zero-fill before partial T.copy
-                    if not is_aligned:
                         T.tile.fill(in0_ub, 0.0)
                         T.tile.fill(in1_ub, 0.0)
-
-                    T.copy(
-                        x1[row_start : row_start + valid_rows, col_off : col_off + valid_n],
-                        in0_ub[0:valid_rows, 0:valid_n],
-                    )
-                    T.copy(
-                        x2[row_start : row_start + valid_rows, col_off : col_off + valid_n],
-                        in1_ub[0:valid_rows, 0:valid_n],
-                    )
-                    if need_cast:
-                        T.tile.cast(xOut_fp32, in0_ub, mode=CAST_MODE, count=tile_elements)
-                        T.tile.cast(tmp_fp32, in1_ub, mode=CAST_MODE, count=tile_elements)
-                    else:
-                        T.copy(in0_ub, xOut_fp32)
-                        T.copy(in1_ub, tmp_fp32)
-                    T.tile.add(xOut_fp32, xOut_fp32, tmp_fp32)
-                    if not is_aligned:
+                        T.copy(
+                            x1[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            in0_ub[0:valid_rows, 0:valid_n],
+                        )
+                        T.copy(
+                            x2[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                            in1_ub[0:valid_rows, 0:valid_n],
+                        )
+                        if need_cast:
+                            T.tile.cast(xOut_fp32, in0_ub, mode=CAST_MODE, count=tile_elements)
+                            T.tile.cast(tmp_fp32, in1_ub, mode=CAST_MODE, count=tile_elements)
+                        else:
+                            T.copy(in0_ub, xOut_fp32)
+                            T.copy(in1_ub, tmp_fp32)
+                        T.tile.add(xOut_fp32, xOut_fp32, tmp_fp32)
                         T.tile.fill(gamma_1d, 0.0)
-                    T.copy(gamma[col_off : col_off + valid_n], gamma_1d[0:valid_n])
-                    T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
-                    T.tile.broadcast(gamma_bc, gamma_fp1d)
-                    T.tile.mul(y_q_fp32, xOut_fp32, gamma_bc)
-                    T.tile.mul(y_q_fp32, y_q_fp32, combined_tile)
-                    T.tile.clamp(y_clamped, y_q_fp32, -INT8_ABS_MAX, INT8_ABS_MAX, tile_elements)
-                    T.tile.round(y_rounded, y_clamped, tile_elements)
-                    T.tile.cast(y_fp16, y_rounded, mode="CAST_RINT", count=tile_elements)
-                    T.tile.cast(y_i8, y_fp16, mode=CAST_MODE, count=tile_elements)
-                    T.copy(
-                        y_i8[0:valid_rows, 0:valid_n],
-                        y[row_start : row_start + valid_rows, col_off : col_off + valid_n],
-                    )
+                        T.copy(gamma[col_off : col_off + valid_n], gamma_1d[0:valid_n])
+                        if need_cast:
+                            T.tile.cast(gamma_fp1d, gamma_1d, mode=CAST_MODE, count=block_N)
+                        else:
+                            T.copy(gamma_1d, gamma_fp1d)
+                        T.tile.broadcast(gamma_bc, gamma_fp1d)
+                        T.tile.mul(y_q_fp32, xOut_fp32, gamma_bc)
+                        T.tile.mul(y_q_fp32, y_q_fp32, combined_tile)
+                        T.tile.clamp(y_clamped, y_q_fp32, -INT8_ABS_MAX, INT8_ABS_MAX, tile_elements)
+                        T.tile.round(y_rounded, y_clamped, tile_elements)
+                        T.tile.cast(y_fp16, y_rounded, mode="CAST_RINT", count=tile_elements)
+                        T.tile.cast(y_i8, y_fp16, mode=CAST_MODE, count=tile_elements)
+                        T.copy(
+                            y_i8[0:valid_rows, 0:valid_n],
+                            y[row_start : row_start + valid_rows, col_off : col_off + valid_n],
+                        )
 
-                # --- Write scaleOut (unified with valid_rows) ---
+                # --- Write scaleOut ---
                 T.copy(scale_ub[:, 0], scale_out_1d)
-                T.copy(scale_out_1d[0:valid_rows], scaleOut[row_start : row_start + valid_rows])
+                if is_aligned:
+                    T.copy(scale_out_1d, scaleOut[row_start : row_start + ROWS])
+                else:
+                    remaining_rows = M_orig - cid * block_M
+                    vid_offset = vid * ROWS
+                    vid_remaining = T.if_then_else(
+                        remaining_rows > vid_offset,
+                        remaining_rows - vid_offset,
+                        0,
+                    )
+                    valid_rows = T.min(ROWS, vid_remaining)
+                    T.copy(
+                        scale_out_1d[0:valid_rows],
+                        scaleOut[row_start : row_start + valid_rows],
+                    )
 
     return tilelang_add_rms_norm_dynamic_quant
 
@@ -404,16 +475,34 @@ if __name__ == "__main__":
         (4093, 4093, torch.bfloat16),  # Case 12
         (4093, 2053, torch.float16),  # Case 13
     ]
-    for M, N, dt in test_configs:
-        print(f"Testing M={M}, N={N}, dtype={dt}")
-        x1 = torch.randn(M, N, device="npu", dtype=dt)
-        x2 = torch.randn(M, N, device="npu", dtype=dt)
-        g = torch.randn(N, device="npu", dtype=dt)
-        y, xOut, scale = add_rms_norm_dynamic_quant(x1, x2, g)
-        y_ref, xOut_ref, scale_ref = golden_add_rms_norm_dynamic_quant(x1, x2, g)
-        torch.testing.assert_close(y.cpu(), y_ref.cpu(), atol=2, rtol=0.02)
-        torch.testing.assert_close(xOut.cpu(), xOut_ref.cpu(), rtol=2e-3, atol=2e-3)
-        torch.testing.assert_close(scale.cpu(), scale_ref.cpu(), rtol=2e-3, atol=2e-3)
-        print("  PASS")
+    failed_cases = []
+    for i, (M, N, dt) in enumerate(test_configs):
+        try:
+            print(f"[{i+1}/{len(test_configs)}] Testing M={M}, N={N}, dtype={dt}", flush=True)
+            x1 = torch.randn(M, N, device="npu", dtype=dt)
+            x2 = torch.randn(M, N, device="npu", dtype=dt)
+            g = torch.randn(N, device="npu", dtype=dt)
+            print(f"  Input stats: x1 mean={x1.float().mean().item():.6f} "
+                  f"std={x1.float().std().item():.6f}", flush=True)
+            torch.npu.synchronize()
+            y, xOut, scale = add_rms_norm_dynamic_quant(x1, x2, g)
+            torch.npu.synchronize()
+            print(f"  Kernel output: y shape={y.shape} dtype={y.dtype} "
+                  f"xOut shape={xOut.shape} dtype={xOut.dtype} "
+                  f"scale shape={scale.shape} dtype={scale.dtype}", flush=True)
+            y_ref, xOut_ref, scale_ref = golden_add_rms_norm_dynamic_quant(x1, x2, g)
+            torch.testing.assert_close(y.cpu(), y_ref.cpu(), atol=2, rtol=0.02)
+            torch.testing.assert_close(xOut.cpu(), xOut_ref.cpu(), rtol=2e-3, atol=2e-3)
+            torch.testing.assert_close(scale.cpu(), scale_ref.cpu(), rtol=2e-3, atol=2e-3)
+            print("  PASS", flush=True)
+        except Exception as e:
+            print(f"  FAIL: {e}", flush=True)
+            traceback.print_exc()
+            failed_cases.append((i + 1, M, N, dt, str(e)))
+    if failed_cases:
+        print(f"\n{len(failed_cases)}/{len(test_configs)} cases FAILED:", flush=True)
+        for idx, m, n, dt, err in failed_cases:
+            print(f"  Case {idx}: M={m}, N={n}, dtype={dt} -> {err}", flush=True)
+        sys.exit(1)
     print("\nKERNEL OUTPUT MATCH")
     print("TEST PASSED!")
