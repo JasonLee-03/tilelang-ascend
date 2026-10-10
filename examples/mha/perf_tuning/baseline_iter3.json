@@ -1,0 +1,17 @@
+{
+  "stage": 3,
+  "operator": "mha",
+  "iteration": 3,
+  "note": "baseline at start of iteration 3 = post-#2",
+  "precision_gate": "pass (l0 10/10 at every iteration start)",
+  "programming_mode": "Developer threads=1 cv_1_1 (four pass_configs all-on)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {
+    "case1": 30.09,
+    "case7": 6062.44,
+    "case10": 217.19,
+    "case14": 1665.76,
+    "case20": 57.97
+  },
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'"
+}

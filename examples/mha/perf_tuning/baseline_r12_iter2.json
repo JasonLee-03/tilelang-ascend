@@ -1,0 +1,37 @@
+{
+  "session": 12,
+  "iteration": "r12-2/r12-3 (global iter31/32)",
+  "phase": "B+C+D (implementation + measurement + verdict + closure)",
+  "timestamp": "2026-10-05T01:30+08:00",
+  "verdict": "ADOPTED (A10, first framework-level adoption of the lineage)",
+  "kernel_state": {
+    "adopted_mha_py_md5": "0fb193b2382f8fc5506ebbc84055bf0c",
+    "adopted_mha_py_lines": 2152,
+    "measured_state_md5": "e8a9d2dabb21c317e3d34a8fd4b3ca6b (2120 lines, docstring note added after measurement; IR identity verified: case15 dump md5 e5a5f0c8858139b0fccf44aa7c5c80e3 == r12_src_var)",
+    "pre_change_backup": "history_version/mha_impl_r4_perf16.py (dda3ad0877ba4df74bbd559f6912eeed)",
+    "adopted_backup": "history_version/mha_impl_r4_perf17.py (0fb193b2)",
+    "framework_files": {
+      "src/tl_templates/ascend/common.h": "d113a6c6 -> modified (+34/-3, kMTE2Sync opt-in param)",
+      "tilelang/language/ascend.py": "44cfef09 -> modified (+33/-2, mte2_sync kwarg)",
+      "backups": "/tmp/opencode/r12_framework_backup/{common.h.pre_r12,ascend.py.pre_r12,framework_r12_phaseB.diff}",
+      "git_state": "working-tree only, NOT committed (charter §0-d)"
+    }
+  },
+  "test_shape": "case15 (60,1,512,16,256) fp16 / case18 (60,2,512,16,256) fp16 — decode D=256 multi-block (kv_db domain, bN=256, kL0=64, 96 slots/core)",
+  "test_command": "msprof --task-time=on python3 examples/mha/perf_tuning/bench_mha.py --case {case} --warmup 5 --iters 20 (n=25 median via parse_prof.py); op mode: msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization,...",
+  "fresh_baseline_us": {"case15": 508.11, "case18": 508.57, "case10": 34.97, "case11": 309.36, "case14": 377.95, "case16": 562.00, "case20": 14.23, "case9": 869.22, "case7": 856.17},
+  "adopted_us": {"case15": 463.58, "case18": 465.36, "case10": 34.73, "case11": 310.98, "case14": 377.44, "case16": 561.59, "case20": 14.63, "case9": 871.19, "case7": 857.11},
+  "improvement_pct": {"case15": -8.76, "case18": -8.50},
+  "guards": "6/7 within ±0.7%; case20 +2.81% on IR-byte-identical source => drift-band attribution (session-8 precedent)",
+  "op_signature_case15": {
+    "duty_pct": [68.3, 73.7], "mte2_busy_gbps": [74.98, 75.84], "c_wall_us": [498.22, 456.67],
+    "c_scalar_t_us": [377.21, 335.70], "c_mte1_stall_us": [355.13, 318.71],
+    "cube_t_us": [49.80, 49.80], "v_vec_t_us": [82.64, 82.64], "gm_to_l1_kb": [25920, 25920],
+    "wait_id2_us": [122.31, 119.92], "v_wait_id0_us": [242.26, 200.19], "taskdur_us": [506.32, 464.84]
+  },
+  "precision_status": "pass (full battery on adopted state: smoke 6/6, probe 22+12 BITEXACT, anchors 9/9+14/14, stress 4+17 x12 nondet=0, l0/l1/coverage/all green, non-mha consumer UT 90/90)",
+  "programming_mode": "Expert (manual sync; framework opt-in param caller-managed)",
+  "activation_chain": "cann-bench re-score requires build_wheel_ascend.sh repackage + eval-env reinstall (setup.py already ships tl_templates; no packaging-script change needed) — Orchestrator side; framework + operator MUST ship as a pair",
+  "residual_handoff": "G2-phase SEM-window MTE2 idle (v_l1 single slot, L1 400/511.75KB closed at bN=256) => upgrade arm = bN=128 k/v dual-DB (268KB, S1 revival under A10 unlock) => next session",
+  "consecutive_no_improvement": 0
+}

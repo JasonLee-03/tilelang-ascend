@@ -1,0 +1,82 @@
+{
+  "stage": 3,
+  "operator": "mha",
+  "iteration": 24,
+  "mode": "perf_measure",
+  "gate": "GATE 0 (pre-screen; NO adoption code produced this round)",
+  "timestamp_utc": "2026-10-02T01:20+08:00 (measurements 2026-10-02 00:36-01:13 local / 16:36-17:13 UTC)",
+  "design_revision_count": 3,
+  "note": "GATE 0 = pure measurement round authorized by the user as an explicit extension of the GATE 0/1/2 budget. Mission: decide with real-machine data whether GATE 2 (q_l1 flat-domain double buffering against the model's `ramp` term) is worth implementing. Production kernel NOT modified: md5 re-verified dda3ad0877ba4df74bbd559f6912eeed / 1926 lines before AND after every probe build.",
+  "production_state": {
+    "file": "examples/mha/mha.py",
+    "md5": "dda3ad0877ba4df74bbd559f6912eeed",
+    "md5_first8": "dda3ad08",
+    "lines": 1926,
+    "md5_reverified_after_round": "dda3ad0877ba4df74bbd559f6912eeed (UNCHANGED)",
+    "programming_model": "Expert (manual T.Scope C/V, explicit L0/L1/UB allocs, manual SEM 0-5 / SIG matrix, 4 pass_configs all False; DESIGN rev4 terminal state)"
+  },
+  "measurement_environment": {
+    "device": "Ascend910 (platform_version 5, soc Ascend910_9362 class), 20 AIC + 40 AIV, aic/aiv freq 1650 MHz (Current == Rated, no throttling)",
+    "cann_version": "9.2.0",
+    "driver_version": "467992",
+    "npu_smi": "2x Ascend910, Health OK, 0 running processes at round start",
+    "host": "aarch64, Linux 5.10.0-182.0.0.95, 40 CPU, torch 2.7.1 / torch_npu device_count=2",
+    "msprof": "/home/developer/Ascend/cann-9.2.0/bin/msprof",
+    "cache_discipline": "session-isolated TILELANG_CACHE_DIR per variant: cache_prod / cache_probe (fbm) / cache_probe_fa (Form A) / cache_smoke. No shared/default cache touched; production cache never shared with a probe.",
+    "wall_caliber": "plain `msprof --task-time=on` timeline mode -> op_summary_*.csv Task Duration(us), MEDIAN over iters=20 after warmup=5 (n=25 launches), parsed by the repo-calibrated examples/mha/perf_tuning/parse_prof.py (caliber validated against cann-bench case1 anchor 46.925us == T_cand 46.9us). r10_base-comparable.",
+    "metrics_caliber": "`msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization,ResourceConflictRatio,L2Cache,Memory,BasicInfo,ArithmeticUtilization,MemoryUB,MemoryL0` single launch (warmup 0 / iters 1), cross-block mean over all 20 blocks + critical block (argmax wall) reported separately",
+    "camodel_usage": "NONE this round (discipline #1: camodel is qualitative-only and has diverged directionally from the real machine 3x). All quantitative claims below are real-machine msprof."
+  },
+  "noise_band": {
+    "caliber": "3 interleaved paired repeats per arm, same session, same NPU, alternating prod/probe to cancel drift",
+    "case9_prod_medians_us": [869.66, 869.10, 869.88],
+    "case9_prod_repeat_spread_us": 0.78,
+    "case7_prod_medians_us": [856.69, 856.65, 856.46],
+    "case7_prod_repeat_spread_us": 0.23,
+    "within_run_stdev_us": "case9 4.18-6.57 / case7 3.94-4.63 (per-launch, n=20)",
+    "paired_diff_sem_us": {"case9": 1.222, "case7": 1.204},
+    "verdict": "repeat-to-repeat spread of the median <=0.91us (<=0.11%) => the paired-difference SEM (~1.2us ~0.14%) is the operative resolution for this round, an order of magnitude tighter than the historical +-3~4% run-to-run band"
+  },
+  "baseline_wall_us_fresh_this_session": {
+    "case9": 869.547,
+    "case7": 856.600,
+    "provenance": "mean of 3 interleaved repeat medians; independent single-run cross-checks: case9 tl_prod_c9_r1 median 872.12 (stdev 6.453), msprof-op single-launch TaskDur 870.00 / 885.78 (metrics-replay arm); case7 ab_prod_c7_r1 857.25 / r2 859.16, msprof-op single-launch 863.40",
+    "vs_r10_base_historical": {"case9": "869.547 vs 869.87 = -0.04%", "case7": "856.600 vs 855.54 = +0.12%"},
+    "reproduction_verdict": "BOTH within noise => production state reproduced, historical anchor valid"
+  },
+  "test_shape": {
+    "case9": "(B=4, S=1024, S_kv=1024, N=16, D=256) float16, scaleValue=-1.0 (auto 1/sqrt(D)), is_causal=True -> form_b_mma, flat (task,kv) domain, block_M=32 block_N=128, tasks=2048, my_cnt=103/core, flat batches num_fb~58/core",
+    "case7": "(B=4, S=1024, S_kv=1024, N=32, D=128) float16, scaleValue=-1.0, is_causal=True -> form_a generic, flat domain, block_M=64 block_N=128, tasks=2048, my_cnt=103/core"
+  },
+  "test_command": {
+    "wall_ab": "source set_env.sh && msprof --output=<dir> --task-time=on python3 examples/mha/perf_tuning/bench_mha.py --case case9 --warmup 5 --iters 20   (prod)  |  ... probe_gate0_qablate/bench_qablate.py --case case9 ...  (probe)",
+    "metrics": "source set_env.sh && msprof op --kernel-name=main_kernel --output=<dir> --aic-metrics=PipeUtilization,ResourceConflictRatio,L2Cache,Memory,BasicInfo,ArithmeticUtilization,MemoryUB,MemoryL0 python3 <bench> --case <case> --warmup 0 --iters 1",
+    "precision_revalidation": "FRESH L0 RE-RUN this round: `source set_env.sh && python3 examples/mha/test_mha.py --level l0` -> 10/10 PRECISION_PASS, exit 0, 'Test Passed!' (isolated TILELANG_CACHE_DIR=cache_prod; max_abs 0.000e+00 ~ 9.766e-04, all inside gate). `--level all` / anchor-A / anchor-B / stress-nondet NOT re-run: production kernel is byte-identical (md5 re-verified at 4 checkpoints) and L0 is fully green, so the inherited session-8/9/10 battery remains valid with no drift signal. The probes are numerically wrong BY DESIGN and are explicitly excluded from any precision judgement."
+  },
+  "precision_status": "pass (fresh L0 10/10 re-verified this round + inherited unchanged: production mha.py byte-identical dda3ad08; session-8 full battery + session-9/10 rollback re-verification on file: anchor-A 9/9 BITEXACT, anchor-B 14/14, stress 4x12 nondet=0, --level all exit 0 PRECISION_PASS=29/FAIL=0)",
+  "bottleneck_type": "sync (cross-core four-phase handshake round-trip latency chain), NOT transfer and NOT compute. Established by direct ablation this round, not by inference: removing 32.4us (case9) / 48.0us (case7) of C-side real DMA work AND 34.8%/34.6% of AIC L2 read-miss-allocate produced ZERO wall gain (case9 +0.29% n.s., case7 +0.87% p=0.025 significant REGRESSION), with V-side real work bit-identical and C-side cross-core wait growing +58.75us / +70.94us.",
+  "gate0_verdict": "FAIL (GATE 2 = NO-GO; GATE 1 = NO-GO as 'GATE 2 groundwork')",
+  "gate2_ev_upper_bound_pct": {
+    "case9": "+0.33% (95% CI upper edge of the COMPLETE-ELIMINATION ablation; point estimate -0.29% i.e. negative)",
+    "case7": "0% / negative (95% CI [+0.267%, +1.476%] REGRESSION, p=0.025)",
+    "combined": "<= +0.33%, i.e. >=9x below the 3% adoption/noise threshold and >=20x below the model's 134us (15.46%) `ramp` premise",
+    "note": "the ablation is a strict UPPER bound for any speed-up-type intervention: a perfect prefetch cannot beat complete elimination"
+  },
+  "artifacts": {
+    "archive": "examples/mha/perf_tuning/msprof_gate0_iter24/ (metrics CSVs x4 arms + wall JSONs x15 + analysis dumps + tooling, 564KB / 65 files)",
+    "probes": "examples/mha/perf_tuning/probe_gate0_qablate/{mha_qablate.py (fbm, md5 07a0b1dd, 2-line delta), mha_qablate_fa.py (Form A, md5 d0233d6f, 3-line delta), bench_qablate.py, bench_qablate_fa.py}",
+    "scratch": "/tmp/opencode/gate0_i24/ (full OPPROF/PROF trees incl. dump+visualize_data.bin, caches, run logs)",
+    "report": "examples/mha/perf_tuning/gate0_verdict_iter24.md"
+  },
+  "hard_discipline_compliance": {
+    "msprof_only_quantitative_basis": "PASS (camodel not run this round)",
+    "cache_discipline": "PASS (4 isolated TILELANG_CACHE_DIR, production cache never shared with a probe)",
+    "production_kernel_untouched": "PASS (md5 dda3ad08 re-verified after every probe build and at round end; probes live in a separate directory and import as mha_qablate / mha_qablate_fa, never shadowing mha.py)",
+    "no_predictive_veto": "PASS (GATE 2 rejected on 6 measured A/B runs + 4 metric arms; GATE 1 explicitly marked NOT MEASURED as a standalone candidate)",
+    "orchestrator_state_untouched": "PASS (.orchestrator_state.json never read or written)",
+    "forbidden_levers_untouched": "PASS (no change to DESIGN 8.6-10 shared-pool phase discipline, bN=256, k/v L1 double buffer, V wide channel, CROSS_INTERVAL, #R5-3 K/V redundancy)"
+  },
+  "consecutive_no_improvement": 2,
+  "consecutive_no_improvement_delta": 0,
+  "consecutive_no_improvement_note": "unchanged at 2 (inherited from r10-1/r10-2). This round is mode=perf_measure and produces no adoption candidate, so it neither increments nor resets the counter; the Orchestrator owns the abort decision."
+}

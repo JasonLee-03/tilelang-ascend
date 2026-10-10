@@ -1,0 +1,45 @@
+{
+  "session": 13,
+  "iteration": "r13-2/r13-3 (global iter34/35)",
+  "phase": "B+C (implementation + measurement + verdict) then D (closure)",
+  "timestamp": "2026-10-05T15:40+08:00",
+  "verdict": "ADOPTED (#R13-1 upgrade arm: bN=128 k/v dual-side L1 DB, operator-side only, framework untouched)",
+  "kernel_state": {
+    "adopted_mha_py_md5": "c316a0040ff4f4445d81bb31ec94a68e",
+    "adopted_mha_py_lines": 2240,
+    "measured_state_md5": "22fffbe58a94ab6a6d2ee7d3691d3f4f (2195 lines; docstring rev4r13 note added after measurement; IR identity verified: case15 dump md5 3a6bf5895b099499b923956b29553a2e == r13_src_var)",
+    "pre_change_backup": "history_version/mha_impl_r4_perf18.py (0fb193b2382f8fc5506ebbc84055bf0c)",
+    "adopted_backup": "history_version/mha_impl_r4_perf19.py (c316a004)",
+    "framework_files": {
+      "src/tl_templates/ascend/common.h": "82e80025e8424f1c38a30aff186f8708 UNCHANGED this session (r12 opt-in state)",
+      "tilelang/language/ascend.py": "1c3a00edeb44d21ddea0bb67aef8fee2 UNCHANGED this session (r12 opt-in state)",
+      "git_state": "working-tree diff == framework_r12_phaseB.diff verbatim (start-of-session md5 double-check passed)"
+    }
+  },
+  "test_shape": "case15 (60,1,512,16,256) fp16 / case18 (60,2,512,16,256) fp16 — decode D=256 multi-block (kv_db domain, NOW bN=128, kL0=128, 192 slots/core, dual k/v L1 slots)",
+  "test_command": "msprof --task-time=on python3 examples/mha/perf_tuning/bench_mha.py --case {case} --warmup 5 --iters 20 (n=25 median via parse_prof.py); op mode: msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization,ResourceConflictRatio,L2Cache,Memory,BasicInfo,ArithmeticUtilization,MemoryUB,MemoryL0",
+  "fresh_baseline_us": {"case15": 463.64, "case18": 465.12, "case10": 34.89, "case11": 311.37, "case14": 377.51, "case16": 563.08, "case20": 14.15, "case9": 867.48, "case7": 857.92},
+  "adopted_us": {"case15": 421.64, "case18": 423.56, "case10": 35.28, "case11": 305.49, "case14": 376.19, "case16": 561.79, "case20": 14.19, "case9": 869.06, "case7": 858.40},
+  "improvement_pct": {"case15": -9.06, "case18": -8.94},
+  "guards": "case11 -1.89 / case14 -0.35 / case16 -0.23 / case20 +0.28 / case9 +0.18 / case7 +0.06 in-band; case10 +1.12% on IR-byte-identical source => drift-band attribution (session-8/r12 precedent, small-core launch jitter)",
+  "op_signature_case15": {
+    "duty_pct": [73.5, 86.4], "wait_id2_us": [119.63, 66.44], "mte2_busy_gbps": [75.64, 70.91],
+    "c_wall_us": [457.61, 412.42], "c_scalar_t_us": [336.15, 411.03], "c_mte1_t_us": [134.75, 143.35],
+    "c_mte2_t_us": [342.65, 365.54], "c_fix_t_us": [61.53, 96.32], "cube_t_us": [49.80, 49.80],
+    "v_wall_us": [458.02, 412.90], "v_vec_t_us": [82.64, 121.13], "v_mte2_t_us": [47.27, 94.44],
+    "v_mte3_t_us": [21.32, 34.60], "v_scalar_t_us": [146.06, 214.37],
+    "v_wait_id0_us": [199.40, 183.20], "v_wait_id4_us": [232.45, 202.38],
+    "gm_to_l1_kb": [25920, 25920], "l0c_to_gm_kb": [3072, 4608],
+    "v_gm_to_ub_kb": [1536, 2304], "v_ub_to_gm_kb": [408, 408], "taskdur_us": [466.34, 423.38]
+  },
+  "bench_conversion_preregistered": {
+    "formula": "speedup_new ~= speedup_old / (1 + wall_delta_frac) (local relative caliber; authoritative = Orchestrator cann-bench re-score)",
+    "case15": {"start": 0.744, "projected": 0.818}, "case18": {"start": 0.879, "projected": 0.965},
+    "decode_no_regress_5_lines": "case10>=0.90 (0.990) / case13>=0.69 (0.891) / case14>=0.99 (1.390) / case16>=0.52 (0.777) / case20>=0.82 (2.113) — all IR-byte-identical domains, expected unchanged within drift band"
+  },
+  "precision_status": "pass (full battery on measured state: smoke 6/6 no-hang, probe 24 targets blocking-caliber (margins 160-640x; valrange 2x pre-existing golden-grid property, vs-old BITEXACT) + 12 guards BITEXACT, anchors 9/9+14/14 all out-of-domain, stress 4+19 cfg x12 nondet=0, l0/l1/coverage/all green incl. sentinels 4/4; consumer-UT gate N/A — framework untouched; adopted-state IR identity + Phase-D fresh re-run)",
+  "programming_mode": "Expert (manual sync; r12 framework opt-in param consumed unchanged)",
+  "residual_and_closure": "post-arm residual = C.scalar_t ~= wall (fixed segments x2 calls + x2 slots = new pacing floor) + mte2 fine-stream rate tax -6.3%; in-rule lever set for decode D=256 kv_db EXHAUSTED (S1 reasoning-superseded-by-this-arm / S2 measured-negative / S3 gate-FAIL / A10 adopted r12 / S13 adopted r13); further gains = scalar-path structural work beyond Stage-3 scope => closure decision handed to user per charter",
+  "consecutive_no_improvement": 0,
+  "activation_chain": "operator-only adoption: cann-bench re-score needs mha_submission sync ONLY IF framework pair already installed (r12 adoption carrier = framework opt-in param — UNCHANGED and REQUIRED; operator+framework still ship as a pair per r12 clause); Orchestrator side"
+}

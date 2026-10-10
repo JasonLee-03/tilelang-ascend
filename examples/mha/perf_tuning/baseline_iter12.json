@@ -1,0 +1,24 @@
+{
+  "stage": 3,
+  "operator": "mha",
+  "iteration": 12,
+  "perf_session": 2,
+  "note": "baseline at start of iteration 12 = post-#10b (decode bN=256 all-D adaptive)",
+  "precision_gate": "pass (l0 10/10 + l1 19/19, /tmp/opencode/l0_s2_iter11.log, l1_s2_iter11.log)",
+  "programming_mode": "Developer threads=1 cv_1_1 (four pass_configs all-on)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {
+    "case1": 14.92,
+    "case7": 3202.04,
+    "case10": 65.71,
+    "case14": 672.08,
+    "case20": 54.81,
+    "case16": 932.84,
+    "case15": 583.76,
+    "case18": 583.94,
+    "case4": 64.99
+  },
+  "kernel_us_note": "case7 carried (prefill BITEXACT-unchanged); case15/18/4 first local msprof values",
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_s2_iter10/*.json + msprof_s2_iter11/*.json"
+}

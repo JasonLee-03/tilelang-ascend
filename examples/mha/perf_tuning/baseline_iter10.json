@@ -1,0 +1,24 @@
+{
+  "stage": 3,
+  "operator": "mha",
+  "iteration": 10,
+  "perf_session": 2,
+  "note": "session-2 start baseline = session-1 final state (post-#8d, perf8+docstring); re-measured 2026-09-19 to confirm no env drift vs baseline_iter8",
+  "precision_gate": "pass (l0 10/10 re-run at session start, /tmp/opencode/l0_s2_start.log)",
+  "programming_mode": "Developer threads=1 cv_1_1 (four pass_configs all-on)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {
+    "case1": 14.86,
+    "case7": 3202.04,
+    "case10": 92.28,
+    "case14": 672.63,
+    "case20": 54.67,
+    "case16": 1266.42
+  },
+  "drift_vs_iter8": {
+    "case1": "-1.2%", "case7": "-0.2%", "case10": "-0.7%",
+    "case14": "+0.8%", "case20": "-0.2%", "case16": "+1.6%"
+  },
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_s2_base/*.json"
+}

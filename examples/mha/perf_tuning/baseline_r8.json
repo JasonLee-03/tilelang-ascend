@@ -1,0 +1,33 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r8-base", "perf_session": 8,
+  "note": "Session-8 opening baseline = rev4 terminal state restored (mha.py md5 ee5bf9c93f979b9fc5b111a3c4121888, 1593 lines; workspace copy had an L782 trailing-whitespace-only editor touch [md5 d1f4dd58], restored via cp history_version/mha_impl_r4_perf1.py, diff-verified trailing-ws-only; opening snapshot = history_version/mha_impl_r4_perf3.py). Mission = joint special ①flat(task,kv) + ②L0B 4-slot rotation + ③V batch-coherency (absorption law: wall gain judged only at Stage-4 joint integration; per-stage criteria = mechanism activation + bit/precision safety + cost net).",
+  "bottleneck_type": "sync (four-phase per-slot handoff latency chain; session-7 dual-side A/B 1:1 absorption law)",
+  "programming_mode": "Expert rev4 three-way dispatch (form_a / form_b_mma / form_b_gemm_v0 decode fallback untouched)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20); op-mode attribution = msprof op PipeUtilization (block0)",
+  "kernel_us": {
+    "case9": 944.74, "case4": 35.57, "case7": 924.69,
+    "case10": 34.86, "case14": 377.69, "case16": 562.96
+  },
+  "kernel_us_note": "fresh session-8 capture (msprof_r8_base/); vs session-7 records (944.61/35.32/926.60/34.98/376.16/560.96) max delta +0.7% => environment consistent, adoption judgments use session-8 internal comparisons",
+  "test_shape": "case9=(4,1024,1024,16,256) fp16 causal [form_b_mma, Stage-1 target]; case4=(2,256,256,8,256) fp16 causal [form_b_mma guard]; case7=(4,1024,1024,32,128) fp16 causal [form_a multi, Stage-2/3 target]; case10/14/16 decode guards",
+  "test_command": "msprof --output=<dir> --application='python3 examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "op_mode_case9_base": {
+    "source": "/tmp/opencode/r8_op_case9_base/OPPROF_20260929181511_FYCMTXSENEBDEISC (fresh session-8 capture, same-session A/B reference)",
+    "TaskDur_us": 944.76,
+    "aic": {
+      "scalar_mte1_stall_us": 433.96, "mte1_busy_us": 321.38, "mte1_ratio": 0.3404,
+      "mte2_us": 476.68, "mte2_ratio": 0.5050, "fixp_us": 325.26, "fixp_ratio": 0.3446,
+      "cube_us": 182.71, "cube_ratio": 0.1935, "scalar_ratio": 0.8467,
+      "wait_id2_us": 340.71, "wait_id5_us": 87.57
+    },
+    "aiv_v0": {
+      "vec_us": 451.08, "vec_ratio": 0.4778, "scalar_ratio": 0.6027,
+      "wait_id0_us": 212.88, "wait_id4_us": 431.51, "vector_stall_us": 59.91,
+      "mte2_us": 200.37, "mte3_us": 85.95
+    },
+    "signature": "mte1_stall(434) > mte1_busy(321) = pure latency exposure (Stage-1 ② attack point); matches archived refs (msprof_case9_20260923: stall 436.2/busy 321.3; r7_op_case9: stall 412.2)"
+  },
+  "precision_gate": "l0 10/10 PASS exit 0 on restored baseline (/tmp/opencode/r8_probes/r8_l0_base.log, TILELANG_CACHE_DIR=/tmp/opencode/r8_cache_base); full gate battery runs per-iteration",
+  "cannbench_ref": {"report": "cann_final_eval_20260922_172117", "composite": 71.79, "avg_speedup": 0.9108, "case9": 0.353, "case7": 0.46, "case8": 0.47, "case3": 0.77},
+  "evidence": "examples/mha/perf_tuning/msprof_r8_base/*.json + /tmp/opencode/r8_op_case9_base/ + /tmp/opencode/r8_probes/r8_l0_base.log"
+}

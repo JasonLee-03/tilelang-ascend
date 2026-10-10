@@ -1,0 +1,27 @@
+operator:
+  name: mha
+  category: Fusion
+  formula: |
+    y = softmax(Q @ K^T * s) @ V ;  s = scaleValue if scaleValue > 0 else 1/sqrt(D)
+    is_causal: scores[..., i, j] = -inf for j > i + (S_kv - S)   # 右下角对齐
+    all-masked row (仅域外 S>S_kv 可达): softmax → 0（golden all_masked 保护对齐）
+  attrs:
+    - name: scaleValue
+      type: Float
+      default: -1.0
+      required: false
+    - name: is_causal
+      type: Bool
+      default: false
+      required: false
+  inputs:
+    - name: query    # [B, S, N, D]
+      dtype: [float16, bfloat16]
+    - name: key      # [B, S_kv, N, D]
+      dtype: [float16, bfloat16]
+    - name: value    # [B, S_kv, N, D]
+      dtype: [float16, bfloat16]
+  outputs:
+    - name: output   # [B, S, N, D]，与 query 同 dtype，contiguous
+      dtype: [float16, bfloat16]
+  schema: mha(Tensor query, Tensor key, Tensor value, float scaleValue=-1.0, bool is_causal=False) -> Tensor output

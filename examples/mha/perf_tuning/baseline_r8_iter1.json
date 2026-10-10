@@ -1,0 +1,31 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r8-1-rolledback", "perf_session": 8,
+  "note": "#R8-1 Stage-1 ② L0B 4x16KB slot rotation (form_b_mma, uniform-orientation v4ksp form — literal 附.3 dual-orientation form inexpressible: T.view broken in this TVM + orientation conflict, probe-archived). ROLLED BACK: criterion (a) mechanism activation FAILED (mte1_stall -2.0% only, stall(425)>busy(328) signature persists). Terminal state = ee5bf9c9 (IR 16/16 restoration verified). Failed variant preserved /tmp/opencode/r8_probes/mha_r81_edit_v1.py (1697 lines, ALL gates passed — future zero-probe revival if flat-① changes the gating structure).",
+  "bottleneck_type": "sync (four-phase handoff chain) — NEW HARD KNOWLEDGE: mte1_stall is a CONCOMITANT SYMPTOM of the chain, not a lever: attacked from MTE2 side (r7-2, stall -54%) and from L0B side (r8-1, stall -2%) — wall zero-response both times. Gating = cross-iteration MTE2 fill (K/V arrival; MTE2 493us = 50.5% busiest C pipe, 1.09us/iter ≈ cadence floor) + SEM chain.",
+  "optimization": "l0b_pool [2,128,128]→[4,64,128] uniform slots + l0a_s [4,32,64] Q k-chunks + l0a_o [4,32,64] P k-chunks; GEMM1 K-split ×4 chain (init T,F,F,F); GEMM2 PV K-split(block_N 2×64) × N-split(D 2×128) with V row+col slices; LOAD-FIRST burst ordering; V slices issued before SEM-gated P section; token ids L0KC 0-3/L0AO 4,5/L0AS 6 group (7/8 cap); init 14/destroy 13",
+  "precision_gate": "pass (ALL gates): mech probe 4-config BITEXACT vs production reference; full-kernel probe 20/20 (14 form_b_mma targets BITEXACT vs pre-change incl. case9/case4/multi-outer 8+2/effvar causal 1..4/bf16/tails/zeros-control/scale + 6 guards BITEXACT); anchor-A 9/9 hard + anchor-B 14/14; stress inherited 4 + rev4-extended 16 (beats new 4-slot token flows both branches) nondet=0 ×12; l0 10/10 l1 19/19 coverage 19P0M0N --level all exit 0 (L2 12/12 rejected, Boundary 6/6, sentinels 4/4 PERF_PASS); budget hard gate: real-compiled readout L0B 64.00/64KB exact-top single pool, L0A 32/L0C 64/L1 152/UB 126KB all OK; IR guard 13/13 byte-identical (Form A ×8 + decode ×5) + 3/3 targets changed; SEM CrossCore census md5 EQUAL to baseline (zero protocol drift)",
+  "programming_mode": "Expert rev4 three-way dispatch (unchanged)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20) + msprof op PipeUtilization A/B (block0)",
+  "kernel_us": {"case9": 946.93, "case4": 34.36, "case7": 924.21, "case10": 35.25, "case14": 375.71, "case16": 563.06},
+  "delta_vs_baseline_pct": {"case9": 0.23, "case4": -3.4, "case7": -0.05, "case10": 1.1, "case14": -0.5, "case16": 0.02},
+  "delta_note": "case9 (designated attack point) +0.23% = noise-band zero response (absorption law third reproduction: wait_id2 -24.3% absorbs the micro-gain); case4 -3.4% sole beyond-band reading, single measurement not re-verified, moot after rollback; guards flat (IR byte-identical).",
+  "op_ab_case9": {
+    "mte1_stall_us": "433.96 -> 425.23 (-2.0%) — CRITERION (a) FAIL (required: significant drop AND stall<=busy; actual: stall(425) > busy(328) persists)",
+    "mte1_busy_us": "321.38 -> 327.99 (+2.1%)",
+    "mte2_us": "476.68 -> 492.77 (+3.4%)",
+    "fixp_us": "325.26 -> 326.28 (+0.3%)", "cube_us": "182.71 -> 180.26 (-1.3%)",
+    "wait_id2_us": "340.71 -> 257.90 (-24.3%)", "wait_id5_us": "87.57 -> 80.37 (-8.2%)",
+    "aiv_all": "±5% (emit_v untouched corroboration)",
+    "TaskDur_us": "944.76 -> 951.60 (+0.7%)"
+  },
+  "cost_net_verdict": "NEGATIVE: MMAD 4→8/iter + MTE1 events 7→13/iter real costs (busy +2.1%) buying no stall reduction; FIX stayed 3/iter (v4ksp cheaper than literal form's 5 — archived for revival)",
+  "adopted": false,
+  "rollback_reason": "criterion (a) mechanism activation failed + cost-net negative (task rule: 净值裁决为负 → 归档知识 + 回滚)",
+  "archived_knowledge": [
+    "mte1_stall root cause ≠ intra-burst L0B slot depth: 4-slot + load-first leaves stall ≈ unchanged; gating = cross-iteration MTE2 fill + SEM chain. ② family evidence-closed UNLESS flat-① lands (revival precondition: post-① op attribution still shows MTE1 exposed segments; variant preserved, zero-probe revival).",
+    "附.3 literal form (GEMM2 4×NC64 + w3 FIX ×4) inexpressible: 16KB-slot orientation conflict + T.view/T.reshape broken in this TVM (tvm.tir.Buffer non-constructable); DESIGN §4.5-e finding reconfirmed at 4-slot granularity.",
+    "NEW bit-safe mechanisms banked: ZN L1 row+col-slice direct MTE1→L0B load (offsets Forward-verified 0/1024/16384/17408); PV K-split chain ≡ single-K mma; Q/P 64-wide colsegs ×4/×2; L0AS group-granularity single-id token round; 7/8 MTE1↔M id layout — all 20/20 BITEXACT + stress nondet=0.",
+    "①+③ dual-joint feasibility (task-mandated evaluation): case7/8/3 main lever ③ unaffected; case9 B-layer convergence downgraded from '①+②+③ three-pack' to '①+③ measured verdict + ② conditional revival' — 626us/0.54x no longer a committable expectation, honest re-estimate required post-①."
+  ],
+  "evidence": "msprof_r8_iter1/*.json + /tmp/opencode/r8_op_case9_{base,iter1}/ + /tmp/opencode/r8_probes/{probe_r81_l0b4_mech.py,probe_r81.log,r8_anchors_iter1.log,r8_anchor_stress_iter1.log,r8_stress_ext_iter1.log,r8_l0_iter1.log,r8_l1_iter1.log,r8_coverage_iter1.log,r8_all_iter1.log,r81_src_*.cc,mha_r81_edit_v1.py} + /tmp/opencode/r8_src_iter1/ (16-shape IR)"
+}

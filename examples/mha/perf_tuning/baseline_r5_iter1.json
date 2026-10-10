@@ -1,0 +1,37 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r5-1-adopted", "perf_session": 5,
+  "note": "post-#R5-1 (Form A single_kv_block task batching) ADOPTED state; md5 3d56c5dd3d8a60d26eed7ade2e404a2b, 1086 lines (= history_version/mha_impl_r3_perf10.py). Change = 1-line emit_v dispatch gate (`single_kv_block and not form_a` -> `single_kv_block`) + new Form A C-scope `if single_kv_block:` batch mirror (117 lines, template = Form B batch branch, body = existing Form A GEMM1/GEMM2 batches). V batched path body reused verbatim (already bit-validated by Form B cases 12/13/14/16/17).",
+  "bottleneck_type": "sync (cross-core / inter-phase dependency chain serialization), NOT compute, NOT transfer",
+  "optimization": "Form A single_kv_block task batching: kv_iters==1 collapsed eff_num_outer/batch_iters to 1, so the NUM_STAGES=8 pipeline and the io_buf[2] ping-pong never had a second slot in flight and every task ran a strictly serial C-QK -> V-softmax -> C-PV -> V-epi chain. Batching the TASK dimension puts up to 8 tasks in one protocol round (slot i <-> task my_start+kb*NUM_STAGES+i), so V's softmax(t+1) follows softmax(t) instead of waiting for C's PV(t)+V's epi(t), and C's Q/K/V loads of t+1 overlap V's softmax(t).",
+  "precision_gate": "pass (probe_r51 30/30 = 19 batched-path BITEXACT vs pre-change + golden blocking gate all pass (worst MARE_abs 1.95e-3 vs gate 7.81e-2, 40x margin) + 11 guards BITEXACT; l0 10/10; l1 19/19; coverage 19 PASS/0 MISS/0 N-A; --level all exit 0 [L0 10/10 L1 19/19 L2 12/12-rejected Boundary 6/6 0-WARN sentinels 4/4 PERF_PASS]; anchor 10/10 BITEXACT vs Developer final (fresh re-run on terminal state); R11 stress inherited 4 configs nondet=0 + NEW extended 7 configs on the changed path nondet=0)",
+  "programming_mode": "Expert rev3 + #R3-1 task-batched single_kv_block (Form B) + #R4-1 barrier-free Form B + #R5-1 task-batched single_kv_block (Form A)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {
+    "case1": 11.56, "case6": 30.07, "case19": 23.38, "case20": 18.28,
+    "case7": 928.35, "case2": 66.81, "case5": 18.47,
+    "case9": 1025.54, "case14": 377.48, "case10": 35.14, "case16": 562.44
+  },
+  "delta_vs_baseline_pct": {
+    "case1": -11.28, "case6": -44.40, "case19": -34.80, "case20": -40.48,
+    "case7": 0.21, "case2": -0.86, "case5": 0.16, "case9": 0.69, "case14": 0.02, "case10": 2.12, "case16": -1.04
+  },
+  "delta_note": "case1/6/19/20 = TARGETS (execution path changed): all four improved 11.3~44.4%, far beyond the 3% noise band; case6 (12.8 task/core -> batches 8+5 and 8+4) is the largest beneficiary as predicted. case7/2/5/9/14/10/16 = GUARDS: 7/7 within +/-3% (max +2.12%) AND 12/12 guard shapes have byte-identical generated source -> zero regression on untouched paths, proven at IR level not just at timing level.",
+  "ir_guard": "16 shapes dumped via get_kernel_source(): 12/12 guards BYTE-IDENTICAL vs baseline, 4/4 targets changed as expected. Baseline dumps for case9/case14 md5-match session-4 /tmp/opencode/r4_src/FormB_case9_postR41.cc + FormB_case14_postR41.cc -> start state confirmed = session-4 terminal. Docstring sync verified codegen-neutral (all 16 sources byte-identical before/after the docstring edit).",
+  "camodel_mechanism_verification": {
+    "method_recovered": "msopprof simulator --output=<OUT>/case1 --kernel-name=main_kernel --aic-metrics=PipeUtilization --dump=true --soc-version=Ascend910_9362 --application='python3 examples/mha/perf_tuning/bench_mha.py --case case1 --warmup 0 --iters 1' (session 4 left no script; recovered from /tmp/opencode/msprof_sim_case1.log and REPRODUCED on the unmodified terminal state: per-core running times match within 0.01us and the 11 VECTOR segment lengths are identical)",
+    "observation1_C_wait": "C FLOWCTRL 7.726 -> 6.564us (-1.162us, -15.0%); V FLOWCTRL 5.876 -> 3.705us (-2.171us, -37.0%); C wall 9.093 -> 7.919us (-12.9%); V wall 9.637 -> 8.487us (-11.9%). HONEST CAVEAT: C's wait RATIO stays high (85.0% -> 82.9%) because C's real work (CUBE 0.322 + MTE1 0.502 + FIXP 2.108us) is intrinsically much smaller than V's VECTOR 3.368us on this shape - C is structurally the lighter core. The defect was that those waits sat ON the critical dependency chain, and that is what was removed (V wait -37%, V VECTOR share 35.1% -> 39.7%).",
+    "observation2_mte_vector_serial": "RESOLVED: overlap 0.1297 -> 0.5146us (+296.7%) = 5.30% -> 20.93% of MTE busy (x3.95) and 3.83% -> 15.28% of VECTOR busy (x3.99) -> io_buf[2] ping-pong demonstrably activated. Corroboration: V MTE2 union +54.6% while total MTE union only +0.5% (transfers spread out and overlapped, not increased); V MTE3 union -38.8% (the two writebacks now back-to-back inside batched phase-2).",
+    "observation3_vector_fragmentation": "PARTIALLY RESOLVED: segment count 11 -> 10 and the gap between the two real softmax computations collapsed 2.684 -> 0.582us (-78.3%), with the gap content changing from 'wait for the other core's PV+epi phase' to 'own necessary DMA (P0 write 187.6ns + w1[1] read 350.3ns)'. NOT ACHIEVED (recorded honestly): the micro-fragment COUNT did not materially drop (6 -> 6 under a <60ns threshold, 8 -> 8 under <100ns) - those are the BAR/prologue-epilogue bookkeeping inherent to the flag-managed copy ownership pattern, which batching does not remove; [#R3-4] already proved decisively that cutting such instruction counts does not shrink wall, so it was not targeted.",
+    "expected_cost_of_real_overlap": "the two softmax segments each grew 1537.8 -> 1553.0/1608.1ns (+1.0%/+4.6%) = UB bandwidth contention between MTE2 and VECTOR; net wall still -12%",
+    "evidence": "examples/mha/perf_tuning/simulator_r5/{README.md, case1_base/, case1_r51/, r51_mechanism_cmp.txt, trace_stats.py, cmp_mechanism.py}"
+  },
+  "estimated_speedups_NON_AUTHORITATIVE": {
+    "model": "session-4 cann-bench per-case speedup x (T_baseline_local / T_new_local)",
+    "case1": 0.831, "case6": 1.050, "case19": 1.339, "case20": 1.702,
+    "avg_over_20": 0.867,
+    "caveat": "OPTIMISTIC BIAS - the cann-bench caliber includes a fixed per-launch overhead that does not scale with kernel time, and sessions 3/4 both recorded +/-0.02~0.04 run-to-run drift. Authoritative numbers require a cann-bench re-evaluation (Orchestrator decision; NOT executed this iteration)."
+  },
+  "adopted": true,
+  "test_command": "source set_env.sh && export LD_LIBRARY_PATH=/usr/local/sqlite3/lib:$LD_LIBRARY_PATH && msprof --output=<dir> --application='python3 examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_r5_iter1/*.json + perf_tuning/simulator_r5/ + /tmp/opencode/r5_probes/{probe_r51.log, r5_l0_iter1.log, r5_l1_iter1.log, r5_coverage_iter1.log, r5_all_iter1.log, r5_anchor_iter1.log, r5_anchor_final.log, r5_stress_iter1.log, r5_stress_final.log, r51_mechanism_cmp.txt} + /tmp/opencode/r5_src_{base,new,final}/"
+}

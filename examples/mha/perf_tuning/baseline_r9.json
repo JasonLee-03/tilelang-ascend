@@ -1,0 +1,23 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r9-base", "perf_session": 9,
+  "note": "Session-9 opening baseline = session-8 terminal state (mha.py md5 dda3ad0877ba4df74bbd559f6912eeed, 1926 lines, verified at Step 0; opening snapshot = history_version/mha_impl_r4_perf10.py). Mission (user decision 2026-09-30): case9 dual-path — path-1 = ③ V wide-channel (VW=2, form_a D=128 first -> fbm D=256 case9 domain; judgmental criteria V.vec drop AND C.wait_id2 drop AND wall drop, else absorption-law 4th instance => ③ family evidence-closed); path-2 = fbm prefill bN 128->256 SCOPING ONLY (scratch variants, no production kernel change; L0C shared-pool first hard gate).",
+  "bottleneck_type": "mixed: case9 = duty-cycle-bound (C.MTE2 57% at 131.2GB/s busy-rate = ceiling, wait_id2 handoff exposure 25%, ramp 15%; NOT bandwidth-bound: HBM byte-utilization 10.5%, L2 hit 92.7%); case7 = V-paced (V.vec 634.4us = 77.5% aiv, C.wait_id2 547.7 = 67% aic)",
+  "programming_mode": "Expert rev4 three-way dispatch (form_a / form_b_mma / form_b_gemm_v0 decode fallback untouched) + flat(task,kv) token stream (session-8 ① adopted)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20); op-mode attribution = msprof op PipeUtilization (block0 + 20-core mean dual caliber)",
+  "kernel_us": {
+    "case9": 869.04, "case7": 858.26, "case8": 855.78, "case3": 131.35,
+    "case4": 27.92, "case2": 44.84, "case5": 15.19,
+    "case10": 33.87, "case13": 565.30, "case14": 376.02, "case16": 562.09, "case20": 14.03
+  },
+  "kernel_us_note": "fresh session-9 capture (msprof_r9_base/, TILELANG_CACHE_DIR=/tmp/opencode/r9_cache_base); vs session-8 final records (868.31/856.62/-/131.48/28.20/44.91/15.40/-/-/-/562.96/14.30 wait case16 563.24) max delta +0.7% => environment consistent; adoption judgments use session-9 internal comparisons ONLY (±2.5% session-variance yardstick)",
+  "test_shape": "path-1 targets: case7/8=(4,1024,1024,32,128) fp16/bf16 causal + case3=(2,512,512,32,128) bf16 causal [form_a flat D=128 -> VW=2 wide]; case9=(4,1024,1024,16,256) + case4=(2,256,256,8,256) fp16 causal [fbm flat D=256 -> Stage-2 VW=2]; W=1 guards: case2=(4,256,256,16,64) + case5=(2,128,256,12,64) [form_a flat D=64]; decode guards case10/13/14/16/20",
+  "test_command": "msprof --output=<dir> --application='python3 examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'; parse_prof.py median",
+  "op_mode_reference": {
+    "case7_iter3": {"source": "/tmp/opencode/r8_op_case7_iter3 (session-8 adopted state = current kernel, IR-identical)", "V_vec_us": 634.39, "V_vec_pct_aiv": 77.5, "C_wait_id2_us": 547.70, "C_wait_id2_pct_aic": 67, "signature": "V-paced => path-1 primary object"},
+    "case9_iter2": {"source": "/tmp/opencode/r8_op_case9_iter2 (current state)", "V_vec_us": "453.3/468.6 (55.4-55.6%)", "V_wait_id4_us": 247.92, "V_wait_id0_us": 267.3, "C_wait_id2_us": "232.1/213.0", "C_mte2_pct": "57.6-57.8 (busiest real-work pipe)", "signature": "duty-cycle-bound; ③ judgment = three-signature criterion (STEP-D-EVAL verbatim inheritance)"}
+  },
+  "precision_gate": "session-8 final fresh subset all-pass on this exact file state (anchors A 9/9 + B 14/14, inherited stress 4x12 nondet=0, l0 10/10, --level all exit 0; r8_cache_finalg) => valid opening gate; full battery per-iteration",
+  "cannbench_ref": {"report": "cann_final_eval_20260930_083840", "composite": 72.59, "avg_speedup": 0.96, "case9": 0.39, "case7": 0.50, "case8": 0.50, "case3": 0.96, "case4": 1.15, "decode_lines": {"case10": 0.96, "case13": 0.87, "case14": 1.39, "case16": 0.78, "case20": 2.14}},
+  "hard_constraints": "decode no-regress bench lines (case10>=0.90/13>=0.69/14>=0.99/16>=0.52/20>=0.82); form_b_gemm_v0 fallback C-side source zero-touch; T.Pipelined banned; threads=2 guard; precision red-lines x4; no-retry list (w1-slim / kv-L1-DB / CROSS_INTERVAL / single-side-byte-speed classes / kv-outer / O-direct-fbm-ext / decode-protocol / ②L0B-depth / NUM_STAGES deepening); camodel qualitative-only; msprof median sole perf authority",
+  "evidence": "examples/mha/perf_tuning/msprof_r9_base/*.json + /tmp/opencode/r9_probes/run_perf_r9_base.log"
+}

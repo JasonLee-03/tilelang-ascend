@@ -1,0 +1,256 @@
+{
+  "iteration": 25,
+  "mode": "perf_measure",
+  "gate": "GATE 0b",
+  "mission": "handoff-latency total EV ceiling probe (C<->V four-phase cross-core SEM chain). PURE MEASUREMENT ROUND: no adoptable code produced, production kernel byte-identical.",
+  "timestamp_utc": "2026-10-02T03:56:32Z .. 2026-10-02T05:05:00Z",
+  "design_revision_count": 3,
+  "design_revision_state": "rev4 terminal",
+  "operator": "examples/mha",
+  "programming_mode": "Expert (manual T.Scope(\"C\"/\"V\"), alloc_L1/ub/L0A/L0B/L0C, manual set_flag/wait_flag + set_cross_flag/wait_cross_flag, 4 pass_configs all False)",
+
+  "production_integrity": {
+    "path": "examples/mha/mha.py",
+    "expected_md5_first8": "dda3ad08",
+    "md5_full": "dda3ad0877ba4df74bbd559f6912eeed",
+    "lines": 1926,
+    "checkpoints": {
+      "round_start": "dda3ad0877ba4df74bbd559f6912eeed UNCHANGED",
+      "after_all_probe_builds": "dda3ad0877ba4df74bbd559f6912eeed UNCHANGED (generator asserts read-only + post-build re-read)",
+      "after_all_hw_runs": "dda3ad0877ba4df74bbd559f6912eeed UNCHANGED",
+      "round_end": "dda3ad0877ba4df74bbd559f6912eeed UNCHANGED"
+    },
+    "verdict": "PRODUCTION UNTOUCHED - 4/4 checkpoints agree",
+    "note": "git status shows examples/mha/mha.py as untracked (??) in this repo state; md5 is the authoritative integrity guard."
+  },
+
+  "caliber": {
+    "device": "Ascend910 (platform_version 5), 20 AIC + 40 AIV",
+    "freq_mhz": "aic 1650 / aiv 1650 (Current == Rated, no throttling)",
+    "cann": "9.2.0",
+    "msprof": "/home/developer/Ascend/cann-9.2.0/bin/msprof",
+    "wall": "plain `msprof --task-time=on` -> op_summary Task Duration(us), warmup 5 / iters 20 -> n=25 MEDIAN, parsed by repo-anchored parse_prof.py. IDENTICAL to iter24/r10_base caliber. NO --aic-metrics on wall arms.",
+    "metrics": "`msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization,ResourceConflictRatio,L2Cache,Memory,BasicInfo,ArithmeticUtilization,MemoryUB,MemoryL0`, single shot (warmup 0 / iters 1), 20-block cross-core MEAN + MAX-block reported separately",
+    "repeats": "3 interleaved paired (prod and every probe arm alternate within each repeat)",
+    "statistics": "paired diff, mean, stdev, SEM, t(df=2), exact two-sided p (closed-form df=2 CDF, validated to 1e-6 against scipy AND reproduces iter24's t=2.048->p=0.177 / t=6.201->p=0.025), 95% CI with t_0.975,2=4.302653",
+    "camodel": "NOT RUN AT ALL this round (discipline #1)",
+    "cache_isolation": "TILELANG_CACHE_DIR per arm: cache_prod (production only) + cache_ho_<probe> per probe + cache_smoke. Production cache NEVER shared with any probe. Default cache never used.",
+    "resolving_power": "prod median repeat spread: case9 3.010 us (0.35%) / case7 3.200 us (0.37%); paired-diff SEM 0.054-2.252 us => best-case resolution 0.006% of wall"
+  },
+
+  "production_reproduction_vs_iter24": {
+    "case9": {"this_round_mean_us": 868.877, "iter24_mean_us": 869.547, "delta_pct": -0.077, "verdict": "REPRODUCED"},
+    "case7": {"this_round_mean_us": 857.173, "iter24_mean_us": 856.600, "delta_pct": 0.067, "verdict": "REPRODUCED"},
+    "case9_independent_calibration_run_us": 867.590
+  },
+
+  "test_shapes": {
+    "case9": "(B=4, S=1024, S_kv=1024, N=16, D=256) float16, scaleValue=-1.0, is_causal=True -> form_b_mma, FLAT (task,kv) domain. Latency-bound C<->V handoff-chain regime.",
+    "case7": "(B=4, S=1024, S_kv=1024, N=32, D=128) float16, scaleValue=-1.0, is_causal=True -> form_a generic, FLAT domain. AIV-VEC-paced regime."
+  },
+
+  "hardware_constraint_discovered": {
+    "source": "CANN AscendC API doc `CrossCoreSetFlag(ISASI)`, 约束说明, verbatim",
+    "text": "同一flagId的计数器最多设置15次。",
+    "meaning": "each cross-core flagId owns a hardware counter holding AT MOST 15 outstanding sets",
+    "why_it_matters": "production MHA uses CROSS_INTERVAL=1 => ~461 sets per flagId per core per kernel; the counter only stays legal because set and wait are strictly interleaved 1:1 per slot",
+    "legality_rule_measured_this_round": "counter clamping past 15 is HARMLESS iff no CrossCoreWaitFlag on that flagId survives, and FATAL (permanent block) iff the lagging side still waits it",
+    "empirical_confirmation": {
+      "harmless_no_waiter": ["xc9l1/case9 exit 0", "xc7l1/case7 exit 0", "x2s both cases exit 0", "x3 both cases exit 0"],
+      "fatal_waiter_survives": ["l2c9/case9 HANG killed@240s exit 137", "l2c7/case7 HANG killed@240s exit 137"]
+    }
+  },
+
+  "probe_inventory": [
+    {"file": "mha_ho_l1c9.py",  "md5": "cd5700c536a9cd53986146f24b1c1bbf", "variant": "Y", "delta_lines": 4,  "level": "L1 case9", "ablated": "SEM0+SEM4 pairs (V_w0 L506, V_w4 L609, C9_s0 L1567, C9_s4 L1640)", "hang": "NO"},
+    {"file": "mha_ho_l1c7.py",  "md5": "a0e3d4bc8fd5aeb6046610ce4c3a9786", "variant": "Y", "delta_lines": 2,  "level": "L1 case7", "ablated": "SEM2 pair (C7_w2 L1138, V_s2 L573)", "hang": "NO"},
+    {"file": "mha_ho_l2s.py",   "md5": "2d8cddbc62a6420dc73e8daa73247f37", "variant": "Y", "delta_lines": 9,  "level": "L2s (LEGAL intermediate, both domains)", "ablated": "all three PER-SLOT pairs SEM0/SEM2/SEM4 in V + fbm-C + FormA-C; PER-ROUND pairs SEM1/SEM3/SEM5 retained fully paired", "hang": "NO"},
+    {"file": "mha_ho_l3.py",    "md5": "cd4cccb950ce50f8522221fa771a11c2", "variant": "Y", "delta_lines": 18, "level": "L3 ABSOLUTE UPPER BOUND", "ablated": "all 6 SEM pairs in V + fbm-C + FormA-C; no CrossCoreWaitFlag survives anywhere", "hang": "NO"},
+    {"file": "mha_ho_xc9l1.py", "md5": "2d51637565d1f7fb5e1daabb9f8c9355", "variant": "X", "delta_lines": 2,  "level": "X@L1 case9", "ablated": "waits only (V_w0, V_w4); sets retained", "hang": "NO"},
+    {"file": "mha_ho_xc7l1.py", "md5": "ceea39b0945fdf2415eb938e8ff6d5d4", "variant": "X", "delta_lines": 1,  "level": "X@L1 case7", "ablated": "wait only (C7_w2); set retained", "hang": "NO"},
+    {"file": "mha_ho_x2s.py",   "md5": "7b86bf0fedbc319b04f42f7093d76583", "variant": "X", "delta_lines": 4,  "level": "X@L2s", "ablated": "all per-slot waits only (V_w0,V_w4,C9_w2,C7_w2)", "hang": "NO"},
+    {"file": "mha_ho_x3.py",    "md5": "b2664f15b70415de2284d7399d1fb80a", "variant": "X", "delta_lines": 9,  "level": "X@L3", "ablated": "every wait in both domains (9 sites); every set retained", "hang": "NO"},
+    {"file": "mha_ho_l2c9.py",  "md5": "82422111f35cb995af67914a18e7313e", "variant": "Y-ILLEGAL", "delta_lines": 6, "level": "literal per-side L2 case9", "ablated": "all V waits + their paired C sets (SEM0/3/4)", "hang": "YES - killed@240s exit 137"},
+    {"file": "mha_ho_l2c7.py",  "md5": "d3bd5055ab88addba1dbb8b5801feebd", "variant": "Y-ILLEGAL", "delta_lines": 6, "level": "literal per-side L2 case7", "ablated": "all C waits + their paired V sets (SEM1/2/5)", "hang": "YES - killed@240s exit 137"}
+  ],
+  "probe_construction": "every ablated line rewritten IN PLACE as `if False: <original statement>  # GATE0B-HO ...` => line count preserved (1926), diff-line count == site count exactly, no `pass`/empty-block needed (static Python bools in `if` are already relied upon throughout mha.py: `if is_causal`, `if not io3_is_alias`, `if need_mask`).",
+
+  "activation_confirmation_rel_max": {
+    "requirement": "prove the probe output has NUMERICALLY DIVERGED, else 'mechanism never fired' cannot be distinguished from 'mechanism fired but zero benefit'",
+    "iter24_reference": {"fbm Q-ablate": 8.447e-01, "FormA Q-ablate": 5.900e-01},
+    "this_round": {
+      "l1c9/case9": 14.46973, "l2s/case9": 14.20996, "l3/case9": 14.09180,
+      "x2s/case9": 15.00879, "x3/case9": 15.28809, "xc9l1/case9": 12.77832,
+      "l1c7/case7": 13.32617, "l2s/case7": 14.42676, "l3/case7": 12.47754,
+      "x2s/case7": 12.75195, "x3/case7": 15.57812, "xc7l1/case7": 13.61816
+    },
+    "verdict": "rel_max 12.5-15.6 = 1250%-1560% divergence, 15-26x LARGER than iter24's ablation => mechanism unambiguously active in all 12 measured (probe,case) combinations. l2c9/l2c7 HANGed so produced no output (recorded as HANG, not as a numeric result)."
+  },
+
+  "counter_evidence_real_work_untouched": {
+    "requirement": "the ablation must remove ONLY latency, never real work, else the ceiling is not trustworthy",
+    "case9_prod_to_y_l3": {
+      "aiv_vec_time_us": "468.5841 -> 468.5841  delta = 0.0000 (BIT-IDENTICAL, both vector0 and vector1)",
+      "aiv_vec_time_maxblock_us": "483.49 -> 483.49  delta = 0.00 (BIT-IDENTICAL)",
+      "aic_cube_time_us": "190.9943 -> 190.9976  delta = +0.0033 (+0.00%)",
+      "aic_mte1_time_us": "335.1969 -> 335.5650  delta = +0.3682 (+0.11%)",
+      "aic_mte2_time_us": "495.9336 -> 496.2699  delta = +0.3363 (+0.07%)",
+      "aic_fixpipe_time_us": "337.5705 -> 335.9830  delta = -1.5875 (-0.47%)",
+      "aic_mte1_instructions": "16079.8 -> 16079.8  delta = 0.0000",
+      "aic_mte2_instructions": "1486.8 -> 1486.8  delta = 0.0000",
+      "aiv_mte2_instructions": "922.6 -> 922.6  delta = 0.0000",
+      "aiv_mte3_instructions": "564.2 -> 564.2  delta = 0.0000",
+      "GM_to_L1_datas_KB": "64307.2 -> 64307.2  delta = 0.0000",
+      "read_main_memory_datas_KB": "64307.575 -> 64307.575  delta = 0.0000",
+      "L0C_to_GM_datas_KB": "22118.4 -> 22118.4  delta = 0.0000",
+      "GM_to_UB_datas_KB": "11059.2 -> 11059.2  delta = 0.0000",
+      "UB_to_GM_datas_KB": "2662.4 -> 2662.4  delta = 0.0000"
+    },
+    "case7_prod_to_y_l3": {
+      "aiv_vec_time_us": "648.9854 -> 648.9402  delta = -0.0452 (-0.01%)",
+      "aiv_vec_time_maxblock_us": "666.44 -> 666.39  delta = -0.05 (-0.01%)",
+      "aic_cube_time_us": "166.9958 -> 166.9662  delta = -0.0296 (-0.02%)",
+      "aic_mte1_time_us": "205.0656 -> 207.4755  delta = +2.4099 (+1.18%)",
+      "aic_mte2_time_us": "466.2126 -> 455.3655  delta = -10.8472 (-2.33%)",
+      "aic_fixpipe_time_us": "301.4238 -> 305.6153  delta = +4.1915 (+1.39%)",
+      "all_instruction_counts_and_KB_counters": "delta = 0.0000 (aic/aiv mte1/mte2/mte3 instructions, GM_to_L1, read_main_memory, L0C_to_GM, GM_to_UB, UB_to_GM)"
+    },
+    "scalar_issue_confound_ruled_out": {
+      "method": "scalar ISSUE-equivalent = scalar_single_time + 2*scalar_dual_time (actual issue occupancy, excludes stalls)",
+      "case9_aic": "132.84 (prod) / 132.07 (yL1) / 131.49 (yL2s) / 131.32 (yL3) / 132.50 (xL3)  => max delta -1.52 us = -1.14% = -0.17% of wall",
+      "case9_aiv": "150.42 / 149.83 / 149.29 / 149.11 / 149.82  => max delta -1.31 us = -0.87%",
+      "case7_aic": "113.92 / 113.10 / 112.39 / 113.58  => max delta -1.53 us = -1.34%",
+      "case7_aiv": "155.32 / 154.74 / 153.96 / 154.69  => max delta -1.36 us = -0.88%",
+      "conclusion": "the removed sync instructions account for <=1.5 us of scalar issue (<=0.17% of wall). The -9.36%/-13.43% is NOT fewer instructions - it is LESS BLOCKING. Proof: case9 aic_scalar_time collapses 814.24 -> 130.24 (-684 us) while ISSUE-equivalent stays 132.84 -> 131.32."
+    },
+    "wait_column_activation": {
+      "note": "msprof DROPS a wait_idN column when it is all-zero across all 20 blocks, so column presence is itself an activation signal",
+      "prod_c9_columns": "aic id1,id2,id5 + aiv id0,id3,id4 (exactly the cross-core SEM partition => confirms wait_idN maps 1:1 to CrossCoreWaitFlag(N))",
+      "yl1_c9_columns": "aic id1(0.03),id2(0.59) + aiv id3(308.63)  => aiv id0/id4 GONE (ablated), aic id5 GONE (became exactly 0, indirect collapse)",
+      "y2s_c9_columns": "aic id1(0.06) + aiv id3(309.44)",
+      "yl3_c9_columns": "NONE - every cross-core wait eliminated"
+    },
+    "VERDICT": "CLEAN. Real-work pipes and every byte/instruction counter are invariant to <=1.2% (case9: vec BIT-IDENTICAL). Only wait/set instructions and their stalls moved. The ceiling is trustworthy."
+  },
+
+  "wall_ab_results": {
+    "case9": {
+      "prod_medians": [870.270, 867.260, 869.100], "prod_mean": 868.877, "prod_repeat_range": 3.010,
+      "arms": {
+        "y_l1":  {"medians": [786.000, 786.090, 788.740], "mean": 786.943, "paired_diffs": [-84.27, -81.17, -80.36], "mean_diff_us": -81.933, "pct": -9.430, "sd": 2.064, "sem": 1.192, "t": -68.765, "p": 2.11e-04, "ci_us": [-87.06, -76.81], "ci_pct": [-10.020, -8.840], "prod_minus_probe_us": 81.933},
+        "y_l2s": {"medians": [786.570, 786.800, 786.030], "mean": 786.467, "paired_diffs": [-83.70, -80.46, -83.07], "mean_diff_us": -82.410, "pct": -9.485, "sd": 1.718, "sem": 0.992, "t": -83.090, "p": 1.45e-04, "ci_us": [-86.68, -78.14], "ci_pct": [-9.976, -8.994], "prod_minus_probe_us": 82.410},
+        "y_l3":  {"medians": [788.570, 787.490, 786.630], "mean": 787.563, "paired_diffs": [-81.70, -79.77, -82.47], "mean_diff_us": -81.313, "pct": -9.358, "sd": 1.391, "sem": 0.803, "t": -101.257, "p": 9.75e-05, "ci_us": [-84.77, -77.86], "ci_pct": [-9.756, -8.961], "prod_minus_probe_us": 81.313},
+        "x_l1":  {"medians": [887.900, 888.990, 892.430], "mean": 889.773, "mean_diff_us": 20.897, "pct": 2.405, "sem": 1.697, "t": 12.311, "p": 6.53e-03, "ci_pct": [1.564, 3.246], "note": "CONTAMINATED - worse than production"},
+        "x_l2s": {"medians": [884.540, 883.510, 883.830], "mean": 883.960, "mean_diff_us": 15.083, "pct": 1.736, "sem": 0.598, "t": 25.212, "p": 1.57e-03, "ci_pct": [1.440, 2.032], "note": "CONTAMINATED"},
+        "x_l3":  {"medians": [1010.340, 1006.350, 1002.400], "mean": 1006.363, "mean_diff_us": 137.487, "pct": 15.823, "sem": 2.112, "t": 65.087, "p": 2.36e-04, "ci_pct": [14.777, 16.870], "note": "CONTAMINATED - +15.8% REGRESSION"}
+      },
+      "ladder_saturation": {"L3_minus_L1_us": 0.620, "p": 0.7024, "verdict": "NOT SIGNIFICANT => case9 ladder SATURATES AT L1"},
+      "core_floor_maxblock": {"prod_aic": 878.22, "prod_aiv": 879.11, "yL3_aic": 803.80, "yL3_aiv": 557.87, "interpretation": "prod BALANCED to 0.9 us (0.1%); after full ablation AIC becomes the SOLE PACER"}
+    },
+    "case7": {
+      "prod_medians": [855.300, 857.720, 858.500], "prod_mean": 857.173, "prod_repeat_range": 3.200,
+      "arms": {
+        "y_l1":  {"medians": [746.490, 746.120, 746.380], "mean": 746.330, "paired_diffs": [-108.81, -111.60, -112.12], "mean_diff_us": -110.843, "pct": -12.931, "sd": 1.780, "sem": 1.028, "t": -107.857, "p": 8.60e-05, "ci_us": [-115.27, -106.42], "ci_pct": [-13.447, -12.415], "prod_minus_probe_us": 110.843},
+        "y_l2s": {"medians": [744.470, 743.750, 744.270], "mean": 744.163, "paired_diffs": [-110.83, -113.97, -114.23], "mean_diff_us": -113.010, "pct": -13.184, "sd": 1.892, "sem": 1.093, "t": -103.434, "p": 9.35e-05, "ci_us": [-117.71, -108.31], "ci_pct": [-13.732, -12.636], "prod_minus_probe_us": 113.010},
+        "y_l3":  {"medians": [742.190, 741.990, 742.100], "mean": 742.093, "paired_diffs": [-113.11, -115.73, -116.40], "mean_diff_us": -115.080, "pct": -13.426, "sd": 1.739, "sem": 1.004, "t": -114.643, "p": 7.61e-05, "ci_us": [-119.40, -110.76], "ci_pct": [-13.929, -12.922], "prod_minus_probe_us": 115.080},
+        "x_l1":  {"medians": [876.910, 874.860, 878.820], "mean": 876.863, "mean_diff_us": 19.690, "pct": 2.297, "sem": 1.328, "t": 14.824, "p": 4.52e-03, "ci_pct": [1.630, 2.964], "note": "CONTAMINATED"},
+        "x_l2s": {"medians": [880.210, 883.170, 890.420], "mean": 884.600, "mean_diff_us": 27.427, "pct": 3.200, "sem": 2.252, "t": 12.178, "p": 6.68e-03, "ci_pct": [2.069, 4.330], "note": "CONTAMINATED"},
+        "x_l3":  {"medians": [902.550, 908.520, 903.010], "mean": 904.693, "mean_diff_us": 47.520, "pct": 5.544, "sem": 1.821, "t": 26.099, "p": 1.46e-03, "ci_pct": [4.630, 6.458], "note": "CONTAMINATED"}
+      },
+      "ladder_saturation": {"L3_minus_L1_us": -4.237, "p": 0.0002, "L2s_minus_L1_us": -2.167, "p": 0.0023, "L3_minus_L2s_us": -2.070, "p": 0.0058, "verdict": "SIGNIFICANT MONOTONE ladder - each level adds ~2 us"},
+      "core_floor_maxblock": {"prod_aic": 857.84, "prod_aiv": 858.45, "yL3_aic": 600.82, "yL3_aiv": 742.59, "interpretation": "prod BALANCED to 0.6 us; after full ablation AIV becomes the SOLE PACER at 742.59, dominated by the irreducible aiv_vec_time max-block 666.39"}
+    },
+    "variant_X_minus_variant_Y_paired": {
+      "case9_X_L3_minus_Y_L3_us": 218.800, "p": 0.0001,
+      "case9_X_L1_minus_Y_L1_us": 102.830, "p": 0.0000,
+      "case7_X_L3_minus_Y_L3_us": 162.600, "p": 0.0001,
+      "case7_X_L1_minus_Y_L1_us": 130.533, "p": 0.0001,
+      "conclusion": "retaining the sets while deleting the waits costs +103 to +219 us. The task-book hypothesis 'variant X = pure latency' is FALSIFIED BY MEASUREMENT."
+    }
+  },
+
+  "TOTAL_EV_CEILING": {
+    "definition": "wall reduction from PERFECT elimination of C<->V handoff latency exposure, with ALL real work and ALL GM workspace bytes held bit-identical. Variant Y (paired wait+set deletion) is the only legal/clean construction.",
+    "case9_latency_bound_handoff_chain_domain": {
+      "absolute_upper_bound_L3_pct": -9.358, "L3_ci_pct": [-9.756, -8.961], "L3_p": 9.75e-05,
+      "best_measured_L2s_pct": -9.485, "L1_pct": -9.430,
+      "ladder_saturates_at": "L1 (L3-L1 = +0.620 us, p=0.7024 ns)",
+      "us_recovered": 81.3,
+      "vs_3pct_adoption_gate": "3.1x the gate",
+      "M1_projection": "case9 currently 0.39x vs M1 line 0.4 => full ceiling gives 0.39/(1-0.09358) = 0.4303x, CROSSES the line. Capture of only -2.500% wall (= 26.5% of the L1 ceiling) reaches exactly 0.4x."
+    },
+    "case7_AIV_VEC_paced_domain": {
+      "absolute_upper_bound_L3_pct": -13.426, "L3_ci_pct": [-13.929, -12.922], "L3_p": 7.61e-05,
+      "L2s_pct": -13.184, "L1_pct": -12.931,
+      "ladder": "monotone, each level significant (~2 us)",
+      "us_recovered": 115.1,
+      "vs_3pct_adoption_gate": "4.5x the gate",
+      "M1_projection": "case7 currently ~0.463x (already above the 0.4 line) => full ceiling gives 0.463/(1-0.13426) = 0.5348x"
+    },
+    "NOT_INTERCHANGEABLE": "the two domains have different ceilings AND different post-ablation pacers (case9 -> AIC pipe-limited at max-block 803.80 us; case7 -> AIV pipe-limited at max-block 742.59 us dominated by the irreducible aiv_vec_time 666.39). NEVER mix or extrapolate between them.",
+    "not_additive": "gap-1 (C-side GEMM1/GEMM2 interleave) and gap-3 (CV-over-GM elimination) attack the SAME quantity - exposed handoff latency. Their combined EV is bounded by this single number, not by its sum."
+  },
+
+  "conversion_efficiency_absorption_law_round2": {
+    "case9": {"prod_exposed_cross_core_wait_us_20blk_mean_both_sides": 760.59, "recovered_wall_us_L3": 81.31, "conversion_pct": 10.69, "absorbed_pct": 89.31},
+    "case7": {"prod_exposed_cross_core_wait_us_20blk_mean_both_sides": 783.32, "recovered_wall_us_L3": 115.08, "conversion_pct": 14.69, "absorbed_pct": 85.31},
+    "where_it_absorbs": [
+      "case9 yL1: aiv_scalar_wait_id3 EXPLODES 0.33 -> 308.63 us (+92104%) - the freed per-slot latency re-materialises on the single RETAINED per-round handshake",
+      "case9 yL1: aiv_scalar_vector_stall 71.41 -> 224.09 (+213.8%); aic_scalar_mte1_stall 533.86 -> 685.05 (+28.3%)",
+      "case7 yL1: aic_scalar_wait_id1 EXPLODES 10.59 -> 213.81 us (+1918.8%); wait_id5 6.70 -> 15.29 (+128.4%)",
+      "case7 yL1: aic_scalar_mte1_stall 205.14 -> 421.82 (+105.6%); aiv_scalar_vector_stall 264.52 -> 323.62 (+22.3%)"
+    ],
+    "ring_symmetry_proof": "at case9 L1 only the V-side waits were ablated, yet C's exposed cross-core wait collapsed FOR FREE: wait_id2 211.86 -> 0.59 (-99.72%), wait_id1 4.81 -> 0.03 (-99.43%), wait_id5 2.34 -> 0 (column dropped). => in a closed ring each side's wait IS the other side's latency; they are mutually generated and cannot be attributed or ablated independently.",
+    "headline": "measured wait_idN time OVERSTATES recoverable wall by 6.8x (case9) to 9.4x (case7). Any EV estimate built by summing wait_idN is inflated by that factor."
+  },
+
+  "bandwidth_non_binding_PINCER_CLOSED": {
+    "this_round_evidence": {
+      "case9_prod_to_yL3": {"all_byte_counters_delta": "0.0000 (GM_to_L1, read_main_memory, L0C_to_GM, GM_to_UB, UB_to_GM, aic/aiv mte1/mte2/mte3 instructions)", "aic_read_hit_rate_pp": 0.01, "aic_r0_read_cache_miss_allocate_pct": -0.077, "GM_to_L1_bw_usage_rate_after_speedup_pct": 28.7975, "wall_pct": -9.358},
+      "case7_prod_to_yL3": {"all_byte_counters_delta": "0.0000", "aic_read_hit_rate_pp": 0.219, "aic_r0_read_cache_miss_allocate_pct": -2.990, "GM_to_L1_bw_usage_rate_after_speedup_pct": 18.6528, "wall_pct": -13.426}
+    },
+    "iter24_evidence": {"perturbation": "GM_to_L1 -1622.4 KB, aic_r0_read_cache_miss_allocate -34.76%/-34.55%, aic_read_hit_rate +2.64pp/+2.34pp", "wall_response": "case9 +0.288% (p=0.177 ns) / case7 +0.871% REGRESSION (p=0.025)"},
+    "pincer": "iter24: change L2 A LOT -> wall does not move. iter25: change L2 NOT AT ALL (+0.01pp) -> wall moves -9.36%/-13.43%. Both arms together prove the wall is LATENCY-bound, NOT bandwidth-bound.",
+    "bandwidth_headroom_after_full_ablation": "case9 GM->L1 28.80% used => 71.20% idle; case7 18.65% used => 81.35% idle",
+    "consequence_for_gap3_byte_side": "gap-3's claimed 1032 MB / 46% L2 traffic saving is worth APPROXIMATELY ZERO. iter24's inference is CONFIRMED and STRENGTHENED."
+  },
+
+  "post_ablation_pacer_identity": {
+    "case9": "AIC becomes pipe/queue-limited: aic_time 769.03 us mean (803.80 max-block) with aic_scalar_mte1_stall 687.08 us = 89.4% of it, while aic_mte1_time busy is only 335.57 us = 43.7%. => the MTE1 QUEUE DEPTH, not MTE1 throughput, is the post-handoff limiter. AIV is freed to 540.44 mean / 557.87 max.",
+    "case7": "AIV becomes pipe-limited: aiv_time 724.70 mean (742.59 max) with the irreducible aiv_vec_time 648.94 mean (666.39 max) = 89.5% of it. AIC is freed to 573.01 mean / 600.82 max.",
+    "implication": "the two domains need DIFFERENT follow-up levers: case9 -> MTE1 queue/L0B slot pressure on the C side; case7 -> AIV VEC work itself (which no handoff change can touch)."
+  },
+
+  "variant_X_contamination_mechanism": {
+    "observation": "x3 has the SAME scalar ISSUE-equivalent as prod (132.50 vs 132.84) yet aic_scalar_time = 953.43 = 100.0% of aic_time 953.48, with aic_scalar_mte1_stall 867.90 (+334.03) and aic_scalar_cube_stall 78.00 (+77.79, from 0.20); AIV wait_ib 2.01 -> 20.75.",
+    "mechanism": "CrossCoreSetFlag<mode,PIPE> is a scalar instruction that BLOCKS until PIPE drains. In production the paired CrossCoreWaitFlag keeps the pipe shallow, so each set's drain is nearly free. Delete the waits and keep the sets, and every set becomes a full-pipe-drain blocking point that production never had; the block is attributed to the drained pipe (mte1/cube) and to wait_ib.",
+    "conclusion": "variant X is NOT a pure-latency probe. It is 'latency removed + a NEW drain cost added', and the added cost dominates (+218.80 us over variant Y at L3 case9, p=0.0001). Variant Y is the only clean construction."
+  },
+
+  "discipline_compliance": {
+    "msprof_only_perf_basis": "PASS - camodel not run at all",
+    "cache_isolation": "PASS - cache_prod never shared with any probe cache",
+    "production_untouched": "PASS - md5 dda3ad0877ba4df74bbd559f6912eeed at 4/4 checkpoints, 1926 lines",
+    "probes_in_independent_dir_not_named_mha_py": "PASS - all in perf_tuning/probe_gate0b_handoff/ named mha_ho_<level>.py (no import shadowing)",
+    "no_predictive_veto": "PASS - variant X and literal L2 were BUILT AND RUN under timeout guards; the HANGs are MEASURED (exit 137 @240s), not predicted. The <=15 counter rule was used to DESIGN the safe ladder, then confirmed empirically in both directions.",
+    "orchestrator_state_not_touched": "PASS - .orchestrator_state.json never read or written",
+    "ab_caliber_identical_to_iter24": "PASS - same run_ab.sh structure, same parse_prof.py, warmup 5 / iters 20 / n=25 median, 3 interleaved paired repeats",
+    "probe_numerics_never_used_for_acceptance": "PASS - rel_max 12.5-15.6 documented as the ACTIVATION proof only; no precision comparison used to accept anything, no probe entered any baseline, nothing committed",
+    "forbidden_zones_not_touched": "PASS - DESIGN 8.6-10 shared-pool phase discipline untouched; bN=256 untouched; k/v L1 double-buffer untouched; V wide-channel untouched; CROSS_INTERVAL untouched (still 1); R5-3 K/V redundancy untouched; GATE 2 q_l1 double-buffer NOT revived"
+  },
+
+  "adopted": false,
+  "adoption_note": "mode=perf_measure, GATE 0b. NO code adopted. All 10 probe files are timing-only, numerically wrong by construction, and are archived under perf_tuning/probe_gate0b_handoff/ as methodology assets - never to be baselined or committed.",
+
+  "VERDICT": "[GATE0B_VERDICT] handoff-latency total EV ceiling = case9 -9.36% (L3 absolute UB; best measured -9.49% at L2s; ladder saturates at L1 -9.43%) / case7 -13.43% (L3 absolute UB, monotone ladder). Both 3.1x-4.5x above the 3% adoption gate. case9 full-ceiling capture projects 0.39x -> 0.4303x, CROSSING the M1 0.4 line; only -2.50% wall (26.5% of ceiling) is needed to cross. => GAP-1 design rollback: CONDITIONAL GO on EV, blocked on a measured MTE1-queue/L0B/event-id budget pre-audit. GAP-3 framework project: NO-GO for its LATENCY component (<=9.36%/<=13.43%, and its byte component is worth ~0 - pincer closed); its WORK-ELIMINATION component (single-domain flash, AIC FIX 337.57 us = 40.1% of aic_time + AIV MTE2 213.32 us) was deliberately NOT ablated this round and remains UNMEASURED.",
+
+  "consecutive_no_improvement": "unchanged by this round (pure measurement, no candidate adopted/rejected on performance)",
+  "measurement_gaps": [
+    "gap-3 WORK-elimination component (removing the w1/w3 GM round trip as BYTES-OF-WORK rather than as LATENCY) not ablated - would need a different probe redirecting workspace_1/3 to a dummy single-slot buffer; out of this round's stated scope",
+    "per-event timeline identification still impossible on real hardware (iter24 finding stands: --aic-metrics=TimelineDetail fails with 'Kernel context save failed', --instr-profiling produces raw slices with no CLI export, no MindStudio in this environment)",
+    "l2c9/l2c7 produced no counter data (HANGed before any launch completed) - recorded as HANG evidence only",
+    "case9 prod wait_idN counters show more run-to-run spread than case7 (aiv_wait_id0 295.34 this round vs 272.80 iter24 = +8.3%; aic_wait_id2 211.86 vs 176.32 = +20%) because metrics arms are SINGLE-SHOT (warmup 0 / iters 1); wall arms (3 repeats, n=25 median each) are unaffected"
+  ],
+  "environment_errors": "none that invalidated any measurement. One observation recorded for completeness: immediately after the SIGKILL of the l2c7 HANG demonstrator (04:25:16 UTC) npu-smi listed one orphaned device context (pid 3856768, python3, 275 MB) left by the killed process. All 4 subsequent variant-X smoke runs (04:28:08-04:29:15), the full 42-run A/B matrix (04:29:31-04:45:11) and all 9 metrics arms completed normally, and npu-smi reported 'No running processes found in NPU 5' at 04:45:11 and again at round end (05:11:58) with Health OK. No arm was discarded. NPU Health OK throughout.",
+  "hang_evidence_note": "the l2c9/l2c7 logs captured only the torch_npu import warning (329 bytes) because stdout was block-buffered to a file and SIGKILL discarded the buffer; the HANG signature is therefore 'did not complete even 1 warmup launch within 240 s', against ~17 s for every legal probe to compile AND complete 3 launches."
+}

@@ -1184,13 +1184,36 @@ static constexpr uint32_t L0AB_EVENT = 0;
 
 template <typename T1, typename T2, uint32_t M, uint32_t N, uint32_t K,
           bool transpose_A = false, bool transpose_B = false,
-          uint32_t kL0Size = 128>
+          uint32_t kL0Size = 128, int32_t kMTE2Sync = -1>
 CATLASS_DEVICE void
 gemm_v0(LocalTensor<T1> const &A, LocalTensor<T1> const &B,
         LocalTensor<T2> const &C, // this must be located in l0c
         AscendC::TBuf<AscendC::TPosition::A2> &l0a_,
         AscendC::TBuf<AscendC::TPosition::B2> &l0b_, bool clear,
         uint32_t n_actual = N) {
+  // kMTE2Sync: opt-in caller-managed per-buffer MTE2->MTE1 synchronization.
+  // Default -1 keeps the historical behaviour byte-identical: the prologue
+  // self-issues SetFlag<MTE2_MTE1>(L0AB_EVENT) + WaitFlag, which drains the
+  // WHOLE MTE2 queue (every copy enqueued before this call, including
+  // prefetches for later gemms, joins this call's critical path). When >= 0,
+  // the caller is responsible for having issued
+  // SetFlag<MTE2_MTE1>(kMTE2Sync) into the MTE2 queue AFTER the last operand
+  // copy (A/B in L1) this gemm consumes -- FIFO position semantics then make
+  // the flag an exact per-buffer "operands resident" event: the prologue only
+  // WaitFlags that id (no self-set), so MTE2 copies enqueued after the
+  // caller's SetFlag (prefetches for subsequent gemms) keep streaming instead
+  // of being absorbed. Contract: (1) one Set per Wait, strict 1:1
+  // alternation per (MTE2_MTE1, id) -- safe under both 1-bit and counting
+  // flag semantics; (2) the caller's Set must postdate ALL operand copies of
+  // this call in issue order (a Set placed after only some operands does not
+  // cover later-enqueued ones); (3) valid id range 0..5 (AscendC static-Tensor
+  // programming forbids event ids 6/7 -- may collide with internal usage);
+  // (4) if opt-in and default-mode gemm_v0 calls coexist in one kernel, the
+  // caller id must avoid L0AB_EVENT (0) which the default prologue self-sets.
+  static_assert(kMTE2Sync == -1 || (kMTE2Sync >= 0 && kMTE2Sync <= 5),
+                "gemm_v0 kMTE2Sync must be -1 (default pipe-level drain) or "
+                "an event id in [0,5] (ids 6/7 are reserved by AscendC in "
+                "static-Tensor programming scenarios)");
   // n_actual: runtime output-column count (<= N), only honoured on the
   // transpose_B (QK) path -- computes/loads just the real window columns
   // instead of the full template N. Defaults to N, so all existing callers are
@@ -1303,8 +1326,16 @@ gemm_v0(LocalTensor<T1> const &A, LocalTensor<T1> const &B,
   // N-tiling version) instead serialised the tiles. For nL0split == 1 (every
   // pre-existing caller, and the QK transpose-B path) tileIdx == kL0Idx, so
   // this is byte-for-byte the original K ping-pong.
-  SetFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
-  WaitFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
+  if constexpr (kMTE2Sync >= 0) {
+    // Opt-in per-buffer mode: the caller already set MTE2_MTE1(kMTE2Sync)
+    // right after this gemm's operand copies; waiting that id blocks MTE1
+    // only until those copies retire (FIFO prefix), leaving later-enqueued
+    // prefetch MTE2s in flight. See the kMTE2Sync contract above.
+    WaitFlag<HardEvent::MTE2_MTE1>(kMTE2Sync);
+  } else {
+    SetFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
+    WaitFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
+  }
   SetFlag<HardEvent::FIX_M>(L0AB_EVENT);
   WaitFlag<HardEvent::FIX_M>(L0AB_EVENT);
 

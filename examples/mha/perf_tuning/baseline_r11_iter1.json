@@ -1,0 +1,36 @@
+{
+  "iteration": "r11-1",
+  "global_iteration": 27,
+  "session": 11,
+  "timestamp": "2026-10-04T07:35:00Z..07:58:00Z",
+  "baseline_state": {
+    "file": "examples/mha/mha.py",
+    "md5": "dda3ad0877ba4df74bbd559f6912eeed",
+    "lines": 1926,
+    "backup": "history_version/mha_impl_r4_perf14.py",
+    "provenance": "IR dump 16/16 byte-identical vs /tmp/opencode/r8_src_iter3 (r11_src_base, disable_cache + dedicated r11_cache_base) + T_case18 extra baseline dump"
+  },
+  "programming_mode": "Expert (manual T.Scope C/V, alloc_L1/ub/L0C, explicit SEM 0-5, pass_configs all False)",
+  "test_command": "msprof --task-time=on python3 examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20; parse_prof.py median n=25",
+  "precision_status": "pass (cann_performance_eval_20261003_122353: 20/20, 72.63, 0.96x; l0 10/10 + anchors 9/9+14/14 in案 for dda3ad08)",
+  "fresh_baseline_wall_us_median_n25": {
+    "case15": {"median": 505.17, "mean": 504.84, "min": 500.92, "max": 509.36, "stdev": 2.303, "shape": "(60,1,512,16,256) fp16 non-causal", "role": "TARGET"},
+    "case18": {"median": 504.05, "mean": 504.2, "min": 500.86, "max": 507.6, "stdev": 1.836, "shape": "(60,2,512,16,256) fp16 non-causal MTP", "role": "TARGET"},
+    "case10": {"median": 34.44, "stdev": 0.203, "shape": "(1,1,2048,32,128) fp16", "role": "GUARD(D128 multi-block decode, IR-identical)"},
+    "case11": {"median": 309.47, "stdev": 1.5, "shape": "(16,1,1024,32,128) fp16", "role": "GUARD(D128 multi-block decode, IR-identical)"},
+    "case14": {"median": 378.05, "stdev": 1.547, "shape": "(128,1,128,32,128) fp16", "role": "GUARD(D128 batched single-block, IR-identical)"},
+    "case16": {"median": 564.47, "stdev": 3.306, "shape": "(60,2,512,32,128) fp16 causal MTP", "role": "GUARD(D128 batched single-block, IR-identical)"},
+    "case20": {"median": 14.1, "stdev": 0.266, "shape": "(2,128,128,32,128) fp16 zeros", "role": "GUARD(Form A single-block, IR-identical)"},
+    "case9": {"median": 869.46, "stdev": 6.65, "shape": "(4,1024,1024,16,256) fp16 causal", "role": "GUARD(form_b_mma flat, IR-identical)"},
+    "case7": {"median": 857.65, "stdev": 3.753, "shape": "(4,1024,1024,32,128) fp16 causal", "role": "GUARD(form_a flat wide-off, IR-identical)"}
+  },
+  "cross_day_drift_check": "vs decode_roofline_a1 (2026-10-03): case15 +0.26% / case18 -0.2% / case10 +0.6% / case11 +2.6% / case14 +0.2% / case16 +0.9% / case20 -0.3% / case9 -0.05% / case7 +0.25% — all within band, environment stable, device 0 (npu-smi no other process)",
+  "op_mode_reference": {
+    "source": "/tmp/opencode/decode_roofline_a1/op_parsed.json (2026-10-03, same md5 state)",
+    "case15": {"c_wall_us": 498.6, "mte2_duty_pct": 68.45, "mte2_busy_gbps_per_core": 74.83, "mte1_stall_us": 356.7, "wait_id1_us": 0.96, "wait_id2_us": 122.66, "wait_id5_us": 0.0, "fix_t_us": 66.3, "per_slot_wall_us": 5.25, "per_slot_busy_us": 3.61, "per_slot_gap_us": 1.64}
+  },
+  "bottleneck_type": "transfer (C-side MTE2 duty gap 31% — gemm_v0 per-step PipeBarrier<PIPE_M> drain + K/V single-buffer serial bubbles; busy-rate 74.8 GB/s/core already at the 512B-row layout ceiling 1452 GB/s aggregate)",
+  "candidate": "#R11-1 K-side L1 double buffer (3D [2,bN,256] no-annotate + gemm_v0 runtime slice + 4-site prefetch, zero new user flags)",
+  "adoption_gate": "case15 AND case18 >= 3% wall improvement + duty signature + full gate battery; guards +/-3% (IR-byte-identical domains timing-exempt per session-8 case20 precedent)",
+  "ev_note": "conservation-law analysis (Step0-5/6 in optimization_log): steady-state per-slot wall invariant to L1 slot count under gemm_v0 pipe-level prologue drain + in-order scalar; recoverable = task/round-boundary lead-in only; EV corrected 1.15-1.20x (mission model) -> 1.03-1.06x (this analysis); msprof is sole arbiter"
+}

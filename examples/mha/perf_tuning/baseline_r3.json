@@ -1,0 +1,31 @@
+{
+  "stage": 3,
+  "operator": "mha",
+  "iteration": "r3-base",
+  "perf_session": 3,
+  "note": "Expert rev3 baseline at session-3 start = Stage 2 rev3-attempt1 final (md5 d71ba4c34130e3b268227499cc988c39, == history_version/mha_impl_r3_s2_attempt1.py == mha_submission copy)",
+  "precision_gate": "pass (l0 10/10, /tmp/opencode/r3_l0_base.log; bit-anchor 10/10 BITEXACT vs Developer final + R11 stress PASS, /tmp/opencode/r3_anchor_base.log)",
+  "programming_mode": "Expert (cid,vid) cv_1_2, four pass_configs all-False, dual Form A(mma)/B(gemm_v0), NUM_STAGES=8, CROSS_INTERVAL=1",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {
+    "case1": 12.91,
+    "case7": 928.0,
+    "case9": 1398.35,
+    "case10": 40.53,
+    "case11": 349.63,
+    "case14": 746.08,
+    "case16": 763.42,
+    "case20": 31.3
+  },
+  "cannbench_anchor": {
+    "report": "cann_final_eval_20260919_223045",
+    "composite": 67.88,
+    "perf_score": 17.88,
+    "avg_speedup": 0.68,
+    "cross_validation": "local msprof vs cann-bench per-case: case7 928.0 vs 929.5us, case14 746.1 vs 747.3us, case20 31.3 vs 31.68us — all <0.3% (caliber consistent, final_report §7 inherited)",
+    "per_case_speedup": {"1": 0.78, "7": 0.47, "9": 0.24, "10": 0.92, "11": 0.82, "14": 0.71, "16": 0.58, "20": 1.04},
+    "milestones": {"M1": ">=0.75x avg + case7/8/9 >=0.4x (NOT met: avg 0.68, case9 0.24)", "M2": ">=0.9x avg + case7/8/9 >=0.6x", "stretch": "~1.0x avg"}
+  },
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_r3_base/*.json"
+}

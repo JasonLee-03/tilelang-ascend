@@ -1,0 +1,15 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r4-final", "perf_session": 4,
+  "note": "session-4 terminal adopted state = post-#R4-1 (Form B barrier_all pure removal, 15 sites); r4-2a/r4-2b/r4-3 all rolled back (regression/no-improvement rules); abort clause 2 triggered (3 consecutive no-improvement); md5 e80f7f652a7123c82c71c0354723755b (= history_version/mha_impl_r3_perf6/7/8.py = submission copy)",
+  "precision_gate": "pass (terminal fresh: --level all exit 0 [L0 10/10 L1 19/19 L2 12/12-rejected Boundary 6/6 sentinels 4/4 PERF_PASS] /tmp/opencode/r4_all_final.log + anchor 10/10 BITEXACT vs Developer final + R11 stress nondet=0 /tmp/opencode/r4_anchor_final.log)",
+  "programming_mode": "Expert rev3 + #R3-1 task-batched single_kv_block + #R4-1 barrier-free Form B (gemm_v0 self-synchronized segment ordering, zero C-scope user flags)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {"case1": 12.94, "case7": 932.60, "case9": 1020.73, "case10": 35.34, "case11": 312.34, "case14": 378.16, "case15": 504.19, "case16": 565.27, "case18": 504.53, "case20": 30.84},
+  "kernel_us_note": "case15/18 measured on r3_perf8 state during r4-3 baseline补测 (= adopted state, flat rolled back); case9/14/16/11/10/7/20/1 from msprof_r4_iter1 (adopted state)",
+  "cannbench_final": {"report": "cann_final_eval_20260920_141424", "composite": 70.21, "perf_score": 20.21, "avg_speedup": 0.7813, "pass": "20/20", "case4": 0.846, "case7": 0.464, "case8": 0.470, "case9": 0.324, "case10": 0.998, "case11": 0.925, "case12": 0.886, "case13": 0.883, "case14": 1.394, "case15": 0.688, "case16": 0.784, "case17": 1.138, "case18": 0.811, "case20": 1.013},
+  "milestone_verdict": "M1 PARTIAL: avg 0.7813 >= 0.75 ACHIEVED; case9 0.324 < 0.4 NOT achieved (in-rules floor: gemm_v0 per-step scalar chain 78% wall, triple-evidence S4-3-2; only design-level §10.3-5 manual-mma can break — rev4 recommendation with evidence banked)",
+  "fallback_clause": "NOT triggered (70.21 > 65.05, 0.7813 > 0.55)",
+  "decode_no_regression": "case10 0.998>=0.90 PASS / case14 1.394>=0.99 PASS / case20 1.013>=0.82 PASS / case13 0.883>=0.69 PASS / case16 0.784>=0.52 PASS; case7/8/9 monotonic (7/8 noise band, Form A IR untouched; 9 +0.084)",
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_r4_*/*.json + reports/cann_final_eval_20260920_141424.* + /tmp/opencode/r4_*.log"
+}

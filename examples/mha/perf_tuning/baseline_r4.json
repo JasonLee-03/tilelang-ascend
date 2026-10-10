@@ -1,0 +1,13 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r4-0-baseline", "perf_session": 4,
+  "note": "session-4 start baseline = session-3 final adopted state (md5 1d3a261c9c44c1ad9dd1b30b571717b6, = history_version/mha_impl_r3_perf2.py = submission copy); case9 re-measured fresh (machine-state consistency check), other cases reused from baseline_r3_iter1.json",
+  "precision_gate": "pass (fresh this session: l0 10/10 /tmp/opencode/r4_l0_base.log + anchor 10/10 BITEXACT vs Developer final + R11 stress nondet=0 /tmp/opencode/r4_anchor_base.log)",
+  "programming_mode": "Expert rev3 + #R3-1 task-batched single_kv_block Form B path",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {"case1": 12.93, "case7": 927.11, "case9": 1379.56, "case10": 39.90, "case11": 349.63, "case14": 530.73, "case16": 646.84, "case20": 31.30},
+  "kernel_us_note": "case9 fresh re-measure 1379.56us (median, stdev 1.73) vs recorded 1380.34us -> Delta 0.06% consistent; others carried from baseline_r3_iter1.json",
+  "cannbench_anchor": {"report": "cann_final_eval_20260920_005958", "composite": 68.50, "perf_score": 18.50, "avg_speedup": 0.7017, "case9": 0.240, "case7": 0.466, "case8": 0.467, "case10": 0.903, "case14": 0.995, "case20": 1.001},
+  "milestone_target": "M1: avg >= 0.75x AND case9 >= 0.4x (i.e. case9 wall <= 844us); noise threshold 3%; iteration budget 10",
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_r4_base/case9.json + /tmp/opencode/r4_l0_base.log + /tmp/opencode/r4_anchor_base.log"
+}

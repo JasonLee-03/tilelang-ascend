@@ -1,0 +1,204 @@
+{
+ "session": 14,
+ "iteration": "r14-1 (global iter36)",
+ "phase": "A+B+C (verification + implementation + IR machine proof) — GO verdict for Phase D+E",
+ "timestamp": "2026-10-05T18:30+08:00",
+ "authorization": "user 2026-10-05 scope A: 2 operator-level instruction fusions (task book r14 = sole authorization); iter26 finding 'instruction-level means to cut aiv_vec_time itself UNMEASURED' = this arm's target (case7 form_a domain pacing pipe = AIV VEC 648.99us = 77.5% of aiv_time)",
+ "kernel_state": {
+  "production_mha_py_md5": "c316a0040ff4f4445d81bb31ec94a68e (2240 lines, = perf19 = r13 adopted; UNTOUCHED through Phase C)",
+  "startup_snapshot": "history_version/mha_impl_r4_perf20.py (c316a004 identical)",
+  "variant_path": "/tmp/opencode/r14_probes/mha_r14x_edit_v1.py",
+  "variant_md5": "535b71f0f6a3bf45150efca3439bfc59 (2236 lines, delta exactly -4)",
+  "variant_generator": "/tmp/opencode/r14_probes/make_r14x.py (5 whitelisted replacement blocks, each count==1 asserted; 7 hunks -8/+4 asserted; flag census / second-round-trip x3 / phase2-add x2 / fills x2 conserved asserted)",
+  "framework_files": {
+   "src/tl_templates/ascend/common.h": "82e80025e8424f1c38a30aff186f8708 UNCHANGED (zero-touch this round)",
+   "tilelang/language/ascend.py": "1c3a00edeb44d21ddea0bb67aef8fee2 UNCHANGED (zero-touch this round)"
+  },
+  "ruff": "check 'All checks passed!' + format 'already formatted' + ast.parse OK",
+  "template_deviation_note": "task-book template comment prefix 3 spaces -> 2 spaces (ruff format hard gate wins; comment text verbatim)"
+ },
+ "changes": {
+  "R14-1_cast_direct": "3 isomorphic emit_v paths (single_kv_block L480/L485, flat_v L635/L650, generic L811/L819): T.copy(io_buf->work_ub) retargeted to rr_ub (= fused r16(qk) cast), old T.copy(work_ub,rr_ub) deleted; set_flag(V,MTE2,SIG_IO_UB+side) stays after the new read (ownership window closed); second round-trip r16(scores) UNTOUCHED; bit-level: io_buf->work_ub was lossless fp32 copy => r16(io_buf)==r16(work_ub); no reader of stale work_ub fp32 between the two copy points on any path (audited)",
+  "R14-2_fill_add_fusion": "1 site (single_kv_block && not form_a phase-2 L564-565): fill(acc_o,0.0)+add(acc_o,acc_o,io3) -> add(acc_o, io3, 0.0); bit-exact by IEEE-754 commutativity incl. signed zeros; API precedent same-file L517; position within wait/set_flag(sig_io3_base+side) window unchanged"
+ },
+ "phase_c_ir_proof": {
+  "dump": "20 shapes (r13 list verbatim), base arm md5-prov c316a004 -> /tmp/opencode/r14_src_base (cache r14_cache_base), var arm prov 535b71f0 -> /tmp/opencode/r14_src_var (cache r14_cache_var); both EXIT=0; provenance: G_case15 base dump md5 3a6bf5895b099499b923956b29553a2e == r13 adopted-state archive value (baseline == r13 final machine proof)",
+  "gate_C1_literal_AIC_projection": "0/20 byte-identical; 20/20 QUALIFIED — diffs exclusively shared-prologue ascend_ub.GetWithOffset view re-ordering of V-EXCLUSIVE buffers (moved set: work_ub/rr_ub/m_i_prev [+m_i/row_thresh causal-multi]; root cause: cast-direct moves rr_ub first-use ahead of work_ub => codegen UB storage planner re-orders; pure address arithmetic, AIC never dereferences UB views; mechanical in-scope consequence, NOT out-of-scope change)",
+  "ub_layout_audit": "20/20: buffer set identical, per-buffer pool/type/size identical, non-UB views (L1/L0A/L0B/L0C) byte-identical, InitBuffer pool sizes identical (ub=196352), new layout zero-overlap, in-pool bound",
+  "gate_C2_AIC_compute_projection": "20/20 BYTE-IDENTICAL (decisive machine proof of C-side zero-touch: compute/flags/gemm/copies)",
+  "aiv_hunk_whitelist": "66 hunks total = 40 CAST (inside AIV) + 6 FILL (inside AIV) + 20 UB-VIEW (prologue, C1-audited); zero UNCLASSIFIED; zero unexpected instruction add/remove",
+  "census_conservation": "per-shape: copy_ub_to_ub exactly -1 (all 20); fill family (-1/-1/+1) ONLY on the 6 Form-B single-block shapes; SetFlag/WaitFlag/CrossCoreSetFlag/CrossCoreWaitFlag/Mmad/gemm_v0/copy_gm_to_l1/copy_l0c_to_gm all delta=0 on 20/20",
+  "result": "CMP_IR_R14_RESULT: PASS (cmp_ir_r14.log archived)"
+ },
+ "verdict": "GO for Phase D (precision gates) + Phase E (wall/op A/B)",
+ "phase_e_preregistration": {
+  "wall_protocol": "same-session fresh baseline (production c316a004 re-measured) + variant; msprof --task-time=on bench --case X --warmup 5 --iters 20; n=25 median via parse_prof.py; 3 INTERLEAVED PAIRED repeats; paired Delta + mean + stdev + SEM + t(df=2) + exact two-sided p (df=2 closed-form CDF) + 95% CI (t_0.975,2=4.302653) — iter24-26 verbatim caliber",
+  "targets": "case7/case8 (primary, form_a domain, AIV VEC pacing) + case15/case18 (secondary, kv_db decode)",
+  "guards": "case9/case10/case11/case14/case16/case20 (+-3% band; NOTE: r14 AIV IR changes in ALL domains (emit_v shared) — guard deviations are NOT drift-band-exempt by IR identity; only the AIC side is byte-identical. Guard regression outside band = investigate, not auto-attribute)",
+  "op_signature": {
+   "case7": "aiv_vec_time MUST drop significantly (mechanism main signature, expected -3~-8%); AIV issue equivalent single+2*dual drop reported as-is (instruction-reduction arm: direction = DOWN, proves edits genuinely took effect); wait_idN migration column (absorption-law watch: aic_wait_id2 / aiv_wait_id0 rises recorded); AIC pipes zero change (runtime echo of the IR proof)",
+   "case15": "v_vec_t / v_scalar_t changes; C-side counters must stay in-band with r13 adopted state (AIC IR identical => C-side runtime should reproduce)"
+  },
+  "adoption_criteria_preregistered": "(a) precision gates all green AND (b) mechanism signature active (case7 aiv_vec_time significant drop AND AIV issue-equivalent drop AND AIC IR 20/20 byte-identical[C2 caliber]) AND (c) wall gate: >=1 target case improvement >=3% AND zero guard regression",
+  "r7-1_clause": "mechanism active but wall zero-response => ROLLED_BACK_ZERO_WALL (triple rollback verification; variant archived; absorption-law instance = qualified output)",
+  "noise_threshold": "3% (DESIGN.md performance-target section caliber)"
+ },
+ "budget": "soft 3 iterations (global iter36 start, cap 38); this file = iter36 record",
+ "final_verdict_addendum": {
+  "verdict": "ROLLED_BACK_ZERO_WALL (r7-1 clause literal hit: mechanism primary signature active, wall zero/negative response)",
+  "iteration_close": "r14-2 (global iter37); budget used 2 of 3 (cap 38)",
+  "precision_gates": "ALL GREEN: smoke 6/6 BITEXACT; A/B BITEXACT main gate 54/54 (24 targets + 12 guards + 18 form_a/fbm/bf16) vs c316a004; anchors A 9/9 BITEXACT + B 14/14; stress inherited 4x12 + ext 19x12 nondet=0; l0 10/10; l1 19/19; coverage 19P/0M; --level all EXIT=0 sentinels 4/4 incl perf_d256_bf16",
+  "wall_ab": {
+   "protocol": "same-session fresh baseline + variant, 3 interleaved paired repeats, n=25 median, df=2 closed-form p, 95% CI t=4.302653; 60/60 runs exit 0; production md5 checkpointed at every repeat boundary",
+   "case7": {
+    "prod_us": [
+     855.8,
+     855.63,
+     854.36
+    ],
+    "var_us": [
+     864.66,
+     865.39,
+     863.12
+    ],
+    "delta_us": 9.127,
+    "delta_pct": 1.07,
+    "p": 0.00121,
+    "ci_pct": [
+     0.91,
+     1.23
+    ],
+    "reading": "SIGNIFICANTLY SLOWER"
+   },
+   "case8": {
+    "prod_us": [
+     853.49,
+     854.08,
+     854.79
+    ],
+    "var_us": [
+     857.8,
+     858.06,
+     857.32
+    ],
+    "delta_us": 3.607,
+    "delta_pct": 0.42,
+    "p": 0.02221,
+    "ci_pct": [
+     0.15,
+     0.7
+    ],
+    "reading": "SIGNIFICANTLY SLOWER"
+   },
+   "case15": {
+    "delta_pct": 0.12,
+    "p": 0.143,
+    "reading": "ns zero-response (scalar floor immune)"
+   },
+   "case18": {
+    "delta_pct": 0.03,
+    "p": 0.476,
+    "reading": "ns zero-response"
+   },
+   "guards": "case9 +0.41(p=0.124) / case10 +1.00(p=0.174) / case11 +0.07 / case14 +0.01 / case16 +0.30 / case20 +0.30 — all ns, in +-3% band, zero significant regression; point estimates all >=0 = mild session-wide positive bias logged"
+  },
+  "op_signature": {
+   "case7": {
+    "aiv_vec_time_us": [
+     648.99,
+     624.22
+    ],
+    "delta_pct": -3.82,
+    "band": "-3~-8% preregistered => ACTIVE (648.99 reproduces iter26 archive verbatim)",
+    "aiv_mte2_t_us": [
+     231.71,
+     210.3
+    ],
+    "aiv_scalar_busy_us": [
+     689.25,
+     685.18
+    ],
+    "aiv_issue_equiv_s_plus_2d": [
+     155.32,
+     157.69
+    ],
+    "issue_equiv_note": "+1.53% OPPOSITE to expected direction — reported as-is; runtime slot-offset addressing migrated into the surviving Cast call (inference); activation proven independently by IR census (-1 copy_ub_to_ub/slot x20) + vec_time in-band drop",
+    "wait_migration": {
+     "aiv_wait_id0_us": [
+      58.23,
+      93.2
+     ],
+     "aiv_wait_id4_us": [
+      163.85,
+      182.01
+     ],
+     "aic_wait_id2_us": [
+      535.83,
+      536.64
+     ]
+    },
+    "aic_zero_change_echo": {
+     "cube_t_us": [
+      166.99,
+      167.0
+     ],
+     "gm_to_l1_mb": [
+      38.5,
+      38.5
+     ],
+     "aic_issue_equiv": [
+      113.92,
+      113.92
+     ],
+     "c_scalar_t_us": [
+      755.06,
+      765.17
+     ],
+     "note": "c_scalar_t +10.11 = cross-core SEM blocking on byte-identical AIC IR (ring coupling)"
+    },
+    "absorption": "V-pipe busy removed ~46.2us (vec -24.8 + mte2 -21.4) vs wall +9.13us => conversion -19.8% (NEGATIVE; harshest instance in the absorption-law ledger)"
+   },
+   "case15": {
+    "v_vec_t_us": [
+     121.13,
+     118.57
+    ],
+    "v_mte2_t_us": [
+     102.34,
+     94.43
+    ],
+    "v_scalar_t_us": [
+     219.25,
+     214.38
+    ],
+    "aiv_issue_equiv": [
+     37.7,
+     37.88
+    ],
+    "aic_issue_equiv": [
+     47.27,
+     47.27
+    ],
+    "c_side_band_vs_r13_adopted": "wall 412.31~412.48 vs 412.42 / scalar 410.40~410.79 vs 411.03 / mte2 365.11~365.41 vs 365.54 / fix 96.01~96.21 vs 96.32 / cube 49.80 exact / wait2 58.4~60.3 vs 66.4 (cross-session drift band) => IN-BAND",
+    "absorption": "V busy removed ~15.3us vs wall +0.49us ns => ~zero response (scalar floor 410.4 ~= wall 412.3 unchanged; r13 conclusion re-proven)"
+   }
+  },
+  "criteria_check": {
+   "(a) precision all green": "PASS",
+   "(b1) case7 aiv_vec_time significant drop": "PASS (-3.82% in band)",
+   "(b2) AIV issue-equivalent drop": "FAIL (+1.53% opposite direction; auxiliary signature — reported as-is; activation independently proven)",
+   "(b3) AIC IR 20/20 byte-identical": "PASS under C2 semantic gate (C1 literal QUALIFIED: UB-view address arithmetic only, layout audit clean)",
+   "(c) wall gate >=1 target improved >=3% AND zero guard regression": "FAIL (decisive: no target improved; case7/case8 significantly slower; guards zero significant regression)",
+   "r7-1 clause": "TRIGGERED => rollback triple-verification + variant archived + absorption-law instance = qualified output"
+  },
+  "rollback_triple_verification": {
+   "(i) md5": "c316a0040ff4f4445d81bb31ec94a68e restored (diff vs perf19/perf20 identical; ast+ruff OK; 2240 lines; framework 82e80025/1c3a00ed untouched)",
+   "(ii) IR": "ROLLBACK_IR_RESULT PASS (case7 dump == dcde9ec13f31cb592fe24de70c2a277e, case15 dump == 3a6bf5895b099499b923956b29553a2e byte-identical)",
+   "(iii) l0": "10/10 Test Passed! L0_RB_EXIT=0 (cache r14_cache_final)"
+  },
+  "variant_disposition": "archived /tmp/opencode/r14_probes/mha_r14x_edit_v1.py (535b71f0, full-precision-gates-passed measurement asset; adoption/baseline/submission FORBIDDEN)",
+  "consecutive_no_improvement": "0 -> 1",
+  "design_error": "no",
+  "verdict_doc": "perf_tuning/gate_r14_verdict.md"
+ }
+}

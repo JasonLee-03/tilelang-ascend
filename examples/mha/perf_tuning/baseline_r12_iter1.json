@@ -1,0 +1,25 @@
+{
+  "session": 12,
+  "iteration": "r12-1 (global iter30)",
+  "phase": "A (feasibility + design, zero production change, zero measurement)",
+  "timestamp": "2026-10-04T20:05+08:00",
+  "kernel_state": {
+    "mha_py_md5": "dda3ad0877ba4df74bbd559f6912eeed",
+    "mha_py_lines": 1926,
+    "backup": "history_version/mha_impl_r4_perf16.py (same md5)",
+    "common_h_md5_pre": "d113a6c602a67d3a9aa5dd5bc2359001",
+    "ascend_py_md5_pre": "44cfef098b9ad13d7ed76823e91f45ef",
+    "framework_git_diff_lines": 0
+  },
+  "reference_perf_r11_fresh_baseline_us": {
+    "case15": 505.17,
+    "case18": 504.05,
+    "note": "session-11 same-session medians (n=25, msprof --task-time=on); r12 fresh baseline to be re-acquired in r12-2 per same-session discipline"
+  },
+  "roofline_reference_us": { "case15_local": 503.84, "case15_bench": 507.90, "ratio": 0.680 },
+  "upper_bound_duty_100pct": "1.39-1.45x",
+  "test_shape_case15_18": "decode S<=16 D=256 S_kv>128 (bN=256, kL0=64, 96 slots/core, 48 tasks/core)",
+  "precision_status": "pass (production state, session-8 adoption + session-9/10/11 closure verifications on file)",
+  "programming_mode": "Expert (manual sync, T.Scope C/V)",
+  "verdict": "GO for r12-2 Phase B+C (channel b: header-only template param + frontend kwarg, zero C++ rebuild)"
+}

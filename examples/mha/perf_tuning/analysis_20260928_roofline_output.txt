@@ -1,0 +1,55 @@
+chip: cube peak 270 / sust 203 TFLOPS fp16; HBM rd 1472 GB/s; L2>=4TB/s; FLOOR 9us
+ cs form  bMxbN    iters  padE  uniqMB  relMB  implMB |     tA bA       tA* |     tB bB    pipeB     tBnv |   spA  spA*   spB   now B/now
+  1 A     64x128      32  0.50     1.0      1       5 |    9.0 floor    9.0 |    9.0 floor V.vec      9.0 |  1.11  1.11  1.11  0.93   84%
+  2 A     64x128     384  0.67     8.4     13      67 |    9.0 floor    9.0 |   35.1 pipe  V.vec     29.6 |  3.64  3.64  0.93  0.48   52%
+  3 A     64x128    1280  0.80    33.6     84     310 |   26.8 hbm     26.8 |  129.2 pipe  V.vec    105.1 |  4.88  4.88  1.01  0.77   76%
+  4 Bmma  32x128     192  0.67     8.4     25      51 |    9.0 floor    9.0 |   20.3 pipe  C.mte2    20.3 |  3.64  3.64  1.62  0.90   56%
+  5 A     64x128      96  1.00     2.4      3      17 |    9.0 floor    9.0 |    9.8 pipe  V.vec      9.0 |  1.17  1.17  1.07  0.56   52%
+  6 A     64x128     256  1.00    10.5     17      50 |    9.0 floor    9.0 |   12.6 l2    C.fix     12.6 |  3.64  3.64  2.61  1.27   49%
+  7 A     64x128    9216  0.89   134.2    604    2181 |  190.8 cube   157.9 |  797.2 pipe  V.vec    623.2 |  2.27  2.74  0.54  0.46   85%
+  8 A     64x128    9216  0.89   134.2    604    2181 |  190.8 cube   157.9 |  797.2 pipe  V.vec    623.2 |  2.25  2.72  0.54  0.47   86%
+  9 Bmma  32x128    9216  0.89   134.2   1208    2332 |  190.8 cube   157.9 |  626.1 pipe  C.mte2   626.1 |  1.77  2.14  0.54  0.35   65%
+ 10 Bgv0  16x512     128  0.06    33.6     34      48 |   22.8 hbm     22.8 |   22.8 hbm   C.mte2    22.8 |  2.34  2.34  2.34  0.99   42%
+ 11 Bgv0  16x512    1024  0.06   268.7    268     390 |  182.5 hbm    182.5 |  182.5 hbm   C.mte2   182.5 |  1.57  1.57  1.57  0.92   59%
+ 12 Bgv0  16x512    1024  0.06   269.0    268     394 |  182.5 hbm    182.5 |  182.5 hbm   C.mte2   182.5 |  1.49  1.49  1.49  0.89   60%
+ 13 Bgv0  16x512    1920  0.06   504.3    503     739 |  342.3 hbm    342.3 |  342.3 hbm   C.mte2   342.3 |  1.44  1.44  1.44  0.88   61%
+ 14 Bgv0  16x128    4096  0.06   270.5    268     470 |  183.1 hbm    183.1 |  183.1 hbm   C.mte2   183.1 |  2.88  2.88  2.88  1.40   49%
+ 15 Bgv0  16x256    1920  0.06   504.3    503     676 |  342.3 hbm    342.3 |  342.3 hbm   C.mte2   342.3 |  1.01  1.01  1.01  0.69   68%
+ 16 Bgv0  16x512    1920  0.12   505.3    503     739 |  342.6 hbm    342.6 |  342.6 hbm   C.mte2   342.6 |  1.28  1.28  1.28  0.78   61%
+ 17 Bgv0  16x256    3072  0.12   405.8    403     629 |  274.6 hbm    274.6 |  274.6 hbm   C.mte2   274.6 |  2.05  2.05  2.05  1.14   56%
+ 18 Bgv0  16x256    1920  0.12   505.3    503     676 |  342.6 hbm    342.6 |  342.6 hbm   C.mte2   342.6 |  1.19  1.19  1.19  0.81   68%
+ 19 A     64x128     128  0.50     8.4      8      25 |    9.0 floor    9.0 |    9.0 floor C.fix      9.0 |  3.64  3.64  3.64  1.41   39%
+ 20 A     64x128     128  1.00     8.4      8      25 |    9.0 floor    9.0 |    9.0 floor C.fix      9.0 |  3.64  3.64  3.64  2.12   58%
+
+mean speedup vs baseline | A  ideal kernel, sust cube : 2.35x  (geomean 2.10x)
+mean speedup vs baseline | A* ideal kernel, peak cube : 2.41x  (geomean 2.16x)
+mean speedup vs baseline | B  cur arch, perfect pipe  : 1.63x  (geomean 1.39x)
+mean speedup vs baseline | B- cur arch, +vec coherent   : 1.67x  (geomean 1.46x)
+mean speedup vs baseline | now measured               : 0.91x  (geomean 0.83x)
+
+  small prefill 1,2,5,6,19,20 A= 2.81x  A*= 2.81x  B= 2.17x  Bnv= 2.21x  now= 1.13x
+  big prefill 3,7,8          A= 3.13x  A*= 3.45x  B= 0.70x  Bnv= 0.88x  now= 0.57x
+  D256 prefill 4,9           A= 2.71x  A*= 2.89x  B= 1.08x  Bnv= 1.08x  now= 0.63x
+  decode 10-15               A= 1.79x  A*= 1.79x  B= 1.79x  Bnv= 1.79x  now= 0.96x
+  MTP 16,17,18               A= 1.51x  A*= 1.51x  B= 1.51x  Bnv= 1.51x  now= 0.91x
+
+case1   A: iters=   16 gf=  0.13 rel=    1MB bnd=floor | B: pipe=    2.2 hbm=   0.8 l2=   1.2 perIt=0.705us(V.vec) imb=1.25
+case2   A: iters=  128 gf=  1.07 rel=    8MB bnd=floor | B: pipe=   35.1 hbm=   6.7 l2=  16.8 perIt=1.058us(V.vec) imb=0.99
+case3   A: iters= 1280 gf=  5.37 rel=   84MB bnd=hbm   | B: pipe=  129.2 hbm=  26.8 l2=  77.6 perIt=1.411us(V.vec) imb=0.97
+case4   A: iters=   96 gf=  0.81 rel=   13MB bnd=floor | B: pipe=   20.3 hbm=   6.7 l2=  12.8 perIt=1.112us(C.mte2) imb=1.04
+case5   A: iters=   24 gf=  0.20 rel=    2MB bnd=floor | B: pipe=    9.8 hbm=   1.9 l2=   4.1 perIt=1.058us(V.vec) imb=1.25
+case6   A: iters=  256 gf=  1.07 rel=   17MB bnd=floor | B: pipe=   11.9 hbm=   8.4 l2=  12.6 perIt=0.767us(C.fix) imb=1.02
+case7   A: iters= 9216 gf= 38.65 rel=  604MB bnd=cube  | B: pipe=  797.2 hbm= 107.4 l2= 545.3 perIt=1.411us(V.vec) imb=0.97
+case8   A: iters= 9216 gf= 38.65 rel=  604MB bnd=cube  | B: pipe=  797.2 hbm= 107.4 l2= 545.3 perIt=1.411us(V.vec) imb=0.97
+case9   A: iters= 4608 gf= 38.65 rel=  604MB bnd=cube  | B: pipe=  626.1 hbm= 107.4 l2= 583.0 perIt=1.112us(C.mte2) imb=0.96
+case10  A: iters=  128 gf=  0.54 rel=   34MB bnd=hbm   | B: pipe=   22.3 hbm=  22.8 l2=  12.1 perIt=2.225us(C.mte2) imb=1.25 | now effHBM=622GB/s
+case11  A: iters= 1024 gf=  4.29 rel=  268MB bnd=hbm   | B: pipe=  174.8 hbm= 182.5 l2=  97.5 perIt=2.225us(C.mte2) imb=1.02 | now effHBM=868GB/s
+case12  A: iters= 1024 gf=  4.29 rel=  268MB bnd=hbm   | B: pipe=  131.6 hbm= 182.5 l2=  98.6 perIt=2.225us(C.mte2) imb=1.02 | now effHBM=876GB/s
+case13  A: iters= 1920 gf=  8.05 rel=  503MB bnd=hbm   | B: pipe=  240.8 hbm= 342.3 l2= 184.8 perIt=2.225us(C.mte2) imb=1.00 | now effHBM=895GB/s
+case14  A: iters= 4096 gf=  4.29 rel=  268MB bnd=hbm   | B: pipe=  129.7 hbm= 183.1 l2= 117.4 perIt=0.556us(C.mte2) imb=1.00 | now effHBM=711GB/s
+case15  A: iters= 1920 gf=  8.05 rel=  503MB bnd=hbm   | B: pipe=  315.6 hbm= 342.3 l2= 169.1 perIt=2.159us(C.mte2) imb=1.00 | now effHBM=999GB/s
+case16  A: iters= 1920 gf=  8.05 rel=  503MB bnd=hbm   | B: pipe=  240.8 hbm= 342.6 l2= 184.8 perIt=2.225us(C.mte2) imb=1.00 | now effHBM=891GB/s
+case17  A: iters= 3072 gf=  6.44 rel=  403MB bnd=hbm   | B: pipe=  194.5 hbm= 274.6 l2= 157.3 perIt=1.112us(C.mte2) imb=1.00 | now effHBM=814GB/s
+case18  A: iters= 1920 gf=  8.05 rel=  503MB bnd=hbm   | B: pipe=  315.6 hbm= 342.6 l2= 169.1 perIt=2.159us(C.mte2) imb=1.00 | now effHBM=998GB/s
+case19  A: iters=   64 gf=  1.07 rel=    8MB bnd=floor | B: pipe=    6.3 hbm=   6.7 l2=   6.3 perIt=0.767us(C.fix) imb=1.09
+case20  A: iters=   64 gf=  1.07 rel=    8MB bnd=floor | B: pipe=    6.3 hbm=   6.7 l2=   6.3 perIt=0.767us(C.fix) imb=1.09

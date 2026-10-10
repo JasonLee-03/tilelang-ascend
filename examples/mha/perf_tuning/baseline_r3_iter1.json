@@ -1,0 +1,12 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r3-1-adopted", "perf_session": 3,
+  "note": "post-#R3-1 (Form B single_kv_block task batching) = session-3 final adopted state (md5 1d3a261c9c44c1ad9dd1b30b571717b6); r3-2/r3-3/r3-4 all rolled back to this state (no-improvement rule)",
+  "precision_gate": "pass (probe_r31 14/14 + l0 10/10 + anchor 10/10 BITEXACT + R11 stress nondet=0; final --level all exit 0: L0 10/10 L1 19/19 L2 12/12 Boundary 6/6 sentinels 4/4)",
+  "programming_mode": "Expert rev3 + #R3-1 task-batched single_kv_block Form B path (dispatch: single_kv_block and not form_a)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {"case1": 12.93, "case7": 927.11, "case9": 1380.34, "case10": 39.90, "case11": 349.63, "case14": 530.73, "case16": 646.84, "case20": 31.30},
+  "kernel_us_note": "case11/case20 carried from session baseline (untouched paths); case1/case10/case9 re-measured as guards during r3-1/r3-2 (noise band)",
+  "cannbench_final": {"report": "cann_final_eval_20260920_005958", "composite": 68.50, "perf_score": 18.50, "avg_speedup": 0.7017, "case14": 0.995, "case16": 0.678, "case17": 0.916, "case12": 0.785, "case13": 0.766, "case7": 0.466, "case8": 0.467, "case9": 0.240, "case10": 0.903, "case20": 1.001},
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_r3_iter1/*.json + reports/cann_final_eval_20260920_005958.*"
+}

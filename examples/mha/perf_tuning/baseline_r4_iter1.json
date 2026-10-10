@@ -1,0 +1,11 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r4-1-adopted", "perf_session": 4,
+  "note": "post-#R4-1 (Form B barrier_all pure removal, 15 sites) adopted state; gemm_v0 internal prologue/epilogue pipe flags + pipe-scoped SEM cover all segment-boundary hazards (S4-Step 2 precheck)",
+  "precision_gate": "pass (probe_r41 15/15 BITEXACT + l0 10/10 + anchor 10/10 BITEXACT + R11 stress nondet=0 + l1 19/19)",
+  "programming_mode": "Expert rev3 + #R3-1 task-batched single_kv_block + #R4-1 barrier-free Form B",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20)",
+  "kernel_us": {"case1": 12.94, "case7": 932.60, "case9": 1020.73, "case10": 35.34, "case11": 312.34, "case14": 378.16, "case16": 565.27, "case20": 30.84},
+  "estimated_speedups": {"avg_5case_updated": 0.7662, "case9": 0.331, "case10": 1.512, "case11": 0.915, "case14": 1.395, "case16": 0.777},
+  "test_command": "msprof --output=<dir> --application='python examples/mha/perf_tuning/bench_mha.py --case <case> --warmup 5 --iters 20'",
+  "evidence": "examples/mha/perf_tuning/msprof_r4_iter1/*.json + /tmp/opencode/r4_probes/probe_r41.log"
+}

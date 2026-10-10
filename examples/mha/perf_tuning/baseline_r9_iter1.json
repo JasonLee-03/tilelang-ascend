@@ -1,0 +1,38 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r9-iter1", "perf_session": 9,
+  "note": "r9-1 candidate state (③ VW=2 wide channel, form_a flat D=128; md5 52dd7e8a93dbd5f3d00679eb1269d2ea, 2405 lines, variant archived /tmp/opencode/r9_probes/mha_r91_edit_v1.py). Precision gates ALL PASS (probe 16/16 BITEXACT vs dda3ad08 + guards 7/7; anchors A 9/9 incl #9 wide-domain BITEXACT = Layer-1 anchor plan realized + B 14/14; stress 33cfg x12 nondet=0; l0/l1/coverage/all EXIT=0; IR 14/16 byte-identical guards + 2/2 targets changed; UB wide-domain real-compiled 172.62K<=191.75K). REJECTED by performance rule (3/3 target domains +12.4~+16.0% regression), rolled back to dda3ad08 with IR 16/16 byte-level restoration verified.",
+  "bottleneck_type": "compute (V.vec hypothesis) -> MEASUREMENT-CORRECTED: event-tax lives in scalar/stall/MTE3/wait side (all cut as predicted: -12~-51%), vec main-pipe = real data-volume throughput (widening INCREASED it +21.8%)",
+  "kernel_us_candidate": {
+    "case7": 964.77, "case8": 993.06, "case3": 150.20,
+    "case9": 868.80, "case4": 28.25, "case2": 44.92, "case5": 15.29,
+    "case10": 34.90, "case13": 559.43, "case14": 377.53, "case16": 564.52, "case20": 14.20
+  },
+  "kernel_us_baseline_same_session": {
+    "case7": 858.26, "case8": 855.78, "case3": 131.35,
+    "case9": 869.04, "case4": 27.92, "case2": 44.84, "case5": 15.19,
+    "case10": 33.87, "case13": 565.30, "case14": 376.02, "case16": 562.09, "case20": 14.03
+  },
+  "delta_pct": {
+    "case7": "+12.41 (REGRESSION)", "case8": "+16.04 (REGRESSION)", "case3": "+14.35 (REGRESSION)",
+    "case9": "-0.03 (IR-identical guard)", "case4": "+1.18", "case2": "+0.18", "case5": "+0.66",
+    "case10": "+3.04 (IR-identical; env drift — rollback-state remeasure showed +4.6% monotonic drift on byte-identical file, non-kernel)", "case13": "-1.04", "case14": "+0.40", "case16": "+0.43", "case20": "+1.21"
+  },
+  "op_ab_case7_three_signature": {
+    "base_source": "/tmp/opencode/r8_op_case7_iter3 (IR-identical predecessor)",
+    "candidate_source": "/tmp/opencode/r9_op_case7_iter1/OPPROF_20260930152528_VDXNYQEHHTWFOLHI",
+    "V_vec_us": "634.39 -> 772.73 (+21.8%) block0 | 648.99 -> 793.70 (+22.3%) 20-core mean — SIGNATURE-1 FAIL (predicted significant DROP)",
+    "C_wait_id2_us": "547.70 -> 657.83 (+20.1%) | 533.19 -> 661.28 (+24.0%) — SIGNATURE-2 FAIL (reverse)",
+    "wall_us": "858.26 -> 964.77 (+12.4%) — SIGNATURE-3 FAIL",
+    "event_tax_side_all_delivered": "v_scalar -11.7% / v_stall -35.6% / v_mte3 -27.9% / wait_id0 -44.2% / wait_id4 -51.0% / C.wait_id5 -100% / C.scalar -14.9%",
+    "verdict": "three-signature criterion FAIL all-reverse => ③ family evidence-closed (stronger form than the anticipated absorption-law 4th instance: the mechanism hypothesis itself — fragment tax as V.vec bulk — is falsified; vec bulk = data-volume throughput, widening adds large-repeat inefficiency + always-on mask cost)"
+  },
+  "rollback_verification": {
+    "md5": "dda3ad0877ba4df74bbd559f6912eeed == perf11 == session baseline",
+    "ir_16_16": "r9_src_rollback byte-identical to r8_src_iter3 (dump_rollback.log)",
+    "l0": "10/10 PASS (r91_l0_rollback.log, r9_cache_rb2)",
+    "spot_remeasure_msprof_r9_rb": "case7 861.10 (+0.33% vs base, restored) / case9 869.28 (+0.03%) / case10 35.43 (+4.6% env drift, monotonic across 3 byte-identical-file measurements) / case20 14.50 (+3.3%, +0.47us absolute, session-8 case20 variance precedent)"
+  },
+  "adopted": false,
+  "consecutive_no_improvement": 1,
+  "evidence": "examples/mha/perf_tuning/msprof_r9_iter1/*.json + msprof_r9_rb/*.json + /tmp/opencode/r9_op_case7_iter1/ + /tmp/opencode/r9_probes/{r91_probe,r91_anchors,r91_stress_ext,r91_l0,r91_l1,r91_all,r91_l0_rollback}.log + r9_src_iter1/ + r9_src_rollback/"
+}

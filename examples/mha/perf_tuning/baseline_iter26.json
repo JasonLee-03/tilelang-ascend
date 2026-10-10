@@ -1,0 +1,342 @@
+{
+  "iteration": 26,
+  "mode": "perf_measure",
+  "gate": "GATE 0c",
+  "mission": "Closing double-probe: (A) GATE A static budget audit of the gap-1 feasibility pre-gate (C-side GEMM1(fb+1)/GEMM2(fb) interleave, zero-compile zero-run except one mandated minimal L0B shape probe); (B) G1 measured upper bound of Plan C's WORK-ELIMINATION component. PURE MEASUREMENT/AUDIT ROUND: no adoptable code produced, production kernel byte-identical.",
+  "timestamp_utc": "2026-10-02T06:15:00Z .. 2026-10-02T07:10:00Z",
+  "design_revision_count": 3,
+  "design_revision_state": "rev4 terminal",
+  "iteration_budget": {"index": 26, "extension_ceiling": 29, "remaining": 3},
+  "operator": "examples/mha",
+  "programming_mode": "Expert (manual T.Scope(\"C\"/\"V\"), alloc_L1/ub/L0A/L0B/L0C, manual set_flag/wait_flag + set_cross_flag/wait_cross_flag, 4 pass_configs all False)",
+  "adopted": false,
+  "adoption_note": "mode=perf_measure, ZERO adoptable code. No candidate exists. This file records MEASUREMENT FACTS only; it must never enter a perf baseline comparison as an improvement.",
+
+  "production_integrity": {
+    "path": "examples/mha/mha.py",
+    "expected_md5_first8": "dda3ad08",
+    "md5_full": "dda3ad0877ba4df74bbd559f6912eeed",
+    "lines": 1926,
+    "ast_parse": "OK",
+    "checkpoints": {
+      "round_start": "dda3ad0877ba4df74bbd559f6912eeed UNCHANGED",
+      "before_after_A4_compile_probe": "UNCHANGED",
+      "after_3_probe_builds": "UNCHANGED (generator asserts read-only + post-build re-read, 3/3)",
+      "after_8_IR_compiles": "UNCHANGED",
+      "after_6_smoke_24wall_8metrics": "UNCHANGED (per-repeat md5 + driver start/end)",
+      "round_end": "dda3ad0877ba4df74bbd559f6912eeed UNCHANGED, 1926 lines, ast.parse OK"
+    },
+    "verdict": "PRODUCTION UNTOUCHED - all checkpoints agree; no rollback action needed (never written)",
+    "orchestrator_state": ".orchestrator_state.json NEVER read or written (mtime Oct 2 14:00, predates this round's first action)"
+  },
+
+  "caliber": {
+    "wall": "plain `msprof --task-time=on` -> op_summary Task Duration(us), warmup 5 / iters 20 -> n=25 MEDIAN, parsed by repo-anchored parse_prof.py. IDENTICAL to iter24/iter25. NO --aic-metrics on wall arms (avoids replay perturbation).",
+    "metrics": "`msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization,ResourceConflictRatio,L2Cache,Memory,BasicInfo,ArithmeticUtilization,MemoryUB,MemoryL0`, single shot (warmup 0 / iters 1), 20-block cross-core MEAN + MAX/critical-block reported separately",
+    "repeats": "3 interleaved paired (prod and every probe arm alternate within each repeat)",
+    "statistics": "paired diff, mean, stdev, SEM, t(df=2), exact two-sided p (closed-form df=2 CDF), 95% CI with t_0.975,2=4.302653",
+    "runs": {"wall": 24, "metrics": 8, "smoke": 6, "ir_compiles": 8, "a4_compiles": 4, "hangs": 0, "timeouts": 0, "nonzero_exits": 0},
+    "camodel": "NOT RUN AT ALL this round (discipline #1)",
+    "cache_isolation": "TILELANG_CACHE_DIR = /tmp/opencode/gate0c_i26/cache_{a4,ir,smoke,ab,met}. Default production cache /home/developer/.tilelang/cache NEVER used by any probe (set_env.sh does not set TILELANG_CACHE_DIR).",
+    "resolving_power": "paired-diff SEM 0.245-1.335 us = 0.028%-0.154% of wall; best arm (case7 w3) SEM 0.245 us = 0.028% of wall. prod repeat spread case9 3.680 us / case7 0.830 us.",
+    "hang_guard": "timeout -k 10 on every run + progressive deepening (smoke W1->W2->W3 before any timing) + stdbuf -oL -eL + python3 -u line-buffered stdout to disk (fixes iter25's l2c9/l2c7 lesson where SIGKILL discarded block-buffered stdout)"
+  },
+
+  "production_reproduction_vs_iter25": {
+    "case9": {"this_round_mean_us": 869.543, "iter25_mean_us": 868.877, "iter24_mean_us": 869.547, "delta_vs_iter25_pct": 0.077, "verdict": "REPRODUCED (within noise; also matches iter24 to 0.0005%)"},
+    "case7": {"this_round_mean_us": 856.683, "iter25_mean_us": 857.173, "iter24_mean_us": 856.600, "delta_vs_iter25_pct": -0.057, "verdict": "REPRODUCED"}
+  },
+
+  "GATE_A_static_budget_audit": {
+    "verdict": "FAIL",
+    "decision_rule_applied": "iter25 pre-registered: '>8 event id OR >64KB L0B => immediate NO-GO, no kernel needs to be written'",
+    "evidence_provenance": {
+      "production_IR": "/tmp/opencode/r10_src_rollback (diff -rq vs r8_src_iter3 exit 0; G_case9_B_p3_multi.cc md5 35a21f67... and G_case7_A_multi_P2.cc md5 dcde9ec1... both byte-match dump_final.log; re-dumped this round to the same md5s)",
+      "r81_variant_IR": "/tmp/opencode/r8_src_iter1 (G_case9 md5 dbe5760b... matches dump_iter1.log)",
+      "budget_reader": "budget_r81.py (P4-method, pure regex over generated C++; ZERO compile ZERO run)",
+      "hard_limits_verified_in_source": "EVENT_ID_MAX 8 @ 3rdparty/pto-isa/include/pto/common/event.hpp:14 (and :223 modulo wrap); SYNC_FLAG_ID_MAX 16 @ type.hpp:284"
+    },
+    "A1_L0B_current_state_IR_measured": {
+      "hard_limit_KB": 64.0,
+      "form_A_P1_D64_case2_5": {"declaration": "l0b_s [2,D=64,bN=128] + l0b_o [2,bN=128,D=64] PHYSICALLY SEPARATE", "ir_sites": "16384 elts @0 (32KB) + 16384 elts @32768 (32KB)", "total_KB": 64.00, "pct": 100.0},
+      "form_A_P2_D128_case7_8_3_1_19_20_6": {"declaration": "l0b_o = l0b_s ALIASED (mha.py:848, block_N==D)", "ir_sites": "32768 elts @0 (SINGLE pool 64KB)", "total_KB": 64.00, "pct": 100.0},
+      "form_B_mma_D256_case9_4": {"declaration": "l0b_pool = T.alloc_L0B([2, KC=128, block_N=128])", "ir_sites": "32768 elts @0 (SINGLE pool 64KB)", "total_KB": 64.00, "pct": 100.0},
+      "r81_variant_4x16KB": {"declaration": "T.alloc_L0B([4, KC=64, block_N=128])", "ir_sites": "32768 elts @0 (SINGLE pool 64KB)", "total_KB": 64.00, "pct": 100.0},
+      "finding": "pipe.InitBuffer(ascend_l0b, 65536) is BYTE-IDENTICAL in all four implementations => L0B is at 100% top with ZERO margin in every existing form. mha.py:19-21 docstring itself states l0b_pool is 'phase time-multiplexed' = the DESIGN 8.6-10 shared-pool phase discipline that interleaving would lift."
+    },
+    "A1_L0B_interleave_requirement": {
+      "criterion": "session-10 S10-3-1 bN upper-bound theorem: B-operand working set <= L0B 64KB INCLUDING all in-flight chunks of the K-split chain; safe lineage requires load-first with ZERO intra-phase reuse (v4ksp 4-separate-slot precedent)",
+      "form_B_mma_D256": {
+        "slot_level": "2x[128,128] + 2x[128,128] = 64+64 = 128KB FAIL (2.00x over)",
+        "chunk_level_load_first": "4x[64,128] + 4x[128,64] = 64+64 = 128KB FAIL (2.00x over)",
+        "chunk_level_min_concurrent": "2+2 x 16KB = 64KB zero-margin BUT 4 chunks squeezed into 2 slots => intra-phase overwrite + B-operand second read + phase depth 4>=3 => hits session-10 poison mechanisms (a) AND (b) => STRUCTURALLY POISONED FAIL",
+        "verdict": "FAIL - no legal interleave form exists"
+      },
+      "form_A_P2_D128": {
+        "slot_level": "de-alias [2,128,128] + [2,128,128] = 128KB FAIL (2.00x over)",
+        "chunk_level": "2x[64,128] + 2x[128,64] = 32+32 = 64KB ZERO-MARGIN PASS on capacity; load-first, phase depth 2<3 so (b) not triggered; slots==chunks so no intra-phase overwrite, (a) not triggered",
+        "verdict": "PARTIAL (capacity passes at zero margin) BUT EV ~= 0 - see ev_relevance"
+      },
+      "form_A_P1_D64": {
+        "slot_level": "pools ALREADY physically separate: [2,64,128] + [2,128,64] = 32+32 = 64KB ZERO-MARGIN PASS; phase depth 1 => no poison",
+        "chunk_level": "KC=NC=32: 2x[32,128] + 2x[128,32] = 32KB, margin 32KB PASS - but 32-column L0B fractal legality NOT MEASURED (A.4 only tested 64)",
+        "verdict": "PARTIAL (capacity passes) BUT EV never measured (case2/5 outside the iter24/25/26 EV domain)"
+      },
+      "r81_existence_proof": "#R8-1 carries GEMM1's 4 kc chunks AND GEMM2's 4 (kc2,nc) slices in 4 slots x 16KB = 64KB ONLY because the two phases are SERIALIZED and time-share those 4 slots (K^T loaded at mha_r81_edit_v1.py:1114-1123, V reloaded into the SAME slots at :1175-1184). Interleaving removes the time-sharing => slots must become 4+4=8 => 128KB. This is not an estimate: it is a fully gate-passing, zero-probe-cost implementation doubled by its own structure."
+    },
+    "A1_transpose_question": {
+      "question": "Can two INDEPENDENT T.alloc_L0B declarations of transposed shapes [2,64,128] and [2,128,64] bypass the T.view/T.reshape corruption (customize.py:94/112 call tvm.tir.Buffer directly, previously probe-verified 'Buffer() takes no arguments')?",
+      "answer": "YES - MEASURED (see A4). But NOT decisive: (i) #R8-1 already provides a better solution - K-split the PV reduction along block_N (KC2=64) so GEMM2's B-tile becomes a ROW slice of V, giving a UNIFORM [64,128] orientation across all 4 slots, so mixed shapes are unnecessary; (ii) even though mixed shapes are legal, capacity is still 128KB for B-mma, so legality does not change the verdict."
+    },
+    "A2_event_id_budget": {
+      "hard_limit": 8,
+      "r81_7of8_allocation_verified_verbatim": "mha_r81_edit_v1.py:243-245 -> SIG_L0KC=0 (slots 0..3 => ids 0,1,2,3) + SIG_L0AO=4 (sides => 4,5) + SIG_L0AS=6 (task-level single id covering all 4 k-chunks) = 7/8, margin 1. TASK-BOOK FIGURE CONFIRMED. Achievable only via (i) one stream serving both phases (legal only because phases are serialized) and (ii) task-level grouping of L0AS.",
+      "per_pipe_pair": {
+        "MTE1_M": {
+          "current_B_mma": "SIG_L0KC 0,1 + SIG_L0AO 2,3 + SIG_L0AS 4,5 = 6/8 (margin 2)",
+          "current_A_P1_P2": "SIG_L0AB 0,1 = 2/8 (margin 6)",
+          "interleave_B_mma_prod_geometry": "SIG_L0KC MUST split by phase (G1 kc slots and G2 nc slots concurrently in flight, cannot share a stream) => G1 2 + G2 2 + L0AO 2 + L0AS 2 = 8/8 ZERO MARGIN (7/8 if L0AS task-grouped)",
+          "interleave_B_mma_r81_geometry": "G1 4 + G2 4 + L0AO 2 + L0AS 1 = 11/8 FAIL OVER BY 3",
+          "interleave_A_P2_chunk": "G1-L0B 2 + G2-L0B 2 + G1-L0A 2 + G2-L0A 2 = 8/8 ZERO MARGIN; task-level grouping can reduce to 4/8 (margin 4)"
+        },
+        "M_FIX": {
+          "current": "SIG_L0C 0,1 = 2/8 WITH AN INDEX-SEMANTICS CONFLICT: GEMM1 uses SIG_L0C+side (side = i%2 = fb parity, mha.py:1553/1556/1558) while GEMM2 uses SIG_L0C+chunk (n-chunk 0/1, :1620/1621/1623 and :1632/1634/1636). Two different semantics on ONE stream, legal ONLY because the phases are serialized.",
+          "interleave": "concurrent => must split into l0c_s 0,1 + l0c_o 2,3 = 4/8 (margin 4) PASS"
+        },
+        "MTE2_MTE1": {"current": "SIG_K_L1 0 / SIG_P_L1 1 / SIG_V_L1 2 / SIG_Q_L1 3 = 4/8", "interleave": "unchanged 4/8 PASS (Q double-buffering explicitly out of scope this round)"},
+        "V_MTE2_MTE3": {"current": "SIG_IO_UB 0,1 + SIG_IO3 2,3 (only when D != block_N) / SIG_S_HALF 0", "interleave": "UNCHANGED PASS (AIV side unaffected by a C-side interleave)"},
+        "cross_core_SEM": "OUT OF SCOPE per task book (SYNC_FLAG_ID_MAX=16, SEM 0-5 used, margin 10, ample)"
+      },
+      "summary": "M_FIX / MTE2_MTE1 / V-side all have margin. Bottleneck is MTE1_M: B-mma production geometry lands at exactly 8/8 ZERO MARGIN (passes but with no redundancy), #R8-1 geometry FAILS at 11/8. Since A.1 already fails B-mma on capacity, event id is not the independent veto there, but it is a SECOND zero-margin/over-limit warning."
+    },
+    "A3_collateral_budgets": {
+      "L0C": {"limit_KB": 128, "B_mma_current": "8192 fl @0 (32KB) + 8192 fl @32768 (32KB) = 64KB / 50%, TWO POOLS ALREADY SIMULTANEOUSLY LIVE", "B_mma_interleave": "still 64KB PASS - TASK-BOOK HYPOTHESIS CONFIRMED TRUE (l0c_s is GEMM1's target, l0c_o GEMM2's; production already occupies both concurrently, so interleaving adds nothing)", "A_P2_current": "16384 fl @0 = 64KB single pool (l0c_o aliases l0c_s)", "A_P2_interleave": "must de-alias => 64+64 = 128KB / 128KB ZERO MARGIN", "A_P1": "16384 fl @0 (64KB) + 8192 fl @65536 (32KB) = 96KB / 75%, already separate => PASS margin 32KB"},
+      "L0A": {"limit_KB": 64, "B_mma_current": "8192 el @0 (16KB) + 8192 el @16384 (16KB) = 32KB / 50%", "B_mma_interleave": "32KB PASS (L0A does not double: Q stays task-resident, P ping-pong unchanged)", "A_P2_current": "16384 el @0 = 32KB single pool (aliased)", "A_P2_interleave": "de-alias => 32+32 = 64KB / 64KB ZERO MARGIN; AND the task-book Q-reload issue holds - GEMM2 clobbers l0a_s so every GEMM1 slot must reload Q => MTE1 traffic x2 => needs 4 L0A sides => 128KB FAIL", "A_P1": "8192 @0 (16KB) + 16384 @16384 (32KB) = 48KB / 75% PASS margin 16KB"},
+      "L1": {"limit_KB": 511.75, "B_mma": "152.00KB / 29.7%", "A_P2": "96.00KB / 18.8%", "A_P1": "56.00KB / 10.9%", "interleave": "UNCHANGED in all forms (no new L1 buffers required) PASS margin >= 359.75KB"},
+      "UB": {"limit_KB": 191.75, "B_mma": "126.00KB / 65.7%", "A_P2": "131.50KB / 68.6%", "A_P1": "143.50KB / 74.8%", "interleave": "UNCHANGED PASS margin >= 48.25KB"},
+      "conclusion": "L1/UB have ample margin in every form and are NOT an obstacle. The real collateral warning is A-P2's TRIPLE ZERO MARGIN after de-aliasing: L0B 64/64 + L0A 64/64 (or 128KB FAIL if 4 sides needed) + L0C 128/128."
+    },
+    "A4_minimal_compile_probe": {
+      "script": "perf_tuning/probe_gate0c_workelim/probe_a4_l0b_mixed_shape.py",
+      "method": "COMPILE-ONLY via get_kernel_source() (drives TVM lowering + Ascend codegen, NEVER launches). No timing, no NPU execution, no HANG risk. Isolated cache_a4.",
+      "results": {
+        "ctrl_[2,128,128]^T": "COMPILE_OK, L0B 64.00KB, sites [65536 @0], copy_l1_to_l0b<half,128,128,true> + tl::ascend::mma x1 (production shape = positive control proving the harness works)",
+        "alpha_[2,64,128]^T": "COMPILE_OK, L0B 32.00KB, sites [32768 @0], copy_l1_to_l0b<half,128,64,true>",
+        "beta_[2,128,64]": "COMPILE_OK, L0B 32.00KB, sites [32768 @0], copy_l1_to_l0b<half,128,64,false>",
+        "gamma_BOTH": "COMPILE_OK, L0B 64.00KB, sites [32768 @0] + [32768 @32768] = TWO PHYSICALLY SEPARATE POOLS, copy_l1_to_l0b<half,128,64,true> + <half,128,64,false> + tl::ascend::mma x2"
+      },
+      "conclusions": [
+        "64-COLUMN L0B FRACTAL NZ IS LEGAL ON A3 - both copy_l1_to_l0b<half,128,64,false> and <half,128,64,true> instantiate. The task-book's 'must not be assumed' item is now MEASURED and CLOSED.",
+        "TWO INDEPENDENT DIFFERENT-SHAPED T.alloc_L0B DECLARATIONS CAN COEXIST in one kernel, landing in two physically separate pools (offsets 0 and 32768) => this DOES bypass the T.view/T.reshape tvm.tir.Buffer construction problem.",
+        "BUT LEGALITY != FEASIBILITY: gamma's 64KB is exactly ZERO-MARGIN and covers only 2+2 = 4 slots of 16KB. B-mma (D=256) needs 4+4 = 8 slots = 2x gamma = 128KB. The positive A.4 result CANNOT rescue gap-1."
+      ]
+    },
+    "A5_verdict": {
+      "overall": "FAIL",
+      "per_form": {
+        "form_B_mma_case9_case4": "FAIL (DECISIVE) - slot level 128KB, chunk level 128KB, minimal-concurrent form 64KB but poisoned. This is the ONLY form where gap-1 has measured non-zero EV (iter25 ceiling -9.358%, M1 line 0.39x -> 0.4303x crossing lives here).",
+        "form_A_P2_case7": "PARTIAL on capacity (chunk level 64/64) BUT triple zero margin (L0B 64/64 + L0A 64/64 + L0C 128/128) and Q-reload forces MTE1 traffic x2 (4 L0A sides => 128KB FAIL); AND EV ~= 0 => DO NOT PURSUE",
+        "form_A_P1_case2_case5": "PARTIAL on capacity (slot level 64/64, pools already separate, phase depth 1) BUT EV never measured and these are not the M1/benchmark-representative shapes => DO NOT PURSUE"
+      },
+      "ev_relevance_evidence_this_round": "case7 is AIV-paced IN PRODUCTION (this round's own metrics, independent of iter25): AIV wall mean 837.33 us > AIC wall mean 836.45 us, and aiv_vec_time 648.99 us = 77.51% of aiv_time (critical block 664.26/856.41 = 77.56%). aiv_vec_time is IRREDUCIBLE REAL COMPUTE. Gap-1 is a pure C-side (AIC) reordering => it CANNOT touch case7's pacing pipe => EV structurally ~= 0. This independently reproduces iter25 4.1's conclusion.",
+      "hang_risk_for_the_two_capacity_passing_forms": "HIGH - NOT excludable by static audit. Precedent: #R10-1 bN=256 all forms aicore timeout (507014) HANG with 4 ROUNDS OF BALANCED STATIC TOKEN AUDITS (S10-3-2: 'static token audit balance cannot exclude this defect class - the verdict must come from a runtime variant matrix'). A-P2 chunk level carries all three high-risk features: (i) TRIPLE zero margin (S10-3-4: 'double-top zero-margin warning is necessary but not sufficient'); (ii) concurrent MTE1_M token streams doubled to 8/8 zero margin; (iii) lifting the shared-pool phase discipline introduces concurrent intra-phase L0B occupancy never validated in the production safety lineage.",
+      "final": "Gap-1 is vetoed by the L0B 64KB hard limit in the only form with measured non-zero EV (needs 128KB = 2.00x), triggering the pre-registered '>64KB => immediate NO-GO, no kernel needs to be written' rule. GAP-1 CLOSED. No kernel written."
+    }
+  },
+
+  "G1_work_elimination_probe": {
+    "design": {
+      "ablated_segments": {
+        "S1_C_FIX_write_w1": "fbm mha.py:1557; Form A :1104 -> AIC PIPE_FIX / aic_fixpipe_time",
+        "S2_C_FIX_write_w3": "fbm :1622 (colseg 0) + :1635 (colseg 1); Form A :1159 -> AIC PIPE_FIX",
+        "S3_V_MTE2_read_w1": "emit_v flat_v :507 (4-line stmt) -> AIV PIPE_MTE2 / aiv_mte2_time",
+        "S4_V_MTE2_read_w3": "emit_v flat_v :610 (4-line stmt) -> AIV PIPE_MTE2",
+        "S5_V_MTE3_write_w2": "emit_v flat_v :567 (4-line stmt) -> AIV PIPE_MTE3 / aiv_mte3_time",
+        "S6_C_MTE2_read_w2_to_p_l1": "fbm :1599; Form A :1139 -> AIC PIPE_MTE2 / aic_mte2_time"
+      },
+      "levels": {"W1": "S1+S2 (5 sites) - largest single item, case9 aic_fixpipe 337.57us = 40.1% of aic_time", "W2": "W1+S3+S4 (7 sites) - adds case9 aiv_mte2 213.32us = 25.3%", "W3": "W2+S5+S6 (10 sites) - ABSOLUTE work-elimination upper bound"},
+      "deliberately_NOT_ablated": "the final Output write (emit_v flat_v :634, also :453/:794) is NOT a workspace round trip and survives any single-domain restructure. The task book lists 'V-side MTE3 writes w2 / Output'; this round removes ONLY w2 and KEEPS Output. This makes the ceiling CONSERVATIVE (lower), hence a STRONGER falsification of the 2.3-3.4x claim. All compute, all UB<->UB moves, all L1<->L0 moves, and all GM Q/K/V reads are fully preserved.",
+      "token_accounting_JUSTIFIED_DEVIATION": "Task book asked for iter25's variant-Y paired deletion (delete the DMA AND its pipe-pair flag round). This round instead deletes ONLY the DMA statements and keeps EVERY set_flag/wait_flag/set_cross_flag/wait_cross_flag exactly in place. Reasons: (1) variant-Y's real purpose is to forbid the X-type illegal construction (delete wait, keep set) which iter25 measured to be 1.7-15.8% SLOWER because CrossCoreSetFlag<mode,PIPE> blocks until the PIPE drains; this round deletes NEITHER side of any pair, so the X pathology is structurally impossible. (2) Token balance is IDENTICAL TO PRODUCTION (1:1, ZERO dangling) versus iter24's '1 dangling' - generator asserts live-site counts equal production for all four flag families: wait_cross_flag 27/27, set_cross_flag 32/32, set_flag( 137/137, wait_flag( 137/137; IR confirms CrossCoreSetFlag 9->9, SetFlag 62->62 (case9) / 44->44 (case7), WaitFlag 53->53 / 35->35, all delta 0. (3) The CANN <=15 outstanding-sets constraint is UNCHANGED from production because no pairing is altered. (4) All six cross-core SEM pairs stay fully paired => cross-core HANG structurally impossible. (5) Measurement isolation is cleaner: deleting flag rounds too would also delete scalar instructions and re-wire M/FIX/V handoff order, conflating 'workspace work eliminated' with 'protocol simplified'. (6) A set_flag from a now-empty pipe drains immediately - that IS the physical meaning of 'this work no longer exists'; unlike variant X no WAITER was removed, so no pipe is left running deep.",
+      "loop_bound_safety": "num_fb / batch_iters / my_count / eff_kv_iters / total_flat are derived from scalar indices only and never read workspace DATA => removing payloads cannot create an unbounded loop (iter25 L3 argument reused)",
+      "rewrite_mechanism": "iter25's in-place single-line rewrite `if False: <stmt>  # GATE0C-WE <level> ablate <site>` => line count fixed at 1926, diff lines EXACTLY equal site count, no pass/empty-block needed. NEW this round: MULTI-LINE sites (the three 4-line V-side T.copy( calls) are handled by rewriting ONLY the opening `T.copy(` line to `if False: T.copy(`; the argument continuation lines and closing `)` then form the dead body (bracketed continuation is indentation-agnostic in Python) => line count still preserved, diff still 1 line per site. ast.parse OK on all three probes; IR verification proves the dead body is not emitted."
+    },
+    "probes": {
+      "mha_we_w1.py": {"md5": "783b32b6ad8a99f64b55f7d4644d3824", "sites": 5, "diff_lines": 5, "lines": 1926, "hang": false},
+      "mha_we_w2.py": {"md5": "08e9a359569342b5f35eef3a595ec9a8", "sites": 7, "diff_lines": 7, "lines": 1926, "hang": false},
+      "mha_we_w3.py": {"md5": "9d7800152b113e9e9dd06a265682f10d", "sites": 10, "diff_lines": 10, "lines": 1926, "hang": false},
+      "location": "perf_tuning/probe_gate0c_workelim/ (named mha_we_*.py, NEVER mha.py => no import shadowing; bench_we.py does sys.path.insert(0,_HERE))",
+      "numerical_status": "WRONG BY CONSTRUCTION. Timing-only. NEVER an acceptance basis, NEVER a baseline, NEVER committed."
+    },
+    "activation_confirmation": {
+      "rel_max_smoke_6of6_exit0_no_hang": {"w1_case9": 1.0, "w1_case7": 1.0, "w2_case9": 1.958984, "w2_case7": 2035.995, "w3_case9": 1.989258, "w3_case7": 1291.927, "note": "values differ run-to-run because workspace payloads are uninitialized/stale GM (torch.empty); non-determinism is EXPECTED for these probes. Same 'clearly wrong' band as iter24 (8.4e-01/5.9e-01) and iter25 (12.5-15.6). Used ONLY as activation proof, never as an acceptance basis."},
+      "IR_level_proof_STRONGER": {
+        "case9": {"copy_l0c_to_gm": "3 -> 0 (W1+) = S1+S2 fully gone (w1 x1 + w3 colseg x2)", "copy_gm_to_ub": "2 -> 2 -> 0 (W2+) = S3+S4", "copy_ub_to_gm": "2 -> 2 -> 1 (W3) = only the Output write remains, BY DESIGN", "copy_gm_to_l1": "4 -> 3 (W3), per-call attribution proves prod = {q_l1<-Q, k_l1<-K, v_l1<-V, p_l1<-workspace_2} and w3 = {q_l1<-Q, k_l1<-K, v_l1<-V} => the removed one is EXACTLY the w2 read, all three real input reads preserved", "Mmad": "4 -> 4 -> 4 -> 4 UNCHANGED", "copy_l1_to_l0a / copy_l1_to_l0b": "3/4 -> 3/4 UNCHANGED", "SetFlag/WaitFlag": "62/53 -> 62/53 UNCHANGED", "CrossCoreSetFlag": "9 -> 9 UNCHANGED", "workspace_N symbol refs": "25 -> 22 -> 20 -> 18"},
+        "case7": {"copy_l0c_to_gm": "2 -> 0 (Form A has no colseg split)", "copy_gm_to_ub": "2 -> 0", "copy_ub_to_gm": "2 -> 1", "copy_gm_to_l1": "4 -> 3", "Mmad": "2 -> 2", "SetFlag/WaitFlag": "44/35 -> 44/35", "CrossCoreSetFlag": "9 -> 9"}
+      },
+      "ablated_counters_zeroed_real_hw": {
+        "case9": {"aic_fixpipe_time_us": "336.71 -> 0.00 (-100%)", "aiv_mte2_time_us": "190.49 -> 0.00 (W3, -100%)", "aiv_mte3_time_us": "89.53 -> 18.67 (Output write residual)", "aic_mte2_time_us": "493.87 -> 435.99 (-57.88 = w2 read)", "L0C_to_GM_datas_KB": "22118.40 -> 0.00 (-100%)", "GM_to_UB_datas_KB": "11059.20 -> 0.00 (-100%)", "UB_to_GM_datas_KB": "2662.40 -> 819.20 (-69.23%)", "GM_to_L1_datas_KB": "64307.20 -> 60620.80 (-5.73% = exactly the w2 traffic)", "aic_main_mem_write_bw_GBps": "24.1136 -> 0.1323 (-99.45%)", "aiv_mte2_instructions": "922.6 -> 1.0 (-99.89%)", "aic_mte2_instructions": "1486.8 -> 1026.0 (-30.99%)"},
+        "case7": {"aic_fixpipe_time_us": "301.45 -> 0.00 (-100%)", "aiv_mte2_time_us": "214.40 -> 0.00 (W3)", "aiv_mte3_time_us": "98.37 -> 21.83", "aic_mte2_time_us": "465.31 -> 333.26 (-132.05)", "L0C_to_GM_datas_KB": "29491.20 -> 0.00 (-100%)", "GM_to_UB_datas_KB": "14745.60 -> 0.00 (-100%)", "UB_to_GM_datas_KB": "4505.60 -> 819.20 (-81.82%)", "GM_to_L1_datas_KB": "38502.40 -> 31129.60 (-19.15%)", "aic_mte1_instructions": "10239.6 -> 10239.6 (delta 0.0000)"}
+      },
+      "non_ablated_counters_ZERO_CHANGE": {
+        "aiv_vec_time_case9_us": "468.58 / 468.58 / 468.58 across prod/w1/w3 = BIT-IDENTICAL IN ALL THREE ARMS (iter25's golden standard REPRODUCED)",
+        "aiv_vec_time_case7_us": "648.9918 -> 648.9883 (W1, delta -0.0035 us = -0.00% = bit-identical); W3 645.61 (-3.38 us = -0.52% mean, critical block -1.30 = -0.20%) - HONESTLY FLAGGED as a small non-perfect deviation; IR proves NO compute instruction was removed (Mmad 2->2) and the critical-block delta is only -0.20%, so this is read as cross-arm block scheduling/sampling variation (prod critical block 11/19, w3 block 6), not a real compute change. Does not affect the conclusion direction (it makes w3's AIV FASTER while wall is still SLOWER).",
+        "aic_cube_time_us": "case9 191.00/191.02/191.02 (+0.02, noise); case7 167.00/166.97/166.82",
+        "aic_mte1_instructions": "case9 16079.8 delta 0.0000; case7 10239.6 delta 0.0000",
+        "aic_mte3_instructions_case9": "1.0 -> 1.0 delta 0.0000",
+        "L1_to_GM_datas_KB_case9": "490.8 -> 490.8 delta 0.0000"
+      },
+      "issue_equivalent_single_plus_2xdual": {
+        "case9_AIC": "prod 20.28+2x56.28 = 132.84 (BYTE-MATCHES iter25's reported 132.84 => caliber aligned); w1 124.51; w3 121.85 (delta -10.99 = -8.3%)",
+        "case9_AIV": "prod 150.42; w1 150.46; w3 144.61 (-5.81)",
+        "case7_AIC": "prod 62.94; w1 59.98; w3 58.53 (-4.41)",
+        "case7_AIV": "prod 91.06; w1 91.08; w3 87.80 (-3.26)",
+        "interpretation": "issue equivalent DECREASES modestly (fewer DMA-descriptor scalar instructions), direction consistent with the work removed. So there is NO 'wall got slower because instruction count went up' confound - quite the opposite: FEWER instructions, LOWER issue equivalent, BIT-IDENTICAL real compute, and the wall is STILL SLOWER (W2/W3). This makes the B.4-c mechanism the only self-consistent reading."
+      },
+      "zero_pollution_criterion_NOT_APPLICABLE": "Per the task book, this round ablates REAL WORK ITEMS, so iter25's 'zero pollution' criterion does not apply. It is replaced by the three-part pollution ledger (WE-1): ablated items must zero out, non-ablated items must not move, and issue equivalent must move in the consistent direction. All three verified above."
+    },
+    "wall_AB": {
+      "case9": {
+        "prod_medians_us": [868.130, 871.810, 868.690], "prod_mean_us": 869.543, "prod_range_us": 3.680,
+        "w1": {"medians": [862.230, 866.450, 864.350], "mean": 864.343, "paired_diffs": [-5.90, -5.36, -4.34], "mean_diff_us": -5.200, "pct": -0.598, "sd": 0.792, "sem": 0.457, "t_df2": -11.369, "p": 0.00765, "ci95_pct": [-0.824, -0.372], "recovered_us": 5.200},
+        "w2": {"medians": [874.810, 874.230, 874.800], "mean": 874.613, "paired_diffs": [6.68, 2.42, 6.11], "mean_diff_us": 5.070, "pct": 0.583, "sd": 2.313, "sem": 1.335, "t_df2": 3.797, "p": 0.0629, "ci95_pct": [-0.078, 1.244], "recovered_us": -5.070},
+        "w3": {"medians": [871.790, 875.150, 870.560], "mean": 872.500, "paired_diffs": [3.66, 3.34, 1.87], "mean_diff_us": 2.957, "pct": 0.340, "sd": 0.955, "sem": 0.551, "t_df2": 5.365, "p": 0.0330, "ci95_pct": [0.067, 0.613], "recovered_us": -2.957}
+      },
+      "case7": {
+        "prod_medians_us": [856.130, 856.960, 856.960], "prod_mean_us": 856.683, "prod_range_us": 0.830,
+        "w1": {"medians": [856.310, 857.490, 855.180], "mean": 856.327, "paired_diffs": [0.18, 0.53, -1.78], "mean_diff_us": -0.357, "pct": -0.042, "sd": 1.245, "sem": 0.719, "t_df2": -0.496, "p": 0.669, "ci95_pct": [-0.403, 0.319], "recovered_us": 0.357, "note": "p=0.669 NOT SIGNIFICANT - statistically indistinguishable from zero"},
+        "w2": {"medians": [864.320, 866.230, 863.990], "mean": 864.847, "paired_diffs": [8.19, 9.27, 7.03], "mean_diff_us": 8.163, "pct": 0.953, "sd": 1.120, "sem": 0.647, "t_df2": 12.622, "p": 0.00622, "ci95_pct": [0.628, 1.278], "recovered_us": -8.163},
+        "w3": {"medians": [863.800, 864.950, 865.470], "mean": 864.740, "paired_diffs": [7.67, 7.99, 8.51], "mean_diff_us": 8.057, "pct": 0.940, "sd": 0.424, "sem": 0.245, "t_df2": 32.916, "p": 0.000922, "ci95_pct": [0.818, 1.063], "recovered_us": -8.057}
+      },
+      "reading": "W1 is the ONLY arm with a positive return and its magnitude is negligible: case9 -0.598% (significant p=0.0077 but only 1/5 of the 3% adoption gate); case7 -0.042% (p=0.669, indistinguishable from zero). W3 = the ABSOLUTE work-elimination upper bound is SIGNIFICANTLY WORSE on BOTH cases (case9 +0.340% p=0.033 CI entirely positive; case7 +0.940% p=0.00092 CI entirely positive). I.e. eliminating ALL SIX workspace round-trip work items makes the kernel SLOWER. The three levels are NON-MONOTONIC (W1 < prod < W3 ~= W2) => there is no 'the more you eliminate the faster' trend; the work-elimination direction is itself ineffective."
+    },
+    "absorption_law": {
+      "conversion_rates": {
+        "case9_W1": {"eliminated_pipe_busy_us": 336.71, "recovered_wall_us": 5.200, "conversion_pct": 1.54, "absorption_pct": 98.46, "overestimate_x": 64.8},
+        "case9_W2": {"eliminated_pipe_busy_us": 304.33, "recovered_wall_us": -5.070, "conversion_pct": -1.67, "note": "NEGATIVE"},
+        "case9_W3": {"eliminated_pipe_busy_us": 655.94, "breakdown": "FIX 336.71 + V-MTE2 190.49 + V-MTE3 70.86 + C-MTE2 57.88", "recovered_wall_us": -2.957, "conversion_pct": -0.45, "note": "NEGATIVE"},
+        "case7_W1": {"eliminated_pipe_busy_us": 301.45, "recovered_wall_us": 0.357, "conversion_pct": 0.12, "absorption_pct": 99.88, "overestimate_x": 844.4},
+        "case7_W2": {"eliminated_pipe_busy_us": 274.81, "recovered_wall_us": -8.163, "conversion_pct": -2.97, "note": "NEGATIVE"},
+        "case7_W3": {"eliminated_pipe_busy_us": 724.44, "breakdown": "FIX 301.45 + V-MTE2 214.40 + V-MTE3 76.54 + C-MTE2 132.05", "recovered_wall_us": -8.057, "conversion_pct": -1.11, "note": "NEGATIVE"}
+      },
+      "contrast_iter25_latency_side": "case9 exposed cross-core wait 760.59 -> recovered 81.31 = 10.69% conversion (9.35x overestimate); case7 783.32 -> 115.08 = 14.69% (6.81x overestimate)",
+      "methodological_conclusion": "WORK-ELIMINATION absorption is roughly AN ORDER OF MAGNITUDE harsher than LATENCY elimination: 10.69%/14.69% conversion (6.8-9.4x overestimate) on the latency side versus 1.54%/0.12% conversion (64.8x/844x overestimate) on the work side, and NEGATIVE at full elimination. Any EV estimate based on summing pipe-busy durations carries TWO orders of magnitude of inflation; a 'X% of aic_time' figure constitutes NO EV argument whatsoever.",
+      "wait_migration_targets": {
+        "case9_prod_to_w3_us": {"aic_scalar_wait_id2 (C waits SEM2 = w2/P ready)": "213.65 -> 251.66 (+38.01)", "aiv_scalar_wait_id4 (V waits SEM4 = w3 ready)": "242.60 -> 257.06 (+14.46)", "aiv_scalar_wait_id0 (V waits SEM0 = w1 ready)": "304.17 -> 315.01 (+10.84)", "aic_scalar_wait_id5 (C waits SEM5 = w3 consumed)": "2.97 -> 15.24 (+12.27)", "aic_scalar_wait_id1": "5.83 -> 8.62 (+2.79)", "TOTAL cross-core exposed wait increase": "+78.37", "aic_scalar_mte1_stall": "537.28 -> 497.84 (-39.44)", "aiv_scalar_wait_time": "127.38 -> 92.96 (-34.42)", "aiv_vec_time (anchor)": "468.58 -> 468.58 (0.0000)"},
+        "case7_prod_to_w3_us": {"aic_scalar_wait_id5": "5.94 -> 31.97 (+26.03, +438%)", "aic_scalar_wait_id2": "539.77 -> 543.72 (+3.95)", "aiv_scalar_wait_id0": "65.76 -> 86.30 (+20.54)", "aic_scalar_mte1_stall": "201.67 -> 165.41 (-36.26)"},
+        "interpretation": "The eliminated ~656/724 us of pipe-busy time migrates ALMOST ENTIRELY into cross-core exposed waits (+78.37 us on case9), the remainder absorbed by intra-core stall redistribution. This is the SAME absorption channel iter25 identified (then: aiv_wait_id3 +92104%, aic_wait_id1 +1918.8%). => Work elimination and latency elimination attack THE SAME quantity: exposed waiting."
+      },
+      "ROOT_CAUSE_why_W2_W3_are_slower": {
+        "statement": "The CV-over-GM workspace round trip is PHYSICALLY AN L2 ROUND TRIP, NOT A DRAM ROUND TRIP; the write side provides L2 locality for the read side.",
+        "evidence": {"aic_write_hit_rate_pct": "98.2629 in production (hit 43469.8 / miss_allocate 768.0) => 98.26% of workspace writes hit L2 and NEVER go to DRAM", "aiv_read_hit_rate_pct": "99.9989 in production, with aiv_r0_read_cache_miss_allocate = 0.55 (essentially zero) => V reads w1/w3 ENTIRELY from L2", "after_removing_C_writes_W1": "aiv_r0_read_cache_miss_allocate 0.55 -> 973.70 (+176936%, x1770); aiv_read_hit_rate 99.9989% -> 97.7979% (-2.20pp); case7 aiv_mte2_time 214.40 -> 241.04 (+12.42%); case7 aiv_mte2_active_bw 65.5889 -> 58.3681 GB/s (-11.01%)"},
+        "causal_chain": [
+          "W1 (delete writes only): V still reads w1/w3 but those lines are no longer pre-warmed into L2 by C => V's reads fall from 99.9989% L2 hit to 97.80%, miss count x1770, achieved bandwidth -11.01%, aiv_mte2_time +12.42%. The saved C-side FIX time is eaten back (and then some) by V's slower MTE2 => net case9 -0.598%, case7 -0.042% (ns).",
+          "W2 (asymmetric): case9 w2 still reads on the w2 path while the writes are gone, so the cold-read cost is retained => +0.583% / +0.953% degradation.",
+          "W3 (all six gone): the cold-read cost disappears (reads gone too), but the DMA INTERLEAVING THAT PROVIDED THE C<->V RHYTHM INTERLOCK disappears with it, so the ring degenerates into pure-latency ping-pong => cross-core exposed waits +78.37 us (case9) => +0.340% / +0.940% degradation."
+        ],
+        "explains_two_previously_unattributed_iter25_facts": "(a) why the byte side was definitively non-binding (71-81% bandwidth margin) - the workspace traffic was never DRAM traffic; (b) why session-10's claimed 'save 1032 MB / 46% of L2 traffic' is worth ~0 - L2 traffic is not the constraint, and removing it does not reduce DRAM traffic (there was almost none: aic_r0_read_cache_miss_allocate moved only -0.15% while 37.8 MB was removed)."
+      },
+      "byte_side_third_pincer": "iter24 cut L2 misses -34.76% -> wall +0.288% (ns). iter25 changed bytes by delta 0.0000 -> wall -9.358%. THIS ROUND removed 37.8 MB (case9) / 54.0 MB (case7) of GM traffic while aic_r0_read_cache_miss_allocate moved only -0.15% -> wall +0.340% / +0.940% (WORSE). The byte/bandwidth side is now pinched shut from THREE independent directions."
+    },
+    "additivity_argument_B5": {
+      "verdict": "NOT ADDITIVE. Combined ceiling = max(latency, work) = latency side = 1.1032x (case9) / 1.1551x (case7).",
+      "reasons": [
+        "1 (MEASURED) Both attack the same quantity. iter25 already proved gap-1 (C-side interleave) and gap-3 (CV-over-GM elimination) attack THE SAME quantity - exposed cross-core waits - hence non-additive. This round measured directly that after eliminating 656/724 us of WORK, the increase lands exactly on cross-core exposed waits (case9 wait_id2 +38.01, wait_id4 +14.46, wait_id0 +10.84, wait_id5 +12.27 = +78.37 us). Work elimination opens NO new benefit channel; it merely converts pipe-busy time into the same batch of SEM waits => same source as the latency side => not additive.",
+        "2 (MEASURED) The work-elimination component is itself ~1.00x, so adding it changes nothing: case9 1.0060x, case7 1.0004x (p=0.669 ns). Even under an (incorrect) multiplicative combination, case9 would be 1.1032 x 1.0060 = 1.1099x, only 0.6% above 1.1032x - far inside measurement resolving power and attainment uncertainty. Its contribution to the combined ceiling is negligible.",
+        "3 (MEASURED) The absolute-upper-bound arm is NEGATIVE: W3 = all six segments gone = the absolute work-elimination bound reads +0.340% / +0.940% degradation (p=0.033 / p=0.00092, CIs entirely positive). Adding a NEGATIVE component to the latency side is meaningless; the correct combination is max().",
+        "4 (INFERENCE, flagged) Physical bound: wall is set by the pacing pipe's (real work + exposed waits). case9's real-work anchors aiv_vec_time 468.58 us / aic_cube_time 191.00 us are BIT-IDENTICAL in all three arms; case7's aiv_vec_time 648.99 us = 77.51% of AIV wall is likewise unchanged. ANY restructure that does not touch real compute (including the 'eliminate the ws round trip' part of a full single-domain rewrite) has as its ceiling 'exposed waits -> 0', i.e. iter25's already-nailed 1.10x/1.16x. To exceed that bound a single-domain rewrite would have to REDUCE aiv_vec_time / aic_cube_time themselves - an ALGORITHMIC change (altering the softmax/PV computation volume), which is NOT the 'work-elimination component' this round bounds, and which this round's data shows is the irreducible pacing item for case7."
+      ]
+    },
+    "B6_plan_C_total_ceiling_and_verdict": {
+      "components": {"handoff_LATENCY_side_iter25_L3_absolute": {"case9": "-9.358% = 1.1032x", "case7": "-13.426% = 1.1551x"}, "WORK_elimination_side_best_arm_W1": {"case9": "-0.598% = 1.0060x", "case7": "-0.042% = 1.0004x (ns)"}, "WORK_elimination_side_absolute_bound_W3": {"case9": "+0.340% = 0.9966x (WORSE)", "case7": "+0.940% = 0.9907x (WORSE)"}, "byte_bandwidth_side": "~0 (non-binding, three-way pincer)"},
+      "plan_C_total_ceiling": {"case9": "1.10x", "case7": "1.16x", "combination_rule": "max, NOT sum (B.5)"},
+      "session10_claim_A_layer_2.3_to_3.4x": {
+        "verdict": "FALSIFIED (not merely 'insufficient evidence')",
+        "required_vs_available": {"case9": {"2.3x needs wall": -56.5, "3.4x needs wall": -70.6, "measured total ceiling": -9.358, "coverage_of_2.3x_pct": 16.6, "coverage_of_3.4x_pct": 13.3}, "case7": {"2.3x needs wall": -56.5, "3.4x needs wall": -70.6, "measured total ceiling": -13.426, "coverage_of_2.3x_pct": 23.8, "coverage_of_3.4x_pct": 19.0}},
+        "gap_factor": "claim vs measurement differs by 4.2x - 6.0x",
+        "why_falsified_not_undetermined": [
+          "The claim's ONLY possible source has been directly measured and found to be zero. iter25 stated: 'Plan C's handoff-latency component is nailed at 1.10x/1.15x; if 2.3-3.4x holds, its source can only be the work-elimination component.' This round measured exactly that component => 1.0060x / 1.0004x (ns), with the absolute-bound arm NEGATIVE. The only component that could have supported the claim measures zero.",
+          "MECHANISTIC falsification (stronger than the numbers): B.4-c proves the workspace round trip is L2-MEDIATED (write hit 98.26%, read hit 99.9989%, miss count 0.55). The claim's premise - 'CV-over-GM is an expensive DRAM round trip whose elimination saves 1032 MB and yields multi-x speedup' - is PHYSICALLY FALSE: those bytes almost never reach DRAM, and eliminating them neither reduces DRAM traffic (L2 read miss moved only -0.15%) nor reduces wall (it increases it, +0.340%/+0.940%)."
+        ],
+        "honest_boundary": "What is refuted is the component 'eliminate the CV-over-GM workspace round trip while keeping real compute unchanged'. NOT refuted: an ALGORITHMIC restructure that reduces aiv_vec_time / aic_cube_time themselves - but that is not what Plan C's 'A-layer virtual channel / single-domain flash' thesis refers to, and case7's VEC has already been judged the irreducible pacing item by iter25. That direction is UNMEASURED."
+      }
+    }
+  },
+
+  "final_EV_map_closure": {
+    "gap_1_C_side_interleave": {"ceiling": "case9 -9.358% / case7 -13.426% (latency side, same quantity as gap-3, non-additive)", "feasibility": "Form B-mma L0B needs 128KB = 2.00x the 64KB hard limit; A-P2 chunk level passes capacity but triple zero margin and EV~=0; A-P1 passes but EV unmeasured", "verdict": "CLOSED (GATE A FAIL this round)", "basis": "A.1/A.2/A.3 IR-measured budgets + A.4 compile probe + isomorphic to session-10's bN upper-bound theorem; triggers iter25's pre-registered '>64KB => immediate NO-GO, no kernel needs to be written'"},
+    "gap_3_latency_side": {"ceiling": "<= -9.358% / <= -13.426% = 1.10x / 1.16x", "feasibility": "requires framework-level / A5-level cross-project investment", "verdict": "NO-GO", "basis": "iter25 5.2 (framework capital for at most the same ceiling as in-rule gap-1); AND gap-1 is now CLOSED this round => that ceiling has NO achievable in-rule path at all"},
+    "gap_3_work_elimination_side": {"ceiling": "-0.598% = 1.0060x (case9) / -0.042% = 1.0004x ns (case7); absolute bound W3 = +0.340%/+0.940% WORSE", "feasibility": "technically expressible (this round's probes ARE the construction) but NO benefit", "verdict": "CLOSED (G1 measured to zero this round)", "basis": "B.3 wall A/B (24 runs, SEM 0.245-1.335 us) + B.4 conversion 1.54%/0.12% (64.8x/844x overestimate) + B.4-c L2-mediation root cause"},
+    "byte_bandwidth_side": {"ceiling": "~0", "verdict": "CLOSED (three-way pincer)", "basis": "iter24 (L2 miss -34.76% -> wall +0.288% ns) + iter25 (bytes delta 0.0000 -> wall -9.358%; bandwidth margin 71-81%; 6-digit ratio identity) + THIS ROUND (37.8/54.0 MB removed -> wall WORSE; L2 read miss only -0.15%)"},
+    "GATE_2_q_l1_double_buffer": {"ceiling": "<= +0.33% (case9 p=0.177 ns) / case7 significant degradation", "verdict": "CLOSED", "basis": "iter24"},
+    "GATE_1_unit_flag": {"verdict": "CLOSED", "basis": "iter24 (object no longer exists)"},
+    "path_2_bN256": {"verdict": "PERMANENT IN-RULE BAN", "basis": "session-10 hardware hard-limit theorem + dual poison mechanism; all forms aicore timeout 507014 HANG"},
+    "kv_L1_double_buffer_V_wide_channel_CROSS_INTERVAL_R5_3": {"verdict": "CLOSED", "basis": "five-ring falsification chain / r9-1 degradation / r3-4 falsified / non-deterministic corruption undecided"},
+    "reduce_real_compute_algorithmic": {"ceiling": "UNMEASURED", "feasibility": "NOT EVALUATED", "verdict": "the ONLY direction not closed this round, but OUTSIDE Plan C's thesis", "basis": "all three arms have bit-identical aiv_vec_time (case9 468.58/468.58/468.58) => every restructure that does not change real compute is bounded by exposed-waits->0 = 1.10x/1.16x"}
+  },
+
+  "closure_declaration": {
+    "in_rule_levers": "EXHAUSTED. The only open non-zero-ceiling lever before this round was gap-1; GATE A proved via IR-measured budgets that it needs 128KB L0B = 2.00x the hard limit in the only EV-bearing form (Form B-mma / case9), triggering the pre-registered NO-GO rule => CLOSED WITHOUT WRITING A KERNEL. All other in-rule levers were closed in iter24/25 and sessions 8/9/10.",
+    "architecture_level_plan_C": "NOT WORTH PROJECTIZING. Both components are now measured - latency side 1.10x/1.16x (iter25), work-elimination side 1.0060x/1.0004x (this round, absolute-bound arm negative); they attack the same quantity and are non-additive, so the combined ceiling is 1.10x/1.16x. Paying framework-level / A5-level cross-project capital for AT MOST 1.10x/1.16x, with NO measured lower bound on the capture rate (iter25 6.3), does not stand. Session-10's 'A-layer 2.3-3.4x' is FALSIFIED (4.2-6.0x discrepancy, its only possible source measured to zero, and its physical premise refuted by L2 hit rates of 98.26%/99.9989%).",
+    "case9_M1_line": "case9's M1 line 0.4 is recorded as UNREACHABLE by either in-rule or architecture-level HANDOFF rework: current 0.39x, full latency-side ceiling would give 0.4303x (crossing), but that ceiling has NO feasible implementation path (gap-1 L0B over limit, gap-3 needs framework capital)."
+  },
+
+  "closing_recommendation": {
+    "recommendation": "SET SUCCESS AND CLOSE",
+    "task_book_criterion_matched": "D-bullet-1: 'if GATE A FAIL and G1 ceiling is small => recommend setting SUCCESS to close'. GATE A = FAIL (decisive form L0B 2.00x over limit); G1 ceiling = 1.0060x / 1.0004x (small, absolute-bound arm negative).",
+    "actions": [
+      "1. DO NOT initiate any design rollback: GATE A FAIL => no need for the Orchestrator to task the analyst with lifting DESIGN 8.6-10. That shared-pool phase discipline should be RE-CLASSIFIED from 'a constraint awaiting lifting' to 'a structural necessary condition FORCED BY the L0B 64KB hard limit' (this round's IR measurement: all four implementations at L0B 100% top, InitBuffer(ascend_l0b, 65536) byte-identical).",
+      "2. DO NOT projectize Plan C: B.6 gives a falsification-grade verdict. Any future architecture-level discussion should be PRECONDITIONED on an algorithmic argument that reduces aiv_vec_time / aic_cube_time themselves, NOT on any handoff/channel rework - this round's bit-identical VEC/CUBE across all three arms caps the latter at 1.10x/1.16x.",
+      "3. DO NOT relax the 3% adoption gate: no candidate reached 1/5 of the gate (best -0.598%) and the absolute-bound arm degraded significantly. There is NO 'crossed M1 but below the adoption gate' boundary case needing Orchestrator/user adjudication (unlike iter25).",
+      "4. PRODUCTION UNCHANGED: mha.py md5 dda3ad0877ba4df74bbd559f6912eeed / 1926 lines / ast.parse OK, multi-point verified UNCHANGED. NO ROLLBACK NEEDED (never written). The three probes are deliberately-wrong one-shot measurement assets: DO NOT ADOPT / DO NOT BASELINE / DO NOT COMMIT; retained under probe_gate0c_workelim/ for traceability.",
+      "5. LAND this round's three new hard facts (see F.2-c): L2-mediation of the workspace round trip; the order-of-magnitude harsher absorption law on the work-elimination side; the IR-measured method for proving L0B top-out."
+    ]
+  },
+
+  "measurement_gaps": [
+    "G1 32-COLUMN L0B fractal legality NOT MEASURED: A.4 tested only 64 columns ([2,64,128] / [2,128,64]). The A-P1 chunk-level form (KC=NC=32 => [2,32,128] / [2,128,32]) legality is UNKNOWN.",
+    "G2 NO INTERLEAVE FORM WAS EVER COMPILED: GATE A was a static audit plus one minimal L0B shape probe; no actual interleaved kernel was constructed (per the task book's zero-compile-zero-run scope and the '>64KB => no kernel needs to be written' rule). So A-P2 / A-P1 'capacity passes' DOES NOT mean 'implementable' - the scoping blind-spot lesson (S10-3-4) states slot-capacity legality does not validate orchestration legality.",
+    "G3 No measured lower bound on the W1/W2/W3 capture rate (same as iter25's latency-side declaration). Immaterial to the decision since the best arm is only -0.598%.",
+    "G4 G1 was NOT measured on shapes other than case9/case7 (task book requires both and forbids mixing/extrapolation; complied). The work-elimination response of the other 18 cases is UNMEASURED.",
+    "G5 Whether codegen fully eliminates the FIX pipe after aic_fixpipe_time reads 0.00 was not verified instruction-by-instruction (immaterial to the conclusion).",
+    "G6 rel_max is non-deterministic (probes read uninitialized/stale GM, 1.0 - 2.0e3 across runs). This is probe nature, not a defect; activation confirmation rests on the stronger IR-level diff (B.2-b), with rel_max as corroboration only.",
+    "G7 case7 W3's aiv_vec_time deviates by -0.52% (mean) / -0.20% (critical block) instead of being bit-identical; not further localized. IR proves no compute instruction was removed. Does not affect conclusion direction."
+  ],
+
+  "environment_errors": {
+    "verdict": "NONE affecting any measurement",
+    "tooling_issues_self_caught_and_fixed": [
+      "A.4 run 1: AttributeError 'function' object has no attribute 'get_kernel_source' - tilelang.jit decorates a FACTORY (mha.py:177 mha_kernel(...) -> main idiom); fixed by calling make(specs)().",
+      "A.4 run 2: KeyError '\\n    tilelang' - str.format collided with the PASS_CONFIGS dict literal braces; fixed by @@TOKEN@@ substitution.",
+      "A.4 run 3 / IR verify: OSError 'could not get source code' and DiagnosticError 'Expect the for loop to be one of ... T.serial/T.grid/...' - (a) tilelang.jit needs inspect.getsource on the decorated function, impossible for exec'd code; (b) TVMScript rejects plain Python for-loops inside a prim_func body. Fixed by (a) writing generated source to a real .py file and importing it via importlib (also yields auditable artifacts a4_src_*.py) and (b) HAND-UNROLLING the pool list into explicit statements.",
+      "ab_cmp.py reported ONE false **VIOLATION**: I registered the SAME regex copy_gm_to_l1< in BOTH the INVARIANT dict (meaning K/V/Q reads) and the EXPECTED_DROP dict (meaning the w2 read), so the invariant check flagged the legitimate w2 elimination. TOOLING CLASSIFIER DEFECT, NOT A PROBE DEFECT. Resolved by per-call attribution (B.2-b): prod's 4 calls = Q/K/V/workspace_2, w3's 3 = Q/K/V, so the removed one is exactly the w2 read. The 'violation' does not stand."
+    ],
+    "no_data_discarded": "All 24 wall runs, 8 metrics arms, 6 smokes, 8 IR compiles and 4 A.4 compiles completed with exit 0. Zero HANG, zero timeout, zero discarded arm.",
+    "iteration_exemption": "NOT REQUESTED - this round consumed iteration_index=26 normally."
+  },
+
+  "discipline_compliance": {
+    "1_msprof_sole_basis_camodel_never_run": "PASS - 24 wall + 8 metrics all msprof; camodel zero invocations",
+    "2_cache_isolation": "PASS - 5 dedicated dirs under /tmp/opencode/gate0c_i26/; /home/developer/.tilelang/cache never used",
+    "3_no_mha_py_modification_probes_isolated_and_not_named_mha_py_multipoint_md5": "PASS - md5 multi-point UNCHANGED; probes named mha_we_{w1,w2,w3}.py under probe_gate0c_workelim/",
+    "4_no_predictive_veto_unmeasured_flagged": "PASS - A.4 MEASURED rather than assumed as the task book required; 7 unmeasured items listed in measurement_gaps",
+    "5_no_orchestrator_state_access": "PASS - never read, never written",
+    "6_probe_values_deliberately_wrong": "PASS - rel_max used ONLY for activation; bench_we.py prints NUMERICALLY-WRONG-EXPECTED + DO NOT adopt/baseline/commit at every run; adopted=false; no adoption-type baseline written",
+    "7_AGENTS_md_six_core_principles": "PASS - honest reporting (E-section split into fact/inference/unverified); verify-before-concluding (three independent chains: IR + counters + wall); fact vs inference vs recommendation separated; minimal necessary change (production untouched, all iter24/25 tooling reused)",
+    "8_forbidden_touch_list": "PASS - DESIGN 8.6-10 statically audited only, NOT implemented; bN=256, k/v L1 double buffer, V wide channel, CROSS_INTERVAL (still 1), #R5-3, GATE 2 q_l1 double buffer all untouched",
+    "9_hang_protection": "PASS - timeout -k 10 on every run; progressive deepening W1->W2->W3; smoke-verified 6/6 no-HANG BEFORE any timing run; stdbuf -oL -eL + python3 -u line-buffered stdout to disk (corrects iter25's l2c9/l2c7 SIGKILL-discarded-stdout lesson)"
+  },
+
+  "methodology_assets": {
+    "new_chapter_work_elimination_probes_7_rules": ["WE-1 three-part pollution ledger replaces the zero-pollution criterion", "WE-2 IR-level instruction-inventory diff with PER-CALL ATTRIBUTION is mandatory and stronger than rel_max", "WE-3 strongest token balance is 'change none' - keep every flag round, assert live-site counts equal production", "WE-4 multi-line T.copy( can be ablated in place by rewriting only the opening line", "WE-5 work-elimination absorption is ~an order of magnitude harsher than latency; never use pipe-share percentages as EV arguments", "WE-6 MUST check whether an eliminated write was providing cache locality to a neighbouring read (reverse failure mode unique to this probe class)", "WE-7 conservative scoping choices make a falsification STRONGER"],
+    "additions_to_iter25_general_rules_3": ["G-7 static budget gates must use IR-MEASURED readouts, not source-declaration inference (aliasing is only decidable from GetWithOffset site counts)", "G-8 compile-only probes are the right tool for legality questions but MUST carry a positive control plus codegen evidence of materialization", "G-9 static audit has a definite decision power boundary: over-limit => may NO-GO directly (sufficient); within-limit => NOT sufficient to GO (orchestration legality and HANG only decidable by a runtime variant matrix)"],
+    "three_new_hard_facts_for_skill_or_DESIGN": ["MHA's CV-over-GM workspace round trip is physically an L2 round trip (C write hit 98.26%, V read hit 99.9989%, miss count 0.55) => 'save 1032 MB / 46% L2 traffic' claims are worth ~0, and the WRITE SIDE CANNOT BE REMOVED ALONE (cold-starts the read side: miss x1770, achieved bandwidth -11.01%)", "L0B 64KB is at 100% top in EVERY form of this kernel (InitBuffer(ascend_l0b, 65536) byte-identical across four implementations) => any orchestration that increases concurrent in-flight B-operand volume (GEMM phase interleaving, bN enlargement, deeper K-split) is A PRIORI infeasible in-rule and should be rejected at design time without entering implementation", "DESIGN 8.6-10 shared-pool phase discipline should be RE-CLASSIFIED as a structural necessary condition forced by the L0B 64KB hard limit, not a tunable orchestration constraint (lifting it doubles in-flight B-operand volume to 128KB)"]
+  },
+
+  "perf_log_appended": true,
+  "verdict_document": "perf_tuning/gate0c_verdict_iter26.md",
+  "archive": {
+    "probes": "perf_tuning/probe_gate0c_workelim/ (3 probes + bench_we.py + probe_a4_l0b_mixed_shape.py)",
+    "measurements": "perf_tuning/msprof_gate0c_iter26/ ~1.2MB / 134+ files: wall/ 24 JSON, metrics/ 8 arms x (8 CSV + run.log), analysis/{out_ab_stats.txt, ab_stats.json, out_attrib.txt, out_absorption.txt, ir_verify.log, ir_dump/ 8 generated C++, a4_all.log + a4_src_*.py + a4_*.cc, smoke/ 6 logs, driver logs}, tooling/{make_probe_workelim.py, verify_ir_workelim.py, ab_stats.py, absorption.py, drive_wall_ab.sh, drive_metrics.sh, run_ab.sh, run_metrics.sh, ab_cmp.py, attrib.py, dump_pipes.py}",
+    "scratch": "/tmp/opencode/gate0c_i26/ (raw OPPROF/PROF trees, 5 isolated caches, all run logs) - not committed, per repo convention"
+  }
+}

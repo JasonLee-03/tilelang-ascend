@@ -1,0 +1,37 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r5-2-rolledback", "perf_session": 5,
+  "note": "#R5-3 (same-(b,h) K/V L1 residency) ROLLED BACK - precision gate hard failure. Terminal state restored to the #R5-1 adopted state, md5 3d56c5dd3d8a60d26eed7ade2e404a2b (1086 lines) = history_version/mha_impl_r3_perf10.py == r3_perf12.py.",
+  "bottleneck_type": "transfer (post-#R5-1 the largest real-work pipe on either core is C-side MTE2 = 3.961us = 50.0% of C wall; single biggest segment 3050.8ns = Q1,K1,Q2,K2 back-to-back, of which K2/V2 are provably byte-identical re-reads - GM src 0x11351c00 / 0x11391e00 identical across task1 and task2 on core0)",
+  "optimization": "runtime guard `T.And(task > my_start, bx != 0)` around the batched Form A GEMM1 K load and GEMM2 V load (bx != 0 <=> task-1 is in the same (bz,by) group because task//s_blocks == bz*N+by); SIG_K_L1/SIG_V_L1 wait+set kept OUTSIDE the guard so token accounting is untouched",
+  "precision_gate": "FAIL - non-deterministic data corruption (probe 6/6 first changed-path shapes DIFF vs #R5-1, max|d| 3.1e-01~4.5e+00, golden matched down to 0.376; 3/64 vs 24/64 bad (b,n) slices on the identical input across two runs; bad set includes slices with NO skip slot)",
+  "falsification_evidence_chain": [
+    "1. probe_r53 FAIL on 6/6 first changed-path shapes; PART 0 static slot audit had already proven coverage was adequate (1455 slots: SKIP=923, LOAD-bx0=220, LOAD-first=312 of which 14/17 shapes hit the LOAD-BEARING task==my_start && bx!=0 case, SKIP-xbatch=36)",
+    "2. corruption is non-deterministic => race, not predicate logic",
+    "3. DECISIVE: an always-true runtime guard (`task >= my_start`, identical code shape and flag placement) is 3/3 BITEXACT vs #R5-1 => the 'runtime-if around a GM->L1 copy with wait/set outside' mechanism is SOUND; only actually eliding the DMA breaks",
+    "4. predicate verified correct by hand AND in generated code (`my_start < task && 0 < task % s_blocks`; the kb*8 term is legitimately dropped since 8kb == 0 mod s_blocks=2); all SetFlag/WaitFlag confirmed outside the branch; L1 tiles confirmed non-aliasing (q@0/k@8192/v@24576/p@40960)",
+    "5. K-only variant also fails 6/6 on NON-ZERO data; the earlier 'case20 BITEXACT with K-only' was a FALSE NEGATIVE because case20 is an all-zeros input (all-zero K makes a wrongly-skipped load invisible). Failure is independent of P1/P2 pool class and of K vs V side"
+  ],
+  "root_cause_status": "NOT settled within budget (stated honestly). Excluded: predicate logic, generated condition, flag placement, L1 aliasing, the runtime-if mechanism, P1/P2 pool class, K-vs-V side. Leading UNVERIFIED hypothesis: SetFlag<HardEvent::MTE2_MTE1> is an MTE2-stream drain marker; when that slot's MTE2 stream is empty between WaitFlag<MTE1_MTE2> and SetFlag<MTE2_MTE1>, the event fires immediately and the MTE1 consumer may lose ordering against the previous slot's still-in-flight multi-instruction ND2NZ TileCopyTla sequence. Recommended next entry point: standalone minimal repro OUTSIDE this operator (single L1 tile, 2-slot loop, 2nd slot's reload elided, MTE1 consumer), then try the [#R3-2] 'wait+set both inside the guard' form with the consumer-side wait conditionalised too (token balance preserved).",
+  "rollback_verification": "cp history_version/mha_impl_r3_perf11.py mha.py; md5 3d56c5dd3d8a60d26eed7ade2e404a2b confirmed; ruff check + format clean; 1086 lines; IR-LEVEL restore verified 16/16 shapes get_kernel_source() byte-identical to the #R5-1 adopted state (diff -rq /tmp/opencode/r5_src_final /tmp/opencode/r5_src_rollback: no differences); mha.py identical to history_version/mha_impl_r3_perf10.py",
+  "kernel_us": {
+    "case1": 11.07, "case6": 29.66, "case19": 22.98, "case20": 18.16,
+    "case7": 928.35, "case2": 66.81, "case5": 18.47, "case9": 1025.54,
+    "case14": 377.48, "case10": 35.14, "case16": 562.44
+  },
+  "kernel_us_note": "targets re-measured on the restored terminal state (msprof_r5_final): case1 11.07 / case6 29.66 / case19 22.98 / case20 18.16 = -15.04% / -45.16% / -35.92% / -40.87% vs the session-5 baseline. Guards carried over from msprof_r5_iter1 (their generated source is byte-identical, so re-measuring adds nothing). Cross-session msprof variance note: iter1 vs final on the IDENTICAL kernel differ by up to -4.2% (case1 11.56 -> 11.07), i.e. cross-session variance exceeds the within-session stdev; the adoption decision is therefore stated on the conservative iter1 figures (-11.28% / -44.40% / -34.80% / -40.48%), and both readings are far beyond the 3% band vs baseline.",
+  "adopted": false,
+  "consecutive_no_improvement": 1,
+  "artifacts": {
+    "failed_variants": ["/tmp/opencode/r5_probes/mha_r53_both.py", "/tmp/opencode/r5_probes/mha_r53_konly_FAILED.py"],
+    "probes": ["/tmp/opencode/r5_probes/probe_r53_kvresidency.py", "/tmp/opencode/r5_probes/probe_r53.log", "/tmp/opencode/r5_probes/bisect_r53.py", "/tmp/opencode/r5_probes/bisect2_r53.py", "/tmp/opencode/r5_probes/diag_r53.py", "/tmp/opencode/r5_probes/probe_tir_bool.py"],
+    "generated_code": ["/tmp/opencode/r5_probes/r53_case1.cc", "/tmp/opencode/r5_src_rollback/"],
+    "backups": ["history_version/mha_impl_r3_perf11.py (pre-change = #R5-1 adopted)", "history_version/mha_impl_r3_perf12.py (post-rollback restored, same body)"]
+  },
+  "knowledge_updates": [
+    "#R3-9's assertion 'K/V has no cross-task reuse' (optimization_log:523) is CONFIRMED WRONG for the single_kv_block subclass (trace address-level evidence). The redundancy is real - for case6, s_blocks=8 with contiguous task assignment means 7 of every 8 K loads and 7 of 8 V loads within a batch are byte-identical. Status of that optimization point updated from 'evidence-based abandonment (mis-judged by #R3-9)' to 'redundancy PROVEN, elision mechanism FALSIFIED, root cause pending a minimal repro'.",
+    "New reusable API knowledge (probed, not guessed): inside a T.serial slot loop, `T.And(a, b)` and Python `a and b` with BOTH operands TIR produce the identical TIR `if a and b`; the rev2-A1 BoolOp warning applies only to mixing a Python bool with a TIR expr. In-repo precedent: examples/gemm/example_gemm_intrinsic_persistent.py:76.",
+    "New reusable methodology: a runtime guard's correctness must be probed on NON-ZERO data - an all-zeros case (case20) is a false-negative trap for any 'skip a redundant load' optimization.",
+    "Post-#R5-1 bottleneck reading (camodel core0): C MTE2 3.961us = 50.0% of C wall is now the single largest real-work pipe on either core; C FIXP 2.108us (26.6%), V VECTOR 3.368us (39.7%), C CUBE 0.322us (4.1%)."
+  ],
+  "evidence": "examples/mha/perf_tuning/msprof_r5_final/*.json + /tmp/opencode/r5_probes/{probe_r53.log, r53_case1.cc, mha_r53_both.py, mha_r53_konly_FAILED.py} + /tmp/opencode/r5_src_rollback/"
+}

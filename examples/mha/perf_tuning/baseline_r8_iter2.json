@@ -1,0 +1,26 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r8-2-adopted", "perf_session": 8,
+  "note": "#R8-2 Stage-3 ① flat(task,kv) continuous token stream (form_b_mma generic domain) ADOPTED; md5 5d466b5ff3808bd8273eb85915ca4484, 1839 lines (= history_version/mha_impl_r4_perf6.py). Change = C-scope form_b_mma generic branch replaced by flat batch stream (one-time O(my_count) total_flat walk + per-slot sequential walk state machine via T.alloc_var for runtime-nonuniform causal eff_kv) + emit_v new `elif flat_v:` branch (phase1/phase2 dual walk + §S4-3-5 task-state machine: phase2 kv0 resets acc_o/sumexp, phase1 kv0 m_i/row_thresh, phase2 kv-last normalization+writeback SIG_S_HALF closed loop) + host flat_v predicate. Form A / decode fallback / single-block branches statement-zero-change => IR 14/16 byte-identical.",
+  "bottleneck_type": "sync (four-phase per-slot handoff chain — THIS iteration deletes chain structure: batch rounds ~103->~58/core, task boundaries decoupled from round boundaries, batch depth 4.5->8)",
+  "optimization": "flat (task,kv) token stream prefill extension (#R4-3 decode blueprint + prefill delta = runtime-nonuniform eff walk mapping; C/V same-formula §7.2-5; task-switch Q/L0AS conditional rounds fully co-conditioned 同进同出; per-slot op sequences verbatim => BITEXACT)",
+  "precision_gate": "pass (probe_r82_flat 23/23 = 16 flat-domain targets BITEXACT vs pre-change incl. case9/case4 bench shapes + eff-1..8 heterogeneous mid-round switches + cross-round carry kv10 + eff=1 edge + odd/even batches + tails + bf16 + zeros-control + scale, golden blocking all pass (worst bf16 7.81e-3 vs gate 7.8e-2); 7 guards BITEXACT; anchor-A 9/9 hard + anchor-B 14/14; stress inherited 4 + extended 22 (incl. 6 flat-special f01-f06) x12 nondet=0; l0 10/10 l1 19/19 coverage 19P0M0N --level all exit 0 [L2 12/12-rejected Boundary 6/6 sentinels 4/4 PERF_PASS]; red-lines 4/4 verified)",
+  "programming_mode": "Expert rev4 three-way dispatch + flat token stream (form_b_mma generic)",
+  "timing_method": "msprof timeline op_summary Task Duration median (warmup 5 + iters 20) + msprof op PipeUtilization A/B (block0)",
+  "kernel_us": {"case9": 869.51, "case4": 28.20, "case7": 926.99, "case10": 35.19, "case14": 378.71, "case16": 563.36},
+  "delta_vs_baseline_pct": {"case9": -7.96, "case4": -20.72, "case7": 0.25, "case10": 0.9, "case14": 0.3, "case16": 0.07},
+  "delta_note": "case9/case4 = TARGETS (flat domain): -7.96% (inside mission EV band -5~-15%) / -20.72% (batch-depth-vacancy benefit model: case4 legacy ran 1-2-slot micro-batches per task). case7/10/14/16 = GUARDS: all within noise band AND IR byte-identical (14/16 incl. Form A x8 + decode x5 + fbm single-block x1).",
+  "op_ab_case9": {
+    "TaskDur_us": "944.76 -> 884.56 (-6.4%)",
+    "wait_id5_batch_head_us": "87.57 -> 2.16 (-97.5%) — mission EV upper-bound basis (C round-boundary wait 87us) nearly fully realized = bullseye signature",
+    "wait_id2_w2_us": "340.71 -> 232.06 (-31.9%)",
+    "aiv_wait_id4_w3_us": "431.51 -> 247.92 (-42.5%)",
+    "aiv_total_us": "902.68 -> 815.13 (-9.7%)",
+    "real_work_pipes": "mte1_busy ±0.0% / mte2 -1.2% / fixp -1.7% / cube +0.3% / V.vec +0.5% => PURE STRUCTURAL GAIN (zero byte/work change)",
+    "mte1_stall_us": "433.96 -> 497.81 (+14.7%) = productive pacing redistribution after chain tightening (r8-1 finding reconfirmed: stall reading is concomitant symptom)",
+    "aiv_wait_id0_w1_us": "212.88 -> 267.34 (+25.6%) = V arrives earlier (same redistribution)"
+  },
+  "estimated_speedups_NON_AUTHORITATIVE": {"case9": "~0.383x", "case4": "~1.07x", "avg_20": "~+0.013 => ~0.92x (cann-bench fixed-overhead caveat §S5-2; authoritative = Orchestrator round-end re-eval)"},
+  "adopted": true,
+  "ir_guard": "16-shape dump: 14/14 guards byte-identical vs r7_src_rollback2 (provenance re-verified this session) + 2/2 flat targets changed (G_case9_B_p3_multi, G_case4_B_p3_kv2)",
+  "evidence": "msprof_r8_iter2/*.json + /tmp/opencode/r8_op_case9_iter2/ + /tmp/opencode/r8_probes/{probe_r82_flat.py,probe_r82.log,r8_anchors_iter2.log,r8_anchor_stress_iter2.log,r8_stress_ext_iter2.log,r8_l0_iter2.log,r8_l1_iter2.log,r8_coverage_iter2.log,r8_all_iter2.log,stress_r82_flat.py} + /tmp/opencode/r8_src_iter2/"
+}

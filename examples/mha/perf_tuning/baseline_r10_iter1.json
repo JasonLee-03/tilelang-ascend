@@ -1,0 +1,19 @@
+{
+  "stage": 3, "operator": "mha", "iteration": "r10-iter1", "perf_session": 10,
+  "note": "Session-10 baseline = dda3ad0877ba4df74bbd559f6912eeed (1926 lines, session-8/9 final state, cann-bench 72.59/0.96x on file). Path-2 implementation round: fbm prefill bN 128->256 structural widening (handoff slots 442->221 halved; EV conditional -12~-19% if L2 hit >=90% maintained / 0~+10% if collapsed; GATE-6 = pre-verdict hard abort gate). Backups: perf12 (session-start snapshot) = perf13 (pre-edit) = dda3ad08.",
+  "bottleneck_type": "sync/structure (case9 C-side wait_id2 exposure 213-232us = 25% wall; four-phase handoff chain per-slot non-deletable segments SEM propagation + drain; C scalar 95.5% busy slot-count-proportional) — structural-deletion class lever (absorption law not applicable per §S8 knowledge ①)",
+  "kernel_us_baseline_fresh_r10_base": {
+    "case9": 869.87, "case4": 28.21, "case7": 855.54,
+    "case10": 34.61, "case14": 378.26, "case16": 562.01, "case20": 13.98
+  },
+  "baseline_provenance": "msprof median (warmup 5, iters 20, n=25 launches), TILELANG_CACHE_DIR=/tmp/opencode/r10_cache_base, driver /tmp/opencode/r10_probes/run_perf_r10_base.sh -> examples/mha/perf_tuning/msprof_r10_base/*.json; cross-check vs r9_base: case9 869.87 vs 869.04 (+0.10%), case4 28.21 vs 27.92 (+1.04%), case7 855.54 vs 858.26 (-0.32%), case14 378.26 vs 376.02 (+0.60%), case16 562.01 vs 562.09 (-0.01%), case20 13.98 vs 14.03 (-0.36%), case10 34.61 vs 33.87 (+2.19% — decode small-kernel env drift band +3~4.6% documented session-9; guards adjudicated with same-file multi-segment drift caliber)",
+  "op_baseline_inherited": {
+    "case9_joint_state": "/tmp/opencode/r8_op_case9_iter2 (r8-2 adopted state = current IR): C wait_id2 232.06us exposed, MTE2 busy 57.8%, L2 total hit 92.69% (aic_total_hit_rate), MTE2 busy-period rate ~131.2GB/s, C scalar 95.5% busy",
+    "gate6_criteria": "candidate L2 hit >= 90% maintained AND C.MTE2 busy-period rate ~131GB/s-class maintained (collapse signature = shrink toward HBM-side 73.6GB/s/core) — FAIL => immediate rollback + evidence-archive (EV reversal branch fulfillment = qualified output)",
+    "gate7_signatures": "(1) handoff-slot-halving: C wait_id2 exposure ~232 -> ~120us class; (2) MTE2 duty 58% -> ~78% class; (3) FIX event tax net: model total events -17% (actual implementation: FIX 6->4 per 256-col unit, MTE2 6->5, mma 8->12/slot x slots/2)"
+  },
+  "test_shape": "case9 (4,1024,1024,16,256) fp16 causal + case4 (2,256,256,8,256) fp16 causal; guards case7 (4,1024,1024,32,128) / case10 (1,1,2048,32,128) / case14 (128,1,128,32,128) / case16 (60,2,512,32,128) / case20 (2,128,128,32,128)",
+  "test_command": "source set_env.sh && python examples/mha/test_mha.py --level all (plus probe/anchor/stress battery)",
+  "precision_status": "pass (inherited: session-8/9 final state, full gate battery green, cann-bench 72.59/0.96x)",
+  "programming_model": "Expert (manual T.Scope C/V, explicit L0/L1/UB allocs, manual SEM/SIG matrix, pass_configs all-False; DESIGN rev4 unchanged)"
+}
