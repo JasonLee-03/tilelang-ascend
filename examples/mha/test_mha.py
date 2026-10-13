@@ -1,4 +1,4 @@
-"""MHA layered test suite: L0 gate + L1/L2/Boundary + perf sentinels (DESIGN rev2).
+"""MHA layered test suite: L0 gate + L1/L2/Boundary + perf sentinels.
 
 Run (operator development, exit code carries the verdict):
     python examples/mha/test_mha.py --level l0      # precision convergence
@@ -8,18 +8,17 @@ Run (CI): ci/operator_test_manifest.yaml maps examples/mha/mha.py to this file,
 so the workflow runs it under Pytest and examples/bench_test.sh skips both. See
 the "Pytest entry points" section at the bottom for how the two callers differ.
 
-Precision criteria (DESIGN rev2 §9.3.1, user-ruled 2026-09-18, not changeable):
+Precision criteria (DESIGN.md §9.3.1):
 - Blocking = mixed tolerance (§9.3.2: matched_ratio + max_abs_error dual gate)
   AND MARE_abs < 10*Threshold (float16: 9.77e-3; bfloat16: 7.81e-2).
 - MERE and MARE_rel are REFERENCE values: computed and printed on the
-  [PRECISION_*] lines, never blocking; the rev1 [MARE_REL_ESCALATION]
-  arbitration flow is abolished (rev2-C1).
+  [PRECISION_*] lines, never blocking.
 - Thresholds: float16 -> 2**-10; bfloat16 -> 2**-7 (MARE_abs gate = 10x).
 
-Perf sentinels (DESIGN rev2 §9.4):
+Perf sentinels (DESIGN.md §9.4):
 - Blocking feasibility gate = KERNEL-PATH wall time only: H2D -> kernel (incl.
   first JIT compile for the shape) -> D2H + synchronize, <= 120s per sentinel.
-- Blocking precision gate = revised §9.3 caliber (mixed tolerance + MARE_abs).
+- Blocking precision gate = the §9.3 criteria above (mixed tolerance + MARE_abs).
 - Golden-side cost control (mandatory): per-(b,n) chunked golden, persistent
   cross-run cache (.golden_cache/, test-side only), and — for the prefill
   sentinel only — deterministic sampled comparison (16 fixed-seed full (b,n)
@@ -46,8 +45,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mha import mha  # noqa: E402  (kernel host wrapper under test)
 
 
-# ========== Golden reference (DESIGN §9.1, verbatim; renamed golden_mha to
-# avoid collision with the kernel import — semantics unchanged) ==========
+# ========== Golden reference (DESIGN.md §9.1), named golden_mha to avoid
+# colliding with the kernel import ==========
 def golden_mha(
     query: torch.Tensor,
     key: torch.Tensor,
@@ -55,34 +54,36 @@ def golden_mha(
     scaleValue: float = -1.0,
     is_causal: bool = False,
 ) -> torch.Tensor:
-    """多头注意力: query [B,S,N,D], key/value [B,S_kv,N,D] → 输出 [B,S,N,D]"""
+    """Multi-head attention: query [B,S,N,D], key/value [B,S_kv,N,D] -> output [B,S,N,D]."""
     B, S, N, D = query.shape
     S_kv = key.shape[1]
 
     if scaleValue <= 0:
         scaleValue = 1.0 / (D**0.5)
 
-    # 转置为 [B, N, S, D]
+    # transpose to [B, N, S, D]
     q = query.transpose(1, 2)
     k = key.transpose(1, 2)
     v = value.transpose(1, 2)
 
-    # 缩放点积注意力
+    # scaled dot-product attention
     scores = torch.matmul(q, k.transpose(-2, -1)) * scaleValue
     if is_causal:
         i = torch.arange(S, device=scores.device).unsqueeze(-1)
         j = torch.arange(S_kv, device=scores.device).unsqueeze(0)
-        causal_mask = j > (i + (S_kv - S))  # 右下角对齐：上三角置 -inf
+        causal_mask = j > (i + (S_kv - S))  # bottom-right aligned: upper triangle -> -inf
         scores = scores.masked_fill(causal_mask, float("-inf"))
-    # F217: 全 mask 行 (整行 = -inf) 在 softmax 时得 0/0 = NaN，对齐
-    # sparse_flash_attention 加显式保护 → 全 mask 行权重置 0。
+    # A fully masked row (every score -inf) would come out of softmax as 0/0 = NaN,
+    # so guard it explicitly and force its weights to 0 — the same protection
+    # sparse_flash_attention applies.
     scores_max = scores.max(dim=-1, keepdim=True).values
     all_masked = torch.isinf(scores_max) & (scores_max < 0)
     attn_weights = torch.nn.functional.softmax(scores, dim=-1)
     attn_weights = torch.where(all_masked, torch.zeros_like(attn_weights), attn_weights)
     attn_output = torch.matmul(attn_weights, v)
 
-    # 转回 [B, S, N, D]；transpose 只改 stride, 而输出契约要求 contiguous
+    # Back to [B, S, N, D]: transpose only changes strides, while the output
+    # contract requires a contiguous tensor.
     return attn_output.transpose(1, 2).contiguous()
 
 
@@ -107,7 +108,7 @@ def golden_mha_chunked(query, key, value, scaleValue=-1.0, is_causal=False):
     return out
 
 
-# ========== Precision standards (DESIGN §9.3) ==========
+# ========== Precision standards (DESIGN.md §9.3) ==========
 def get_precision(dtype):
     """§9.3.2 mixed tolerance: (atol, rtol, max_abs_error_limit, matched_ratio)."""
     fp_table = {
@@ -126,7 +127,7 @@ def eco_threshold(dtype):
 
 
 def check_special_masks(actual, golden):
-    """Position-sensitive NaN/+Inf/-Inf mask comparison (DESIGN §9.2 principle)."""
+    """Position-sensitive NaN/+Inf/-Inf mask comparison (DESIGN.md §9.2 principle)."""
     a, g = actual.float(), golden.float()
     masks_match = (
         torch.equal(torch.isnan(a), torch.isnan(g))
@@ -184,8 +185,8 @@ def make_inputs(B, S, S_kv, N, D, dtype_str, seed, vrange_qk=None, vrange_v=None
     """CPU-generated deterministic inputs (test prep stays on CPU, H2D once).
 
     Default (vrange_*=None): randn * U[-1,1] cast to dtype — the L0 scheme,
-    bit-stable with attempt1. vrange=(lo, hi): uniform U[lo, hi] cast to
-    dtype (L1 value-range dimensions D-VALRANGE-S/M/L/ASYM).
+    deterministic and bit-reproducible. vrange=(lo, hi): uniform U[lo, hi] cast
+    to dtype (L1 value-range dimensions D-VALRANGE-S/M/L/ASYM).
     """
     gen = torch.Generator().manual_seed(seed)
     dt = {"float16": torch.float16, "bfloat16": torch.bfloat16}[dtype_str]
@@ -228,7 +229,7 @@ def run_case(
 
     gen: optional dict forwarded to make_inputs (vrange_qk/vrange_v) plus
     post-processing flags: negzero_v=True negates V (exercises -0.0 paths on
-    all-zero inputs). Default None = attempt1 L0 scheme, bit-stable.
+    all-zero inputs). Default None = the L0 scheme (deterministic, bit-reproducible).
     """
     B, S, S_kv, N, D = shape
     info = {"name": name, "shape": shape, "dtype": dtype_str}
@@ -249,9 +250,8 @@ def run_case(
         mixed_ok, ratio, max_abs = check_precision(out, ref, dtype_str)
         mere, mare_abs, mare_rel = mere_mare(out, ref)
         thr = eco_threshold(dtype_str)
-        # rev2-C1 blocking caliber: mixed tolerance (§9.3.2) AND MARE_abs < 10*Threshold.
-        # MERE / MARE_rel are reference-only (printed, never gate; the rev1
-        # [MARE_REL_ESCALATION] arbitration flow is abolished).
+        # Blocking caliber: mixed tolerance (§9.3.2) AND MARE_abs < 10*Threshold.
+        # MERE / MARE_rel are reference-only: printed, never gating.
         mare_abs_ok = (mare_abs == mare_abs) and mare_abs < 10 * thr  # NaN -> False
         ok = mixed_ok and mare_abs_ok
 
@@ -271,10 +271,9 @@ def run_case(
         return False, info
 
 
-# ========== L0: gate cases (DESIGN §9.2, 10 cases, regular divisible shapes) ==========
-# Case table unchanged from DESIGN §9.2; tags added per its coverage-matrix
-# mapping (D-DTYPE-fp16: #1,2,5,6,9,10; D-DTYPE-bf16: #3,4,7,8;
-# D-PARAM-is_causal(True): #2,4,6,8,9; D-PARAM-scaleValue(explicit): #10).
+# ========== L0: gate cases (DESIGN.md §9.2, 10 cases, regular divisible shapes) ==========
+# Each case carries the tags of the coverage dimensions it exercises; the
+# aggregate per-dimension counts are declared in COVERAGE_MANIFEST below.
 L0_CASES = [
     # (name, (B,S,S_kv,N,D), dtype, scaleValue, is_causal, tags)
     ("l0_min_fp16", (1, 64, 64, 1, 64), "float16", -1.0, False, ["D-DTYPE-fp16", "D-SHAPE-ALIGNED"]),
@@ -291,7 +290,7 @@ L0_CASES = [
 
 
 def run_l0():
-    """L0 gate: 10/10 must pass (DESIGN §9.2 pass standard, rev2-C1 caliber).
+    """L0 gate: 10/10 must pass (DESIGN.md §9.2 pass standard).
 
     Returns the all-passed bool. Callers decide what that means: main() folds it
     into its exit code, test_mha_l0() asserts on it.
@@ -306,20 +305,20 @@ def run_l0():
     return ok
 
 
-# ========== L1: functional cases (tilelang-op-test-design scenario B) ==========
-# Shapes deterministically generated per test-design §6 from block=(bM,bN)
+# ========== L1: functional cases (irregular shapes, value ranges, attrs) ==========
+# Shapes are derived deterministically from block=(bM,bN)
 # (D in {64,128} -> (64,64); D=256 -> (32,64)): TAIL-1 (bM*k+1 / bN*k+1),
 # TAIL-MID (bM*k+bM//2 / bN*k+bN//2), PRIME (nearest primes), EDGE (S=1 /
 # S_kv=1 / single-element). GEMM three-axis non-alignment: S axis (GEMM1/2 M)
 # via S=65/96/61/127; S_kv axis (GEMM1 N + GEMM2 reduction K) via S_kv=65/96/
 # 127/160/251/1; B·N grid axis via prime B=3/N=5 and N=3 cid decomposition.
 # GEMM1's K axis = D is host-constrained to {64,128,256} (always block-aligned;
-# illegal D is covered by L2 rejection cases). Mask 4-variant coverage (§5.6):
+# illegal D is covered by L2 rejection cases). Mask 4-variant coverage (DESIGN.md §5.6):
 # (F,T)/(T,T) in L0; (F,F) tail-clamp-only via l1_tail1_Skv_fp16 /
 # l1_tailmid_Skv_bf16 / l1_prime_bn_bf16 / l1_edge_Skv1; (T,F) causal+clamp via
 # l1_tail1_Skv_causal_bf16 / l1_tailmid_causal_fp16 / l1_prime_causal_fp16 /
 # l1_d256_tailmix_bf16 / l1_valrange_asym_causal.
-# Value-range magnitude calibration (measured, debug_log.md attempt2): the
+# Value-range magnitude calibration (measured): the
 # fp16/bf16 blocking gates are ABSOLUTE (MARE_abs < 9.77e-3 / 7.81e-2;
 # max_abs <= 1e-1 / 1e0) while any non-bit-exact attention output carries
 # >= 1 ulp(|out|) error; ulp(16)=1.56e-2 already exceeds the fp16 gate, so
@@ -403,7 +402,7 @@ L1_CASES = [
 
 def run_l1():
     """L1 functional tests: irregular/tail/prime shapes + value ranges + attrs.
-    Blocking layer ([PRECISION_*], rev2-C1 caliber). Returns all-passed bool."""
+    Blocking layer ([PRECISION_*]). Returns the all-passed bool."""
     ok = True
     n_pass = 0
     for idx, (name, shape, dtype_str, scale, causal, gen, tags) in enumerate(L1_CASES):
@@ -416,10 +415,10 @@ def run_l1():
 
 # ========== L2: negative tests (illegal inputs must be rejected; non-blocking) ==========
 # All rejections must come from the host metadata asserts (AssertionError)
-# BEFORE any JIT/NPU work (DESIGN §4.8/§5.6: unsupported inputs are rejected
+# BEFORE any JIT/NPU work (DESIGN.md §4.8/§5.6: unsupported inputs are rejected
 # by metadata validation without reading tensor data). NaN/Inf inputs are NOT
-# L2 cases (host cannot reject them without reading data — they are probed in
-# Boundary instead, per DESIGN §5.6 "非有限值输入…非阻塞探测").
+# L2 cases (the host cannot reject them without reading data — they are probed
+# in Boundary instead, as non-blocking out-of-domain inputs).
 def _l2_thunks():
     fp16, bf16, fp32 = torch.float16, torch.bfloat16, torch.float32
 
@@ -478,7 +477,7 @@ def run_l2():
 
 
 # ========== Boundary: special-value probes (position-sensitive; non-blocking) ==========
-# DESIGN §9.2 principle: the declared input domain is finite reals — NaN/Inf
+# DESIGN.md §9.2 principle: the declared input domain is finite reals — NaN/Inf
 # are OUT-of-domain probes (never all-NaN/all-Inf: finite base + SPARSE
 # injected specials, >=1 special and >=1 finite value). Comparison is
 # mask-first: NaN/+inf/-inf positions must match exactly (check_special_masks
@@ -582,8 +581,11 @@ def run_boundary():
     print(f"[BOUNDARY] summary: {n_pass}/{len(BOUNDARY_CASES)} within tolerance (non-blocking)")
 
 
-# ========== Coverage bookkeeping (coverage_check.py; coverage-matrix.md) ==========
-COVERAGE_CATEGORY = "Fusion"  # CV-fused matmul+softmax+matmul (DESIGN §9.2)
+# ========== Coverage bookkeeping ==========
+# Read by .agents/skills/tilelang-op-test-design/scripts/coverage_check.py, which
+# parses these three module constants and scores them against the tags carried by
+# the L0/L1/Boundary case tables above.
+COVERAGE_CATEGORY = "Fusion"  # CV-fused matmul+softmax+matmul (DESIGN.md §9.2)
 COVERAGE_MANIFEST = {
     "D-DTYPE-fp16": 7,
     "D-DTYPE-bf16": 11,
@@ -610,13 +612,13 @@ COVERAGE_MANIFEST = {
 COVERAGE_NA = {}
 
 
-# ========== Perf sentinels (DESIGN rev2 §9.4) ==========
-# Gate structure (rev2-C4):
+# ========== Perf sentinels (DESIGN.md §9.4) ==========
+# Gate structure:
 #   1. kernel-path wall-time gate (BLOCKING, the only feasibility timing
 #      basis): H2D -> kernel (incl. first JIT compile for the shape) ->
 #      D2H + synchronize, <= KERNEL_PATH_GATE_S per sentinel. Warm-kernel
-#      time recorded separately as the Stage-3 baseline (informational).
-#   2. precision gate (BLOCKING): revised §9.3 caliber (mixed tolerance +
+#      time recorded separately as the tuning baseline (informational).
+#   2. precision gate (BLOCKING): the §9.3 criteria (mixed tolerance +
 #      MARE_abs < 10*Threshold); MERE/MARE_rel printed as reference.
 #   3. golden-side cost control (mandatory): per-(b,n) chunked golden +
 #      persistent cross-run cache + deterministic sampled comparison
@@ -634,7 +636,7 @@ SENTINELS = [
     ("perf_max_grid", (128, 128, 128, 64, 64), "float16", -1.0, True, False),
 ]
 
-# Deterministic prefill sampling scheme (§9.4-3 requires reproducibility):
+# Deterministic prefill sampling scheme (DESIGN.md §9.4-3 requires reproducibility):
 PREFILL_SAMPLE_SEED = 1234  # fixed seed selecting the full-comparison (b,n) pairs
 PREFILL_FULL_PAIRS = 16  # >=16 (b,n) chunk pairs get full-element comparison
 
@@ -652,7 +654,7 @@ def prefill_sample_rows(S, D):
     return rows
 
 
-# ---- Golden persistent cache (§9.4-3; test-side only, NOT a deliverable) ----
+# ---- Golden persistent cache (DESIGN.md §9.4-3; generated locally, untracked) ----
 GOLDEN_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".golden_cache")
 GOLDEN_CACHE_SCHEME = "mha-golden-v1"  # bump when make_inputs/golden semantics change
 
@@ -703,7 +705,7 @@ def golden_mha_rows(query, key, value, b, n, rows, scaleValue=-1.0, is_causal=Fa
 
 
 def sentinel_compare(name, shape, dtype_str, scaleValue, is_causal, seed, sampled, out_cpu, q, k, v):
-    """Golden (cost-controlled) + revised-§9.3 precision for one sentinel.
+    """Golden (cost-controlled) + §9.3 precision for one sentinel.
 
     sampled=True (prefill only): PREFILL_FULL_PAIRS fixed-seed (b,n) pairs get
     full-element chunked golden; every remaining pair is compared on the
@@ -765,9 +767,9 @@ def sentinel_compare(name, shape, dtype_str, scaleValue, is_causal, seed, sample
 
 
 def run_sentinel(name, shape, dtype_str, scaleValue, is_causal, sampled, seed):
-    """One §9.4 sentinel. BLOCKING: kernel-path <= 120s AND revised-§9.3
-    precision. NON-BLOCKING: case-level 1800s harness guard (a timeout there
-    is a harness defect, not an operator feasibility verdict)."""
+    """One DESIGN.md §9.4 sentinel. BLOCKING: kernel-path <= 120s AND the §9.3
+    precision criteria. NON-BLOCKING: case-level 1800s harness guard (a timeout
+    there is a harness defect, not an operator feasibility verdict)."""
     old = signal.signal(signal.SIGALRM, _alarm_handler)
     signal.alarm(CASE_WALLCLOCK_GUARD_S)
     try:
@@ -781,7 +783,7 @@ def run_sentinel(name, shape, dtype_str, scaleValue, is_causal, sampled, seed):
         out_cpu = out.cpu()  # D2H
         torch.npu.synchronize()
         kernel_path_s = time.time() - t0
-        # ---- warm kernel re-run (Stage-3 baseline, informational) ----
+        # ---- warm kernel re-run (tuning baseline, informational) ----
         t1 = time.time()
         mha(qn, kn, vn, scaleValue=scaleValue, is_causal=is_causal)
         torch.npu.synchronize()
@@ -818,7 +820,7 @@ def run_perf():
     ok = True
     for idx, (name, shape, dt, scale, causal, sampled) in enumerate(SENTINELS):
         ok &= run_sentinel(name, shape, dt, scale, causal, sampled, seed=9000 + idx)
-    print(f"[PERF] summary: all_sentinels_ok={ok} (kernel-path gate {KERNEL_PATH_GATE_S:.0f}s/sentinel, rev2 §9.4)")
+    print(f"[PERF] summary: all_sentinels_ok={ok} (kernel-path gate {KERNEL_PATH_GATE_S:.0f}s/sentinel, DESIGN.md §9.4)")
     return ok
 
 
@@ -829,13 +831,13 @@ def run_perf():
 # routes it, so that examples/bench_test.sh skips the operator instead of
 # compiling and running the same kernel a second time — a returned bool means
 # nothing: Pytest ignores return values, so a precision regression would have
-# stayed green. Hence the blocking layers assert, while the layers DESIGN §9.2
+# stayed green. Hence the blocking layers assert, while the layers DESIGN.md §9.2
 # declares non-blocking (L2 negative, Boundary special values) keep reporting
 # through their [BOUNDARY_WARN]/[L2] lines without gating.
 
 
 def test_mha_l0():
-    """L0 gate (blocking): 10/10 must pass — DESIGN §9.2 pass standard."""
+    """L0 gate (blocking): 10/10 must pass — DESIGN.md §9.2 pass standard."""
     assert run_l0(), "L0 precision gate failed — see the [PRECISION_FAIL] and [L0] summary lines above"
 
 
@@ -845,25 +847,25 @@ def test_mha_l1():
 
 
 def test_mha_l2():
-    """L2 negative layer (non-blocking per DESIGN §9.2): illegal inputs rejected by host asserts."""
+    """L2 negative layer (non-blocking per DESIGN.md §9.2): illegal inputs rejected by host asserts."""
     run_l2()
 
 
 def test_mha_boundary():
-    """Boundary special-value probes (non-blocking per DESIGN §9.2): WARN recorded, never gating."""
+    """Boundary special-value probes (non-blocking per DESIGN.md §9.2): WARN recorded, never gating."""
     run_boundary()
 
 
 @pytest.mark.ci_skip
 def test_mha_perf():
-    """Perf sentinels (DESIGN rev2 §9.4) — skipped in every CI scenario.
+    """Perf sentinels (DESIGN.md §9.4) — skipped in every CI scenario.
 
-    They are a Stage-3 feasibility gate rather than a code-regression test, and
-    CI cannot run them: their golden side depends on examples/mha/.golden_cache
-    (154 MB of chunked-golden tensors) which is untracked, so a CI workspace —
-    cleaned by actions/checkout on every run — would recompute goldens for
-    shapes up to (8, 2048, 4096, 32, 128) from scratch, under the 1800s
-    per-case harness guard. Run by hand:
+    They are a performance-feasibility gate rather than a code-regression test,
+    and CI cannot run them: their golden side depends on the untracked
+    examples/mha/.golden_cache (154 MB of chunked-golden tensors), so a CI
+    workspace — cleaned by actions/checkout on every run — would recompute
+    goldens for shapes up to (8, 2048, 4096, 32, 128) from scratch, under the
+    1800s per-case harness guard. Run by hand:
     `python examples/mha/test_mha.py --level perf`.
     """
     assert run_perf(), "perf sentinel gate failed — see the [PERF_FAIL] lines above"
@@ -875,7 +877,7 @@ def main():
     parser.add_argument("--level", default="l0", choices=["l0", "l1", "l2", "boundary", "perf", "all"])
     args = parser.parse_args()
 
-    tilelang.disable_cache()  # avoid stale compilation artifacts (checklist #11)
+    tilelang.disable_cache()  # avoid stale compilation artifacts
     torch.manual_seed(0)
 
     blocking_ok = True  # only L0/L1/perf are blocking

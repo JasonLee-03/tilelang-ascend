@@ -72,11 +72,10 @@ block_N and gemm1_kL0 tiers. MTE2_MTE1 event ids 6 and 7 are unusable in
 static-tensor code. The kv_db decode path (S <= 16, D == 256, more than one KV
 block) runs on stock tilelang-ascend: its T.gemm_v0 calls keep the default
 prologue, whose whole-MTE2-pipe drain makes every operand enqueued before the
-call resident; framework_dependency/ is an optional patch, not a requirement.
+call resident, so that path needs no framework-side patch.
 
-Provenance: comments-only cleanup of the r13-adopted state (md5 c316a004,
-byte-identical generated IR); design = DESIGN.md, optimization history =
-perf_tuning/optimization_log.md.
+DESIGN.md in this directory derives the tiling tiers, the event-id budget and
+the precision gates that test_mha.py checks.
 """
 
 import tilelang
@@ -117,7 +116,7 @@ def mha_kernel(
     is_causal=False,
 ):
     accum_dtype = "float"
-    assert NUM_STAGES % 2 == 0, "NUM_STAGES must be even (io_buf/L0 double-slot rotation, §8.6-7)"
+    assert NUM_STAGES % 2 == 0, "NUM_STAGES must be even: the io_buf/L0 slots rotate in pairs"
     # ---- Host-side config derivation: pure Python, touches no tensor data ----
     sm_scale = scaleValue if scaleValue > 0 else (1.0 / D) ** 0.5
     # block_M / block_N / gemm1_kL0 three-tier system. Every tier is the largest
@@ -133,7 +132,7 @@ def mha_kernel(
             # BEFORE the gemm call instead of after it returns: with a single
             # v_l1 slot the epilogue release order forbids a pre-call issue at
             # bN=256. Only the multi-block domain (S_kv > 256) takes this tier;
-            # the single-block domain keeps the legacy tiers below.
+            # the single-block domain keeps the tiers below.
             block_N = 128
         else:
             # bN=512 (D<=128, S_kv>256): GEMM1 transpose_B B-tile 512*kL0(32)*2B =
@@ -160,7 +159,7 @@ def mha_kernel(
     KC = 128  # Form B-mma k-chunk width (compile-time constant; D=256 -> 2 chunks)
     NC = 128  # Form B-mma n-chunk width (compile-time constant; D=256 -> 2 chunks)
     if form_b_mma:
-        assert D % KC == 0 and D % NC == 0, "K/N-split requires D divisible by chunk width (D=256 closed, §3.5.1)"
+        assert D % KC == 0 and D % NC == 0, "K/N-split requires D divisible by the KC/NC chunk width"
     half_M = block_M // 2  # rows owned by one AIV (vid row split): 8/16/32
     causal_offset = S_kv - S  # bottom-right alignment (>= 0 when causal, asserted)
     need_bound_mask = S_kv % block_N != 0  # tail-column clamp (compile-time)
@@ -438,7 +437,7 @@ def mha_kernel(
             # my_start/my_count and the same causal formula; it is never
             # transmitted through a workspace. The per-slot op sequence is the
             # generic one verbatim -- only batch membership changes, so task
-            # boundaries no longer drain the pipeline.
+            # boundaries do not drain the pipeline.
             total_flat = T.alloc_var("int32", init=0)
             for t in T.serial(my_count):
                 _tw = my_start + t
