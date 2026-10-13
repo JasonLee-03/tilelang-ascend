@@ -4,9 +4,10 @@ Run (operator development, exit code carries the verdict):
     python examples/mha/test_mha.py --level l0      # precision convergence
     python examples/mha/test_mha.py --level all     # full suite + sentinels
 
-Run (CI): ci/operator_test_manifest.yaml maps examples/mha/mha.py to this file,
-so the workflow runs it under Pytest and examples/bench_test.sh skips both. See
-the "Pytest entry points" section at the bottom for how the two callers differ.
+Run (CI): examples/bench_test.sh runs this file as a script, so the default
+--level l0 gate plus the "Test Passed!" marker are what CI checks. The suite is
+also Pytest-collectable; see the "Pytest entry points" section at the bottom for
+how the two callers differ.
 
 Precision criteria (DESIGN.md §9.3.1):
 - Blocking = mixed tolerance (§9.3.2: matched_ratio + max_abs_error dual gate)
@@ -826,12 +827,11 @@ def run_perf():
 
 # ========== Pytest entry points ==========
 # Two callers reach this suite. Run as a script (`python test_mha.py --level
-# ...`) the verdict is main()'s exit code, which is what the operator
-# development flow reads. Under Pytest — where ci/operator_test_manifest.yaml
-# routes it, so that examples/bench_test.sh skips the operator instead of
-# compiling and running the same kernel a second time — a returned bool means
-# nothing: Pytest ignores return values, so a precision regression would have
-# stayed green. Hence the blocking layers assert, while the layers DESIGN.md §9.2
+# ...`) the verdict is main()'s exit code, which is what examples/bench_test.sh
+# and the operator development flow both read. Collected by Pytest — which the
+# test_*.py filename invites — a returned bool would mean nothing: Pytest
+# ignores return values, so a precision regression would have stayed green.
+# Hence the blocking layers assert here, while the layers DESIGN.md §9.2
 # declares non-blocking (L2 negative, Boundary special values) keep reporting
 # through their [BOUNDARY_WARN]/[L2] lines without gating.
 
@@ -861,7 +861,7 @@ def test_mha_perf():
     """Perf sentinels (DESIGN.md §9.4) — skipped in every CI scenario.
 
     They are a performance-feasibility gate rather than a code-regression test,
-    and CI cannot run them: their golden side depends on the untracked
+    and CI should not run them: their golden side depends on the untracked
     examples/mha/.golden_cache (154 MB of chunked-golden tensors), so a CI
     workspace — cleaned by actions/checkout on every run — would recompute
     goldens for shapes up to (8, 2048, 4096, 32, 128) from scratch, under the
