@@ -1,8 +1,12 @@
 """MHA layered test suite: L0 gate + L1/L2/Boundary + perf sentinels (DESIGN rev2).
 
-Run:
+Run (operator development, exit code carries the verdict):
     python examples/mha/test_mha.py --level l0      # precision convergence
     python examples/mha/test_mha.py --level all     # full suite + sentinels
+
+Run (CI): ci/operator_test_manifest.yaml maps examples/mha/mha.py to this file,
+so the workflow runs it under Pytest and examples/bench_test.sh skips both. See
+the "Pytest entry points" section at the bottom for how the two callers differ.
 
 Precision criteria (DESIGN rev2 §9.3.1, user-ruled 2026-09-18, not changeable):
 - Blocking = mixed tolerance (§9.3.2: matched_ratio + max_abs_error dual gate)
@@ -34,6 +38,7 @@ import signal
 import sys
 import time
 
+import pytest
 import tilelang
 import torch
 
@@ -285,8 +290,12 @@ L0_CASES = [
 ]
 
 
-def test_mha_l0():
-    """L0 gate: 10/10 must pass (DESIGN §9.2 pass standard, rev2-C1 caliber)."""
+def run_l0():
+    """L0 gate: 10/10 must pass (DESIGN §9.2 pass standard, rev2-C1 caliber).
+
+    Returns the all-passed bool. Callers decide what that means: main() folds it
+    into its exit code, test_mha_l0() asserts on it.
+    """
     ok = True
     n_pass = 0
     for idx, (name, shape, dtype_str, scale, causal, tags) in enumerate(L0_CASES):
@@ -392,7 +401,7 @@ L1_CASES = [
 ]
 
 
-def test_mha_l1():
+def run_l1():
     """L1 functional tests: irregular/tail/prime shapes + value ranges + attrs.
     Blocking layer ([PRECISION_*], rev2-C1 caliber). Returns all-passed bool."""
     ok = True
@@ -459,7 +468,7 @@ def run_l2_case(name, tags, fn):
     return False
 
 
-def test_mha_l2():
+def run_l2():
     """L2 negative tests (non-blocking; results recorded, never gate exit code)."""
     cases = _l2_thunks()
     n_pass = 0
@@ -565,7 +574,7 @@ def run_boundary_case(name, shape, dtype_str, scaleValue, is_causal, seed, injec
         return False
 
 
-def test_mha_boundary():
+def run_boundary():
     """Boundary special-value probes (non-blocking; WARN only recorded)."""
     n_pass = 0
     for idx, (name, shape, dtype_str, scale, causal, inject, tags) in enumerate(BOUNDARY_CASES):
@@ -805,12 +814,59 @@ def run_sentinel(name, shape, dtype_str, scaleValue, is_causal, sampled, seed):
         signal.signal(signal.SIGALRM, old)
 
 
-def test_mha_perf():
+def run_perf():
     ok = True
     for idx, (name, shape, dt, scale, causal, sampled) in enumerate(SENTINELS):
         ok &= run_sentinel(name, shape, dt, scale, causal, sampled, seed=9000 + idx)
     print(f"[PERF] summary: all_sentinels_ok={ok} (kernel-path gate {KERNEL_PATH_GATE_S:.0f}s/sentinel, rev2 §9.4)")
     return ok
+
+
+# ========== Pytest entry points ==========
+# Two callers reach this suite. Run as a script (`python test_mha.py --level
+# ...`) the verdict is main()'s exit code, which is what the operator
+# development flow reads. Under Pytest — where ci/operator_test_manifest.yaml
+# routes it, so that examples/bench_test.sh skips the operator instead of
+# compiling and running the same kernel a second time — a returned bool means
+# nothing: Pytest ignores return values, so a precision regression would have
+# stayed green. Hence the blocking layers assert, while the layers DESIGN §9.2
+# declares non-blocking (L2 negative, Boundary special values) keep reporting
+# through their [BOUNDARY_WARN]/[L2] lines without gating.
+
+
+def test_mha_l0():
+    """L0 gate (blocking): 10/10 must pass — DESIGN §9.2 pass standard."""
+    assert run_l0(), "L0 precision gate failed — see the [PRECISION_FAIL] and [L0] summary lines above"
+
+
+def test_mha_l1():
+    """L1 functional layer (blocking): irregular/tail/prime shapes, value ranges, attrs."""
+    assert run_l1(), "L1 precision gate failed — see the [PRECISION_FAIL] and [L1] summary lines above"
+
+
+def test_mha_l2():
+    """L2 negative layer (non-blocking per DESIGN §9.2): illegal inputs rejected by host asserts."""
+    run_l2()
+
+
+def test_mha_boundary():
+    """Boundary special-value probes (non-blocking per DESIGN §9.2): WARN recorded, never gating."""
+    run_boundary()
+
+
+@pytest.mark.ci_skip
+def test_mha_perf():
+    """Perf sentinels (DESIGN rev2 §9.4) — skipped in every CI scenario.
+
+    They are a Stage-3 feasibility gate rather than a code-regression test, and
+    CI cannot run them: their golden side depends on examples/mha/.golden_cache
+    (154 MB of chunked-golden tensors) which is untracked, so a CI workspace —
+    cleaned by actions/checkout on every run — would recompute goldens for
+    shapes up to (8, 2048, 4096, 32, 128) from scratch, under the 1800s
+    per-case harness guard. Run by hand:
+    `python examples/mha/test_mha.py --level perf`.
+    """
+    assert run_perf(), "perf sentinel gate failed — see the [PERF_FAIL] lines above"
 
 
 # ========== Main: --level dispatch + exit code ==========
@@ -824,15 +880,15 @@ def main():
 
     blocking_ok = True  # only L0/L1/perf are blocking
     if args.level in ("l0", "all"):
-        blocking_ok &= test_mha_l0()
+        blocking_ok &= run_l0()
     if args.level in ("l1", "all"):
-        blocking_ok &= test_mha_l1()
+        blocking_ok &= run_l1()
     if args.level in ("l2", "all"):
-        test_mha_l2()  # negative: non-blocking
+        run_l2()  # negative: non-blocking
     if args.level in ("boundary", "all"):
-        test_mha_boundary()  # special values: non-blocking
+        run_boundary()  # special values: non-blocking
     if args.level in ("perf", "all"):
-        blocking_ok &= test_mha_perf()
+        blocking_ok &= run_perf()
 
     if blocking_ok:
         print("Test Passed!")
