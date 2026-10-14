@@ -76,7 +76,13 @@ call resident, so that path needs no framework-side patch.
 
 DESIGN.md in this directory derives the tiling tiers, the event-id budget and
 the precision gates that test_mha.py checks.
+
+Run this file directly for a self-checking example against a torch reference:
+    python examples/mha/mha.py                    # fp16, B=2 S=S_kv=128 N=8 D=64
+    python examples/mha/mha.py --causal --D 128   # --help lists every option
 """
+
+import argparse
 
 import tilelang
 import torch
@@ -2103,3 +2109,56 @@ def mha(query, key, value, scaleValue=-1.0, is_causal=False):
         is_causal=bool(is_causal),
     )
     return kernel(query, key, value)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Self-checking MHA forward example (BSHD layout).")
+    parser.add_argument("--B", type=int, default=2, help="batch size, 1..128")
+    parser.add_argument("--S", type=int, default=128, help="query length, 1..2048; S <= 16 selects the decode path")
+    parser.add_argument("--S-kv", dest="S_kv", type=int, default=128, help="key/value length, 1..4096")
+    parser.add_argument("--N", type=int, default=8, help="head count, 1..64")
+    parser.add_argument("--D", type=int, default=64, choices=(64, 128, 256), help="head dim")
+    parser.add_argument("--dtype", default="float16", choices=("float16", "bfloat16"), help="Q/K/V dtype")
+    parser.add_argument("--scale", type=float, default=-1.0, help="softmax scale; <= 0 selects 1/sqrt(D)")
+    parser.add_argument("--causal", action="store_true", help="apply the bottom-right aligned causal mask")
+    args = parser.parse_args()
+
+    def ref_mha(q, k, v, scale, causal):
+        """Reference on the kernel's own rounding grid: QK^T -> *scale -> softmax -> @V,
+        computed in the input dtype over [B, N, S, S_kv] scores."""
+        S, S_kv = q.shape[1], k.shape[1]
+        scores = torch.matmul(q.transpose(1, 2), k.transpose(1, 2).transpose(-2, -1)) * scale
+        if causal:
+            i = torch.arange(S).unsqueeze(-1)
+            j = torch.arange(S_kv).unsqueeze(0)
+            scores = scores.masked_fill(j > i + (S_kv - S), float("-inf"))
+        # A fully masked row would leave softmax with 0/0; force its weights to 0.
+        row_max = scores.max(dim=-1, keepdim=True).values
+        weights = torch.nn.functional.softmax(scores, dim=-1)
+        weights = torch.where(torch.isinf(row_max) & (row_max < 0), torch.zeros_like(weights), weights)
+        return torch.matmul(weights, v.transpose(1, 2)).transpose(1, 2).contiguous()
+
+    scale = args.scale if args.scale > 0 else 1.0 / args.D**0.5
+    dtype = getattr(torch, args.dtype)
+    torch.manual_seed(0)
+    query = torch.randn(args.B, args.S, args.N, args.D, dtype=dtype)
+    key = torch.randn(args.B, args.S_kv, args.N, args.D, dtype=dtype)
+    value = torch.randn(args.B, args.S_kv, args.N, args.D, dtype=dtype)
+
+    out = mha(query.to("npu"), key.to("npu"), value.to("npu"), scaleValue=args.scale, is_causal=args.causal)
+    torch.npu.synchronize()
+    ref = ref_mha(query, key, value, scale, args.causal)
+
+    # The mixed-tolerance gate test_mha.py uses: at least 99% of the elements
+    # inside atol + rtol*|ref|, and no element past the dtype's absolute ceiling.
+    atol, rtol, max_abs_limit = {"float16": (2**-14, 2**-9, 1e-1), "bfloat16": (2**-10, 2**-6, 1e0)}[args.dtype]
+    out_f, ref_f = out.detach().cpu().float(), ref.float()
+    abs_err = (out_f - ref_f).abs()
+    matched = (abs_err <= atol + rtol * ref_f.abs()).float().mean().item()
+    max_abs = abs_err.max().item()
+
+    print(f"MHA B={args.B} S={args.S} S_kv={args.S_kv} N={args.N} D={args.D} dtype={args.dtype} causal={args.causal} scale={scale:.6f}")
+    print(f"matched={matched:.5f} (gate >= 0.99)   max_abs_err={max_abs:.3e} (gate <= {max_abs_limit:g})")
+    assert matched >= 0.99, f"only {matched:.5f} of elements are within tolerance (gate 0.99)"
+    assert max_abs <= max_abs_limit, f"max_abs_err {max_abs:.3e} exceeds the {max_abs_limit:g} ceiling"
+    print("Test Passed!")
