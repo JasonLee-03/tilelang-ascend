@@ -474,3 +474,19 @@ def mha_form_a_kernel(
                 )
 
     return main
+
+
+# This file is a library module (mha.py and test_mha.py import it), but the
+# examples/bench_test.sh runner executes nearly every .py under examples/<op>/ as
+# a standalone script and requires a pass token in its output. The __name__ guard
+# below therefore keeps `import mha_form_a` side-effect free while giving
+# `python mha_form_a.py` a real self-check: it builds THIS form's kernel for one
+# in-form shape and validates it against a torch reference on the device.
+# run_form_self_check() first asserts the shape dispatches to Form A, so this
+# module's kernel is guaranteed to be the one exercised.
+if __name__ == "__main__":
+    from mha_common import FORM_A, run_form_self_check
+
+    # Form A: S > 16 and D <= 128. Small, in-domain, structurally representative
+    # (single KV block, so the FIX-direct-write epilogue runs).
+    run_form_self_check(mha_form_a_kernel, form=FORM_A, B=2, S=128, S_kv=128, N=8, D=64)

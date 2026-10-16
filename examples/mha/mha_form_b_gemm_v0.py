@@ -443,3 +443,20 @@ def mha_form_b_gemm_v0_kernel(
                 )
 
     return main
+
+
+# This file is a library module (mha.py and test_mha.py import it), but the
+# examples/bench_test.sh runner executes nearly every .py under examples/<op>/ as
+# a standalone script and requires a pass token in its output. The __name__ guard
+# below therefore keeps `import mha_form_b_gemm_v0` side-effect free while giving
+# `python mha_form_b_gemm_v0.py` a real self-check: it builds THIS form's kernel
+# for one in-form shape and validates it against a torch reference on the device.
+# run_form_self_check() first asserts the shape dispatches to Form B gemm_v0, so
+# this module's kernel is guaranteed to be the one exercised.
+if __name__ == "__main__":
+    from mha_common import FORM_B_GEMM_V0, run_form_self_check
+
+    # Form B gemm_v0 decode fallback: S <= 16, all D. D == 256 with S_kv=512 >
+    # 256 puts it in the kv_db domain (K/V dual-side L1 double buffer, stock
+    # gemm_v0 default prologue), the decode path's most distinct structure.
+    run_form_self_check(mha_form_b_gemm_v0_kernel, form=FORM_B_GEMM_V0, B=2, S=1, S_kv=512, N=8, D=256)

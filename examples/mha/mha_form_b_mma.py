@@ -565,3 +565,21 @@ def mha_form_b_mma_kernel(
                 )
 
     return main
+
+
+# This file is a library module (mha.py and test_mha.py import it), but the
+# examples/bench_test.sh runner executes nearly every .py under examples/<op>/ as
+# a standalone script and requires a pass token in its output. The __name__ guard
+# below therefore keeps `import mha_form_b_mma` side-effect free while giving
+# `python mha_form_b_mma.py` a real self-check: it builds THIS form's kernel for
+# one in-form shape and validates it against a torch reference on the device.
+# run_form_self_check() first asserts the shape dispatches to Form B-mma, so this
+# module's kernel is guaranteed to be the one exercised.
+if __name__ == "__main__":
+    from mha_common import FORM_B_MMA, run_form_self_check
+
+    # Form B-mma: S > 16 and D == 256. Multi KV block (S_kv=512, block_N=128 ->
+    # kv_iters=4), so both the manual K/N-split mma pipeline and the generic flat
+    # (task, kv) slot stream run. Smallest S above the decode threshold that still
+    # reaches the multi-block domain.
+    run_form_self_check(mha_form_b_mma_kernel, form=FORM_B_MMA, B=1, S=32, S_kv=512, N=4, D=256)

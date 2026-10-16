@@ -933,3 +933,232 @@ def make_emit_v(cfg):
         T.wait_flag("MTE3", "V", SIG_S_HALF)
 
     return emit_v
+
+
+# ==================== Runnable self-check entries ====================
+# examples/bench_test.sh's legacy runner executes nearly every .py under
+# examples/<op>/ as a standalone script and only counts it as passed when the
+# output contains a pass token ("Test Passed!" / "Kernel Output Match"). Every
+# module of this operator therefore carries a real, __name__-guarded executable
+# entry: the guard keeps `import <module>` side-effect free (mha.py, test_mha.py
+# and the three form modules all import each other), while `python <module>.py`
+# runs an actual check. run_form_self_check() below is the single on-device
+# numerical check shared by the three form modules (DRY: one torch reference and
+# one tolerance gate, not three copies); mha_common.py's own entry is the
+# device-free host quick-check _host_self_check().
+
+
+def run_form_self_check(
+    kernel_factory,
+    *,
+    form,
+    B,
+    S,
+    S_kv,
+    N,
+    D,
+    dtype="float16",
+    scaleValue=-1.0,
+    is_causal=False,
+):
+    """On-device numerical self-check for one form module, shared by all three.
+
+    Host-side orchestration only; the kernel it builds and runs is the calling
+    module's own. Steps:
+
+    1. Assert the shape really dispatches to ``form`` via select_form() -- the
+       same single source mha_kernel() routes through. This is the key guard: a
+       mistyped shape would otherwise let a form module's entry silently build
+       and test a *different* form, leaving this module's kernel unexercised
+       while CI still prints the pass token.
+    2. Build the kernel by calling ``kernel_factory`` directly (not through
+       mha.py's wrapper), so there is no second instance of the same kernel.
+    3. Run deterministic inputs (torch.manual_seed(0)) on the npu.
+    4. Compare against a torch reference on the kernel's own rounding grid.
+    5. Apply the repo's mixed-tolerance gate (identical table to mha.py and
+       test_mha.py) and print ``Test Passed!`` as the last line.
+
+    All torch / torch_npu work happens inside the body, so importing this module
+    stays free of device side effects.
+    """
+    import torch
+
+    # (1) Dispatch guard: the shape must belong to THIS form.
+    got = select_form(B, S, S_kv, N, D, dtype, scaleValue, is_causal)
+    assert got == form, f"shape (B={B},S={S},S_kv={S_kv},N={N},D={D}) dispatches to {got}, not {form}"
+
+    # (2) Build this module's kernel directly (the jit decorator is lazy, so
+    #     importing the module compiled nothing; compilation happens here).
+    kernel = kernel_factory(
+        B=B,
+        S=S,
+        S_kv=S_kv,
+        N=N,
+        D=D,
+        dtype=dtype,
+        scaleValue=scaleValue,
+        is_causal=is_causal,
+    )
+
+    # (3) Deterministic inputs, run on device.
+    scale = scaleValue if scaleValue > 0 else 1.0 / D**0.5
+    tdt = getattr(torch, dtype)
+    torch.manual_seed(0)
+    query = torch.randn(B, S, N, D, dtype=tdt)
+    key = torch.randn(B, S_kv, N, D, dtype=tdt)
+    value = torch.randn(B, S_kv, N, D, dtype=tdt)
+    out = kernel(query.to("npu"), key.to("npu"), value.to("npu"))
+    torch.npu.synchronize()
+
+    # (4) Torch reference, semantics identical to mha.py's ref_mha: computed in
+    #     the input dtype over [B, N, S, S_kv] scores as QK^T -> *scale ->
+    #     softmax -> @V, with a bottom-right aligned causal mask (j > i +
+    #     (S_kv - S)) and fully-masked rows forced to zero weights.
+    def _ref(q, k, v, s, causal):
+        Sq, Skv = q.shape[1], k.shape[1]
+        scores = torch.matmul(q.transpose(1, 2), k.transpose(1, 2).transpose(-2, -1)) * s
+        if causal:
+            i = torch.arange(Sq).unsqueeze(-1)
+            j = torch.arange(Skv).unsqueeze(0)
+            scores = scores.masked_fill(j > i + (Skv - Sq), float("-inf"))
+        row_max = scores.max(dim=-1, keepdim=True).values
+        weights = torch.nn.functional.softmax(scores, dim=-1)
+        weights = torch.where(torch.isinf(row_max) & (row_max < 0), torch.zeros_like(weights), weights)
+        return torch.matmul(weights, v.transpose(1, 2)).transpose(1, 2).contiguous()
+
+    ref = _ref(query, key, value, scale, is_causal)
+
+    # (5) The mixed-tolerance gate test_mha.py uses: at least 99% of the elements
+    #     inside atol + rtol*|ref|, and no element past the dtype's ceiling.
+    atol, rtol, max_abs_limit = {"float16": (2**-14, 2**-9, 1e-1), "bfloat16": (2**-10, 2**-6, 1e0)}[dtype]
+    out_f, ref_f = out.detach().cpu().float(), ref.float()
+    abs_err = (out_f - ref_f).abs()
+    matched = (abs_err <= atol + rtol * ref_f.abs()).float().mean().item()
+    max_abs = abs_err.max().item()
+
+    name = getattr(kernel_factory, "__name__", form)
+    print(f"{name} self-check: B={B} S={S} S_kv={S_kv} N={N} D={D} dtype={dtype} causal={is_causal} scale={scale:.6f}")
+    print(f"matched={matched:.5f} (gate >= 0.99)   max_abs_err={max_abs:.3e} (gate <= {max_abs_limit:g})")
+    assert matched >= 0.99, f"only {matched:.5f} of elements are within tolerance (gate 0.99)"
+    assert max_abs <= max_abs_limit, f"max_abs_err {max_abs:.3e} exceeds the {max_abs_limit:g} ceiling"
+    print("Test Passed!")
+
+
+def _host_self_check():
+    """Device-free quick check that mha_common.py runs when executed directly.
+
+    The legacy runner executes this shared module as a script too, so it needs
+    its own pass token. It stays entirely on the host -- pure Python scalar
+    assertions over derive_config / select_form / make_emit_v, no kernel
+    compilation and no on-device compute (derive_config's only device touch is
+    _cube_core_num(), a cached host metadata query with a stock fallback) -- so
+    it is near-instant and immune to the runner's parallel JIT-cache lock
+    contention. It asserts the three contracts the whole operator rests on:
+
+    1. The three-way dispatch is mutually exclusive and exhaustive over (S, D),
+       including both edges of the S > 16 threshold and every tiling tier.
+    2. derive_config's tiling / iteration / task-split / event-id derivations
+       satisfy their documented relations on every grid point.
+    3. make_emit_v returns a hygienic emit_v TIRMacro whose captured closure
+       covers every free name of the macro body with the config's own values.
+    """
+    forms = (FORM_A, FORM_B_MMA, FORM_B_GEMM_V0)
+    assert NUM_STAGES % 2 == 0, "NUM_STAGES must be even: the io_buf/L0 slots rotate in pairs"
+    assert len(set(forms)) == 3, "the three form identifiers must be pairwise distinct"
+
+    n_pts = 0
+    # Boundary-covering grid: both edges of S > 16, all three D, and single- vs
+    # multi-KV-block S_kv straddling the 128 / 256 / 512 block_N tier edges.
+    for S in (1, 2, 16, 17, 32, 128, 2048):
+        for D in (64, 128, 256):
+            for S_kv in (64, 128, 129, 256, 257, 512, 2048, 4096):
+                for is_causal in (False, True):
+                    if is_causal and S_kv < S:
+                        continue  # out of domain: mha() requires S <= S_kv when causal
+                    for scaleValue in (-1.0, 0.5):
+                        n_pts += 1
+                        cfg = derive_config(2, S, S_kv, 4, D, "float16", scaleValue, is_causal)
+                        got = select_form(2, S, S_kv, 4, D, "float16", scaleValue, is_causal)
+                        tag = f"(S={S},D={D},S_kv={S_kv},causal={is_causal},scale={scaleValue})"
+
+                        # ---- (1) dispatch: closed, mutually exclusive, exhaustive ----
+                        assert got in forms, f"{tag}: select_form returned {got} outside the three identifiers"
+                        assert int(cfg.form_a) + int(cfg.form_b_mma) <= 1, f"{tag}: form_a and form_b_mma both set"
+                        assert (got == FORM_A) == cfg.form_a, f"{tag}: select_form/derive_config disagree on form_a"
+                        assert (got == FORM_B_MMA) == cfg.form_b_mma, f"{tag}: select_form/derive_config disagree on form_b_mma"
+                        assert (got == FORM_B_GEMM_V0) == (not cfg.form_a and not cfg.form_b_mma), (
+                            f"{tag}: gemm_v0 must be the exact complement of form_a|form_b_mma"
+                        )
+                        # The form depends on (S, D) alone; restate the documented predicate.
+                        expect = FORM_A if (S > 16 and D <= 128) else (FORM_B_MMA if (S > 16 and D == 256) else FORM_B_GEMM_V0)
+                        assert got == expect, f"{tag}: form {got} != documented predicate {expect}"
+
+                        # ---- (2) config-derivation invariants ----
+                        assert cfg.block_M == (16 if S <= 16 else (32 if D == 256 else 64)), f"{tag}: block_M {cfg.block_M}"
+                        assert cfg.block_N in (128, 256, 512), f"{tag}: block_N {cfg.block_N} outside tiers"
+                        assert cfg.gemm1_kL0 in (32, 64, 128), f"{tag}: gemm1_kL0 {cfg.gemm1_kL0} outside tiers"
+                        if S > 16:
+                            assert cfg.block_N == 128 and cfg.gemm1_kL0 == 128, f"{tag}: prefill tier must be bN=128,kL0=128"
+                        assert cfg.half_M == cfg.block_M // 2, f"{tag}: half_M != block_M // 2"
+                        assert cfg.s_blocks == -(-S // cfg.block_M), f"{tag}: s_blocks != ceil(S/block_M)"
+                        assert cfg.kv_iters == -(-S_kv // cfg.block_N), f"{tag}: kv_iters != ceil(S_kv/block_N)"
+                        assert cfg.single_kv_block == (cfg.kv_iters == 1) == (S_kv <= cfg.block_N), f"{tag}: single_kv_block"
+                        assert cfg.flat_v == (S > 16 and not cfg.single_kv_block), f"{tag}: flat_v"
+                        assert cfg.kv_db == (S <= 16 and D == 256 and not cfg.single_kv_block), f"{tag}: kv_db domain"
+                        assert cfg.need_bound_mask == (S_kv % cfg.block_N != 0), f"{tag}: need_bound_mask"
+                        assert cfg.need_mask == (is_causal or cfg.need_bound_mask), f"{tag}: need_mask"
+                        assert cfg.causal_offset == S_kv - S, f"{tag}: causal_offset"
+                        assert cfg.offset_eff == (S_kv - S if is_causal else 2**30), f"{tag}: offset_eff"
+                        assert cfg.block_num == 2 * 4 * cfg.s_blocks, f"{tag}: block_num != B*N*s_blocks"
+                        assert 1 <= cfg.core_num <= cfg.block_num, f"{tag}: core_num {cfg.core_num} out of [1, block_num]"
+                        assert cfg.q_tasks * cfg.core_num + cfg.r_tasks == cfg.block_num, f"{tag}: task split not an exact cover"
+                        assert 0 <= cfg.r_tasks < cfg.core_num, f"{tag}: r_tasks {cfg.r_tasks} out of [0, core_num)"
+                        exp_scale = scaleValue if scaleValue > 0 else (1.0 / D) ** 0.5
+                        assert cfg.sm_scale == exp_scale, f"{tag}: sm_scale {cfg.sm_scale} != {exp_scale}"
+                        assert cfg.io3_is_alias == (cfg.block_N == D), f"{tag}: io3_is_alias"
+                        assert cfg.sig_io3 == (cfg.SIG_IO_UB if cfg.io3_is_alias else cfg.SIG_IO3), f"{tag}: sig_io3"
+                        sem_ids = {
+                            cfg.SEM_WS1_C2V,
+                            cfg.SEM_WS1_V2C,
+                            cfg.SEM_WS2_V2C,
+                            cfg.SEM_WS2_C2V,
+                            cfg.SEM_WS3_C2V,
+                            cfg.SEM_WS3_V2C,
+                        }
+                        assert sem_ids == set(range(6)), f"{tag}: cross-core SEM ids must be exactly 0..5, got {sorted(sem_ids)}"
+
+    print(f"[HOST-SELF-CHECK] dispatch/config grid: {n_pts} points, all invariants held")
+
+    # ---- (3) make_emit_v contract on representative configs (one per domain) ----
+    cfg_fields = {f.name for f in dataclasses.fields(MhaConfig)}
+    repr_points = [
+        ("form_a_multi", (2, 128, 256, 8, 64), False),
+        ("form_a_single", (2, 128, 128, 8, 64), True),
+        ("form_b_mma_multi", (2, 32, 512, 4, 256), False),
+        ("form_b_mma_single", (1, 64, 64, 2, 256), False),
+        ("gemm_v0_kvdb", (2, 1, 512, 8, 256), False),
+        ("gemm_v0_single", (1, 1, 128, 4, 256), False),
+        ("gemm_v0_d64", (2, 1, 64, 2, 64), False),
+    ]
+    for name, (b, s, skv, n, d), causal in repr_points:
+        cfg = derive_config(b, s, skv, n, d, "float16", -1.0, causal)
+        ev = make_emit_v(cfg)
+        assert type(ev).__name__ == "TIRMacro", f"{name}: make_emit_v returned {type(ev).__name__}, not a TIRMacro"
+        assert ev.__name__ == "emit_v", f"{name}: macro __name__ is {ev.__name__}, not emit_v"
+        assert ev.hygienic is True, f"{name}: emit_v must be hygienic (@T.macro default)"
+        src = ev.source.source
+        assert src.strip(), f"{name}: empty macro source"
+        for marker in ("T.set_cross_flag", "T.wait_cross_flag", "T.set_flag", "T.wait_flag", "T.copy"):
+            assert marker in src, f"{name}: marker {marker} missing from emit_v body"
+        freevars = ev.func.__code__.co_freevars
+        missing = [v for v in freevars if v not in ev.closure_vars]
+        assert not missing, f"{name}: emit_v free names missing from closure_vars: {missing}"
+        mismatched = [v for v in freevars if v in cfg_fields and ev.closure_vars[v] != getattr(cfg, v)]
+        assert not mismatched, f"{name}: closure value diverges from cfg for {mismatched}"
+        print(f"[HOST-SELF-CHECK] make_emit_v[{name}]: hygienic emit_v TIRMacro, {len(freevars)} free names captured with cfg values")
+
+    print("Test Passed!")
+
+
+if __name__ == "__main__":
+    _host_self_check()
