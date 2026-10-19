@@ -149,6 +149,8 @@ T.tile.sub(acc_ub, acc_ub, max_2d)
 
 **评审建议**：看到 `for row in range(...)`、`for col in range(...)` 里反复调用 `T.tile.add/sub/mul/div/max/min` 时，优先确认能否改成 broadcast + 整 tile 计算。
 
+**CV 耦合算子例外**：算子为 AIC/AIV 跨核耦合闭环（attention 类）时，本条目的「削减 V 侧指令数」属单侧吞吐类手段——耦合平衡态下会被对侧等待吸收、甚至负转化（三次实测证伪判例）。评审时先按 [attention_tuning_playbook.md §3.7](best-practices/attention_tuning_playbook.md) 做税种判别（vec 主体 vs 事件税拆分），再决定是否列为优化点；非耦合态（纯 Vector 算子、Developer 模式 AUTO_SYNC 主导）本条目照常适用。
+
 ---
 
 ## 冗余全局同步

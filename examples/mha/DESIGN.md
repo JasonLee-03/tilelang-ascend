@@ -209,6 +209,85 @@ equilibrium，§S6-5 判为下一杠杆重试候选——fixpipe RNE 等价探�
 - **IR 守卫方法学（§S5-5 新增硬门继承）**：16 shape 生成码 dump——Form A 12 守卫 +
   兜底域 decode 守卫**逐字节不变**；Form B-mma 目标 shape 按预期改变（§9.6-2）。
 
+### 0.7 三形态文件拆分（refactor_20261014，post-SUCCESS 附加作业）与**行号引用基线声明**
+
+**变更性质**：纯结构性搬移（用户立项指令「将 mha 算子文件 Form A/Form B-mma/Form B
+gemm_v0 建议拆到三个文件，然后在 wrapper 层分发」）。**非** Stage 1-3 状态机重启、
+**非**设计回退、**非**精度事件、**非**性能调优会话；rev4 设计本体（三形态谓词、tile
+三档体系、emit_v 唯一性、SEM/SIG id 空间、4 项精度不变量、同步模型）**零变更**。
+
+**拆分结果**：单体 `mha.py`（2164 行，md5 `66305f03`）→ 1 个 wrapper + 4 个模块：
+
+| 文件 | 行数 | md5 | 职责 |
+|------|------|-----|------|
+| `mha.py` | 251 | `b8e6c042` | **wrapper 层**：模块 docstring（算子契约）+ `_FORM_FACTORIES` 路由表 + `mha_kernel(...)` 纯 Python 分发器（签名/返回语义不变）+ `mha(...)` host 包装（元数据断言逐字保留）+ `__main__` CLI 自检（逐字保留） |
+| `mha_common.py` | 935 | `f6b21478` | `pass_configs`:40 / `NUM_STAGES`:47 / `CROSS_INTERVAL`:48 / `_cube_core_num()`:51 / `FORM_*`:63-65 / `MhaConfig`:69-124 / `derive_config()`:127-313（host 配置派生**唯一源**）/ `select_form()`:316-338（三分派谓词**唯一源**）/ `make_emit_v()`:354-935（内含 `emit_v`:396-933，全仓库**唯一一份**） |
+| `mha_form_a.py` | 476 | `361bcab0` | `mha_form_a_kernel`:31 —— Form A（S>16 ∧ D≤128）C-scope 本体 + V 侧 buffer 声明 |
+| `mha_form_b_mma.py` | 567 | `15bd2b0a` | `mha_form_b_mma_kernel`:31 —— Form B-mma（S>16 ∧ D=256）手动 K/N-split 本体 |
+| `mha_form_b_gemm_v0.py` | 445 | `6b063eba` | `mha_form_b_gemm_v0_kernel`:30 —— Form B gemm_v0（S≤16 全 D）decode 兜底本体 |
+
+**用户已裁决的两项架构决策（本节据此落地，不再复议）**：
+1. 新增 `mha_common.py` 承载三形态共享的 `emit_v`（538 行 `@T.macro`）与共享基础
+   设施——本文档 §8.4 与 `mha.py` docstring 均明确 `emit_v`「必须保持唯一一份」
+   （TVMScript 解析期语义 + 精度不变量 1/2/3/4 全在其中），复制三份 = 3× 精度关键
+   代码漂移风险。
+2. 保留 `mha_kernel(...)` 为 wrapper 层分发器（纯 Python 函数，签名与返回值语义不
+   变）——IR dump 工具链与外部脚本通过 `mod.mha_kernel(B=..., S=...)` 直接取 kernel
+   源码，该入口不可破坏。
+
+> ### ⚠ 行号引用基线声明（全文适用，强制读法）
+>
+> 本文档全文含 12 处 `mha.py:<line>` / `mha.py:<a>-<b>` 形式的行号引用（如 §5.2 的
+> `mha.py:120-179`、§7.2 的 `mha.py:163`、会话 12 记录中的 `mha.py:1114-1123`）。
+> **拆分后这些行号在新 `mha.py`（251 行）中必然失效。本节声明其统一读法，不逐条
+> 重写正文**（最小必要改动原则）：
+>
+> 1. **所有 `mha.py:<line>` 引用一律指向拆分前单体文件 rev4 终态**：2164 行、
+>    md5 `66305f037695b392d13776a14bf10725`，已完整备份为
+>    `history_version/mha_impl_pre_split_20261014.py`（md5 双点核验一致）。查阅任一
+>    历史行号，打开该备份文件即可，行号逐字有效。
+> 2. **旧区间 → 新文件映射表**（按拆分前结构地图；「逐字」= ast.dump 同一性 +
+>    dedent 后文本同一性已机器证明，`emit_v` 为**源文本逐字节同一**）：
+>
+> | 拆分前 `mha.py` 区间 | 内容 | 拆分后落点 |
+> |---|---|---|
+> | 1-83 | 模块 docstring（架构/流水/精度不变量/同步模型/约束/CLI） | `mha.py` 1-106（新增 File layout 段 + emit_v 归属三句；其余逐字） |
+> | 85-90 | imports | 按模块需求分置：`mha.py` 108-115 / `mha_common.py` 35-38 / 三形态文件各自头部 17-27 |
+> | 92-97 | `pass_configs`（4 项全 False） | `mha_common.py`:40（逐字） |
+> | 99-100 | `NUM_STAGES` / `CROSS_INTERVAL` | `mha_common.py`:47-48（逐字） |
+> | 103-110 | `_cube_core_num()` | `mha_common.py`:51（逐字） |
+> | 113 | `@tilelang.jit(out_idx=[3], workspace_idx=[4,5,6], pass_configs=...)` | 三个形态文件各自工厂头部（逐字，×3） |
+> | 114-123 | `mha_kernel(B,S,S_kv,N,D,dtype,scaleValue,is_causal)` 形参表 | 三个形态工厂形参表**完全一致**（逐字，×3）；`mha.py`:126-158 分发器同签名 |
+> | 124-242 | host 侧配置派生（sm_scale / block_M / block_N / gemm1_kL0 三档 / form_a / form_b_mma / KC / NC / half_M / causal_offset / need_bound_mask / need_mask / offset_eff / s_blocks / kv_iters / single_kv_block / flat_v / kv_db / block_num / core_num / q_tasks / r_tasks / SEM_* ×6 / SIG_* ×12 / io3_is_alias / sig_io3） | `mha_common.py`:`derive_config()`:127 函数体（**45 条语句逐字**，ast.dump sha256 `b9113501dfd7f946` 前后一致），返回 `MhaConfig` |
+> | 244-782 | `# ==== Shared V-scope emitter (@T.macro) ====` banner + `@T.macro emit_v`（28 形参、538 行） | `mha_common.py`:395-933，位于 `make_emit_v(cfg)`:354 内 —— **源文本逐字节同一**（同为 4 列缩进；sha256 `b593e7d86ac597fbaf96729c33f5ae2a`） |
+> | 784-794 | 公共注释块（Form B-mma GEMM 体内联展开原因 + V 侧 buffer 须在各 prim_func 内声明 + 分派是 Python 级分支） | `mha_common.py`:341-351（`make_emit_v` 上方，**整块逐字随迁**，仅 de-indent 4 列；决策=不拆分不复制，避免注释语义漂移） |
+> | 795-1198 | `if form_a:` → `@T.prim_func main`(797-1196) → `return main`(1198) | `mha_form_a.py`:75-474（工厂 31-476；de-indent 4 列；ast.dump sha256 `ad77069ac1a347da` 前后一致） |
+> | 1200-1688 | `elif form_b_mma:` → 形态说明注释(1201-1214) → `@T.prim_func main`(1215-1686) → `return main`(1688) | `mha_form_b_mma.py`:94-565（工厂 31-567；形态注释 79-92 随迁；ast.dump sha256 `734f6b58fca8d8fc` 前后一致） |
+> | 1690-2071 | `else:` → `@T.prim_func main`(1692-2069) → `return main`(2071) | `mha_form_b_gemm_v0.py`:70-443（工厂 30-445；ast.dump sha256 `076b5483fcea0a23` 前后一致；其中 2 处 `eff_kv_iters = (...)` 冗余括号被 `ruff format` 合并为单行——de-indent 后行长落入 140 列内所致，AST 同一） |
+> | 2074-2111 | `def mha(...)` host 包装（元数据校验断言 + JIT 分发） | `mha.py`:161-198（**逐字**，ast.dump sha256 `2ca5aa57690ad4c0`） |
+> | 2114-2164 | `__main__` CLI 自检（argparse + ref_mha + 混合容差门 + `Test Passed!`） | `mha.py`:201-251（**逐字**，ast.dump sha256 `71229b19be7cb80b`） |
+>
+> 3. **新增（拆分前无对应区间）**：`mha_common.py` 的 `MhaConfig` / `derive_config`
+>    签名与 `return MhaConfig(...)` / `select_form()` / `make_emit_v(cfg)` 及其 27 行
+>    同名解包；三形态工厂的 `cfg = derive_config(...)` + 形态守卫 assert + 同名解包
+>    块 + `emit_v = make_emit_v(cfg)`；`mha.py` 的 `_FORM_FACTORIES` + `mha_kernel()`
+>    分发器体；`test_mha.py` 的 `run_l1_dispatch()` 分派守卫（§9.2 L1 层增补）。
+> 4. **为何解包块必须存在**：`tvm/script/parser/tir/entry.py::prim_func` 与
+>    `core/parser.py::ScriptMacro.__call__`（hygienic=True，`@T.macro` 默认）均以
+>    `core/utils.py::inspect_function_capture` = `{**func.__globals__, **co_freevars}`
+>    解析自由名。故搬移后每个自由名必须**同名**绑定为所属工厂函数的局部量（Python
+>    自动生成闭包 cell），或存在于**定义所在模块**的 globals；`cfg.block_M` 形式不等
+>    价（属性访问会被 TVMScript 当作 TIR 表达式）。机器化名单见
+>    `/tmp/opencode/r17_split/freename_analysis.md`（symtable 直读编译器符号表，
+>    4 段 UNRESOLVED 均为空）与 `binding_check.log`（C1-C4 全 OK，含运行期
+>    `closure_vars` 49 项实测）。
+>
+> **性能口径**：拆分后 22 shape 生成码三方逐字节同一（baseline / dispatcher /
+> 三工厂直调，`diff -rq` 退出码 0，聚合 sha256
+> `abd65ef6a35ac3263121039778379a07ac67dda5fdcc76440586590c1a6c3828` 三方一致）
+> ⇒ 设备码不变 ⇒ **性能可证不变，无需 msprof 复测**（强于复测）。§12 全部性能目标
+> 与回退条款在拆分后**继续按原体有效**。
+
 ---
 
 ## 1. 概述
@@ -273,6 +352,13 @@ contiguous/padding/cat 等物理化操作（§4.8 HOST-METADATA-AUDIT）；works
 
 ```
 host: 元数据校验 + 配置/三分派推导（不触碰数据；workspace 框架注入）
+      [refactor_20261014 §0.7：该 host 层现为**跨文件**结构——mha.py::mha() 元数据
+       校验（逐字）→ mha.py::mha_kernel() 分发器 → mha_common.select_form()/
+       derive_config()（三分派谓词与配置派生唯一源）→ mha_form_{a,b_mma,b_gemm_v0}.py
+       对应 JIT 工厂构建单个自洽 prim_func。语义与本图完全一致：分派仍是 host 纯
+       Python 元数据层（编译期谓词），仍不触碰张量数据；仅"单文件内 Python 级三分支"
+       变为"wrapper 层路由到三个模块"。V 侧 emit_v 由 mha_common.make_emit_v(cfg)
+       绑定后注入所选工厂，仍是全仓唯一一份。]
                                   │
 ════════ Cube 核（AIC，T.Scope("C")，每 cid 1 个） ════════
 [Form A（prefill D≤128）与 Form B-gemm_v0（decode）数据流 = rev3 §1.5 逐字继承；
@@ -1199,6 +1285,12 @@ generic_fallback: 单一通用 host 入口 mha()（上述全域）；kernel 侧�
   （S≤16 全 D）——谓词按 (S>16, D) 二维互斥穷尽（D 静态封闭 {64,128,256}，
   S>16 二分）；各形态内部 kv_iters≥2 通用 online softmax 路径 + single_kv_block
   特化路径兜底；分派全部位于 host 纯 Python 元数据层（编译期谓词），无输入落空
+  [refactor_20261014 §0.7：分派的**载体**由"单文件内 Python 级三分支 prim_func 构建"
+   变为"跨文件 wrapper 路由"——mha.py::mha_kernel() 读 mha_common.select_form()
+   （谓词唯一源，派生自 derive_config() 的 form_a/form_b_mma 同一对谓词）→
+   _FORM_FACTORIES[form] → 对应形态模块的 JIT 工厂。互斥穷尽性不变（仍按 (S>16, D)
+   二维），且现由 test_mha.py::run_l1_dispatch() 以 16 个 shape 用例（含 S=16/17 双
+   边界 × D=128/256）+ 5 项结构断言机器守卫，不再仅靠注释声明。]
 specializations:
   - predicate: form_a = (S>16) ∧ (D≤128) → Form A（mma 全流水，rev4 不变）
     fallback_on_miss: form_b_mma 谓词次判；再 miss → Form B-gemm_v0
@@ -1517,6 +1609,16 @@ w3 因 rescale 累加语义必须保留——单块域 Form A 已以 #R6-1 O 直
 
 ### 8.3 Cube 核计算流程（rev4：三形态）
 
+> **refactor_20261014（§0.7）载体变更注记**：以下三段 C-scope 流程在拆分前是同一
+> `mha_kernel` 内 `if form_a: / elif form_b_mma: / else:` 三个 Python 级分支各自构建
+> 的 `@T.prim_func main`；拆分后分别位于 `mha_form_a.py` / `mha_form_b_mma.py` /
+> `mha_form_b_gemm_v0.py` 三个模块的 JIT 工厂内，prim_func 仍一律命名 `main`。三段
+> **本体逐字等价**（ast.dump sha256 分别为 `ad77069a` / `734f6b58` / `076b5483`，拆分
+> 前后一致；仅整体 de-indent 4 列，另 Form B-gemm_v0 段 2 处冗余括号被 `ruff format`
+> 合并为单行，AST 同一）。**流程语义、token 账目、pipe 重叠结构、FORBIDDEN 清单全部
+> 不变**；22 shape 生成码三方逐字节同一（§0.7 性能口径）。下文各段中「本 prim_func」
+> 一律读作「该形态所属文件内的那个 prim_func」。
+
 ```python
 # ═══ Form A（prefill D≤128）：mma 双槽流水 —— rev3 §8.3 逐字继承（不变）═══
 # <K 载入 SIG_K_L1 → Q 批首预载 if i<2 → K transpose→l0b_s[side] → SIG_L0AB →
@@ -1621,6 +1723,18 @@ exp → reduce_sum → single_kv_block 预归一 → SIG_S_HALF 闭环 P→w2）
 源码逐字不动**（rev4 S1 变更域仅 C-scope；V 侧对形态无感知：其协议面 = SEM 0-5
 + ws 形状/dtype，三形态一致）。
 
+> **refactor_20261014（§0.7）唯一性载体注记**：「三形态共享 emitter」在拆分前体现为
+> 同一 `mha_kernel` 内的一个 `@T.macro emit_v`（拆分前 `mha.py:245-782`）；拆分后该
+> 定义**唯一**位于 `mha_common.py::make_emit_v(cfg)` 内（`mha_common.py:396-933`），
+> 三个形态文件均**不持有副本**，各自以 `emit_v = make_emit_v(cfg)` 取得绑定同一配置的
+> macro 对象后在自己的 prim_func 内调用。本节「emit_v 源码逐字不动」的承诺在拆分中
+> 以最强形式兑现：该 538 行**源文本逐字节同一**（拆分前后同为 4 列缩进 ⇒
+> `inspect.getsource` 取回并经 `Source` 归一化后的文本 sha256 均为 `4eedbab6…`，
+> 含 banner 注释的文件内区段 sha256 均为 `b593e7d8…`）——即 TVMScript 实际重新解析
+> 的那份文本一个字符未变，精度不变量 1/2/3/4 与其全部 token 账目零风险漂移。
+> `make_emit_v` 必须把 27 个被 macro 体引用的外层名**同名**解包为自身局部量的理由
+> 见 §0.7-4（`inspect_function_capture` = `{**func.__globals__, **co_freevars}`）。
+
 ### 8.5 pass_configs 配置（继承，= §7.3）
 
 ### 8.6 注意事项（rev3 八条继承 + rev4 增量两条）
@@ -1721,6 +1835,20 @@ y = mha(query, key, value, scaleValue=-1.0, is_causal=False)
 > 尾块/质数 shape）/L2（异常）/Boundary（特殊值）完整分层套件**已存在于
 > `test_mha.py`**（场景 B 历史产出：L1 19/L2 12/Boundary 6，接口契约不变 →
 > 零改动复用 §9.5），Stage 2 直接运行既有套件，无需重新枚举。
+>
+> **refactor_20261014（§0.7）L1 层增补注记**：三形态拆分使「三分派互斥且穷尽」从
+> 单文件内的 Python 级 if/elif/else（只有注释声明）变为跨模块的 wrapper 路由契约，
+> 故在 **L1 阻塞层**新增 `run_l1_dispatch()` 分派守卫：16 个 shape 用例（三形态各
+> 5/4/7 例，含 S=16 与 S=17 双侧边界 × D=128/256、S=2048 上限、kv_db 域、
+> single_kv_block 子域）+ 5 项结构断言（三形态标识符互异 / `select_form()` 对三标识
+> 符封闭 / wrapper `_FORM_FACTORIES` 路由到 3 个互异可调用 / 三形态模块可独立 import
+> 且工厂互异 / 路由表条目 == 直接 import 的工厂）。**挂 L1 而非 L0 的理由**：L0 是
+> 固定 10 用例精度收敛门（其计数为 debug_log 全历史记录所引用），本守卫不比数、只验
+> host 结构契约；但误分派 = 构建错误 kernel 本体 = 功能失败而非告警，故必须落在
+> **阻塞**层，L1 即阻塞功能层。该守卫设备无关（`select_form()` 为纯 Python 标量
+> 运算），零编译零上机，不引入 flake 面。**L0 10 用例与 L1 19 个精度用例、L2 12、
+> Boundary 6、哨兵 4 的集合与计数均不变**；覆盖矩阵 19 PASS / 0 MISS / 0 N/A 前后
+> 逐维一致（新增守卫不带 `tags`，不进 `COVERAGE_MANIFEST`）。
 
 **算子类别判定（场景 A Phase 2，按 rev4 设计重跑，结论与 rev3 一致）**：计算类型
 = 混合（CV 融合，两 matmul 夹 softmax，§1.3/§1.4）；复杂度 = Fusion；数学特征 =
@@ -2093,35 +2221,98 @@ int32 compare 退化 / host 顺手物理化 / TVMScript parse-time if 作用域�
 
 ### 11.1 目录结构
 
+> **rev4 终态（拆分前）**：`mha.py` 为单体纯 kernel 文件（2164 行，md5 `66305f03`），
+> 内含 `@tilelang.jit mha_kernel` 三形态工厂 + host 包装 `def mha(...)` + `__main__`
+> CLI 自检。该终态已备份为 `history_version/mha_impl_pre_split_20261014.py`。
+>
+> **refactor_20261014（三形态文件拆分，§0.7）**后的现行结构如下；`mha.py` 由
+> 「三形态工厂」改述为「wrapper 层分发器」。
+
 ```
 examples/mha/
-├── mha.py            # 纯 kernel（@tilelang.jit mha_kernel 三形态工厂 + host 包装 def mha(...)），可 import，无 golden/测试/__main__
-├── test_mha.py       # from mha import mha + §9.1 golden + L0/L1/L2/Boundary/哨兵全套件 + main(--level)（零改动复用）
-├── proto.yaml        # 算子接口规格（dtype/attr），供覆盖门禁派生应覆盖维度（rev4 复核无变化）
-├── DESIGN.md         # 本设计文档（rev4）
-├── debug_log.md      # Stage 2 证据记录（rev4 attempt 续写）
-├── perf_tuning/      # Stage 3 调优证据（final_report.md 六会话证据链 + mindstudio_export/case9_simulator 流水数据 + 续写）
-└── history_version/  # 回退备份（design_rev1/2/3、proto_rev1/2/3、Developer 终态、r3 Expert 终态 7170 锚、各轮快照）
+├── mha.py                  # wrapper 层（251 行，md5 b8e6c042）：算子契约 docstring + _FORM_FACTORIES 路由表
+│                           #   + mha_kernel(...) 纯 Python 分发器（签名/返回语义不变）+ host 包装 def mha(...)
+│                           #   + __main__ CLI 自检（逐字保留）；本文件不含任何 T.* 代码
+├── mha_common.py           # 三形态共享层（935 行，md5 f6b21478）：pass_configs / NUM_STAGES / CROSS_INTERVAL
+│                           #   / _cube_core_num() / FORM_* / MhaConfig / derive_config()（host 配置派生唯一源）
+│                           #   / select_form()（三分派谓词唯一源）/ make_emit_v()（内含 emit_v，全仓唯一一份）
+├── mha_form_a.py           # Form A 工厂（476 行，md5 361bcab0）：@tilelang.jit mha_form_a_kernel（S>16 ∧ D≤128）
+├── mha_form_b_mma.py       # Form B-mma 工厂（567 行，md5 15bd2b0a）：@tilelang.jit mha_form_b_mma_kernel（S>16 ∧ D=256）
+├── mha_form_b_gemm_v0.py   # Form B gemm_v0 工厂（445 行，md5 6b063eba）：@tilelang.jit mha_form_b_gemm_v0_kernel（S≤16 全 D）
+├── test_mha.py             # from mha import mha + §9.1 golden + L0/L1/L2/Boundary/哨兵全套件 + main(--level)
+│                           #   + L1 层 run_l1_dispatch() 分派守卫（refactor_20261014 新增，§0.7）
+├── proto.yaml              # 算子接口规格（dtype/attr），供覆盖门禁派生应覆盖维度（rev4 复核无变化；拆分后仍无变化）
+├── DESIGN.md               # 本设计文档（rev4 + §0.7 拆分节）
+├── debug_log.md            # Stage 2 证据记录（rev4 attempt 续写 + refactor_20261014 节）
+├── perf_tuning/            # Stage 3 调优证据（final_report.md 六会话证据链 + mindstudio_export/case9_simulator 流水数据 + 续写）
+└── history_version/        # 回退备份（design_rev1/2/3、proto_rev1/2/3、Developer 终态、r3 Expert 终态 7170 锚、各轮快照、
+                            #   + mha_impl/test_mha/DESIGN_pre_split_20261014 拆分前三件备份）
 ```
 
 ### 11.2 文件清单
 
 | 文件 | 状态 | 说明 |
 |------|------|------|
-| `DESIGN.md` | ✅ 已完成（本文件，rev4；rev3 已备份 history_version/design_rev3.md，md5 e97dacb6 核验一致） | rev4 设计（含 §0 修订记录/S2 降级论证/成果继承清单、L0 计划、锚体系重构、回退条款） |
-| `proto.yaml` | ✅ rev4 复核**无变化**（host 契约不变；现文件 md5 3079c184 = history_version/proto_rev3.yaml） | dtype 全集 = §9.3.2 表（float16, bfloat16）；attrs = scaleValue(Float) + is_causal(Bool)（§11.5） |
-| `mha.py` | ⬜ Stage 2 rev4 修订（**现文件 = 回退锚 bbfcbcaf 不动直至备份就位**：history_version/mha_impl_r3_expert_final_7170.py 已核验同体） | 三分派 + Form B-mma prim_func 新增；Form A/Form B-gemm_v0/emit_v 三域逐字保留 |
-| `test_mha.py` | ✅ **零改动复用**（§9.5 契约论证；md5 0dd9e93c） | golden + 全套件 + 双口径 harness + 阻塞判定 + 哨兵路径门；Stage 2 只运行不修改 |
-| `history_version/` | ✅ 回退备份就位 | design_rev1/2/3.md、proto_rev1/2/3.yaml、mha_impl_developer_final_6505.py（锚-A 基线）、**mha_impl_r3_expert_final_7170.py（锚-B 基线 + 回退锚）**、test_mha_developer_final.py、r3_perf1-14/s2/s3 各轮快照 |
-| `perf_tuning/` | ✅ 继承证据链 | final_report.md（六会话 65.05→71.70 全证据 + §S4-5 rev4 立项建议）、optimization_log.md、mindstudio_export/case9_simulator/（流水依据 + README 导引）、msprof_*/simulator_* 原始数据 |
+| `DESIGN.md` | ✅ 已完成（本文件，rev4 + §0.7 拆分节；rev3 已备份 history_version/design_rev3.md，md5 e97dacb6 核验一致；拆分前 rev4 终态已备份 history_version/DESIGN_pre_split_20261014.md，md5 457fdeab） | rev4 设计（含 §0 修订记录/S2 降级论证/成果继承清单、L0 计划、锚体系重构、回退条款）+ §0.7 三形态文件拆分与行号引用基线声明 |
+| `proto.yaml` | ✅ rev4 复核**无变化**（host 契约不变；现文件 md5 3079c184 = history_version/proto_rev3.yaml）；refactor_20261014 **零改动**（拆分后 md5 双核验一致） | dtype 全集 = §9.3.2 表（float16, bfloat16）；attrs = scaleValue(Float) + is_causal(Bool)（§11.5） |
+| `mha.py` | ✅ **wrapper 层**（refactor_20261014：251 行，md5 b8e6c042；拆分前 rev4 终态 2164 行 md5 66305f03 已备份 history_version/mha_impl_pre_split_20261014.py） | 算子契约 docstring（信息量全保留 + File layout 段）+ `_FORM_FACTORIES` 路由表 + `mha_kernel(...)` 纯 Python 分发器 + `mha(...)` host 包装（元数据断言逐字）+ `__main__` CLI 自检（逐字）；**不含 T.\* 代码** |
+| `mha_common.py` | ✅ **新增**（refactor_20261014：935 行，md5 f6b21478） | 三形态共享层：`pass_configs` / `NUM_STAGES` / `CROSS_INTERVAL` / `_cube_core_num()` / `FORM_A`\|`FORM_B_MMA`\|`FORM_B_GEMM_V0` / `MhaConfig` / `derive_config()`（= 拆分前 124-242 逐字，45 语句 ast.dump `b9113501` 前后一致）/ `select_form()` / `make_emit_v()`（内含 `emit_v`，= 拆分前 244-782 **源文本逐字节同一** sha256 `b593e7d8`） |
+| `mha_form_a.py` | ✅ **新增**（refactor_20261014：476 行，md5 361bcab0） | `@tilelang.jit(out_idx=[3], workspace_idx=[4,5,6], pass_configs=...) mha_form_a_kernel`，形参表与拆分前 `mha_kernel` 完全一致；prim_func = 拆分前 797-1196 逐字（ast.dump `ad77069a`，de-indent 4 列） |
+| `mha_form_b_mma.py` | ✅ **新增**（refactor_20261014：567 行，md5 15bd2b0a） | `mha_form_b_mma_kernel`；prim_func = 拆分前 1215-1686 逐字（ast.dump `734f6b58`），形态说明注释 1201-1214 随迁 |
+| `mha_form_b_gemm_v0.py` | ✅ **新增**（refactor_20261014：445 行，md5 6b063eba） | `mha_form_b_gemm_v0_kernel`；prim_func = 拆分前 1692-2069 逐字（ast.dump `076b5483`；2 处冗余括号经 `ruff format` 合并为单行，AST 同一） |
+| `test_mha.py` | ✅ 复用 + **L1 层增补**（refactor_20261014：1036 行，md5 3dde0c90；拆分前 902 行 md5 bcfcfd29 已备份 history_version/test_mha_pre_split_20261014.py） | golden + 全套件 + 双口径 harness + 阻塞判定 + 哨兵路径门；入口 `from mha import mha` 与全部门禁语义**不变**；新增 = 头部 File layout 声明 + `DISPATCH_CASES`(16) / `run_l1_dispatch()` 分派守卫（挂 L1 阻塞层，设备无关）；覆盖矩阵 19 PASS / 0 MISS / 0 N/A **前后一致** |
+| `history_version/` | ✅ 回退备份就位 | design_rev1/2/3.md、proto_rev1/2/3.yaml、mha_impl_developer_final_6505.py（锚-A 基线）、**mha_impl_r3_expert_final_7170.py（锚-B 基线 + 回退锚）**、test_mha_developer_final.py、r3_perf1-14/s2/s3 各轮快照、**mha_impl_pre_split_20261014.py + test_mha_pre_split_20261014.py + DESIGN_pre_split_20261014.md（拆分前基线三件，§0.7 行号引用基线）** |
+| `perf_tuning/` | ✅ 继承证据链（refactor_20261014 **零改动**） | final_report.md（六会话 65.05→71.70 全证据 + §S4-5 rev4 立项建议）、optimization_log.md、mindstudio_export/case9_simulator/（流水依据 + README 导引）、msprof_*/simulator_* 原始数据 |
+
+> **可执行自检入口（20261016 CI 修复新增）**：`examples/bench_test.sh` 的遗留运行器把
+> `examples/<op>/` 下几乎每个 `.py` 当脚本执行并要求输出含 pass token，故 5 个算子 `.py`
+> 各自带 `if __name__ == "__main__":` 守卫的可执行入口，`cd examples && python ./mha/<module>.py`
+> 均以退出码 0 结束、末行打印 `Test Passed!`：三个形态模块的入口调用共享的
+> `mha_common.run_form_self_check()`（先断言 shape 确属本模块形态，再直接用本模块工厂建
+> kernel、真机运行、与 torch 参考按 §9.3 同一混合容差门对比）；`mha_common.py` 的入口为
+> 设备无关快检 `_host_self_check()`（630 点网格断言三分派互斥且穷尽、`derive_config` 派生
+> 不变量、`make_emit_v` 的 hygienic TIRMacro 契约与闭包自由名零缺失，纯 host 标量断言，
+> 不编译不上机）；`mha.py` 为既有 CLI 真机自检。守卫入口不改变 import 零副作用；自检为纯
+> host 侧代码，新增后 22-shape 生成设备码与拆分基线逐字节一致（聚合 sha256 `abd65ef6…c3828`
+> 不变，§0.7 性能口径）。
+>
+> **行号引用新鲜度**：本次自检入口新增会改变 `mha.py` 之外四个文件的行数，故上文各表与
+> §0.7 映射表中的**行数/md5 为拆分当轮（refactor_20261014）的行数快照**，自检入口新增后
+> 各文件行数以现文件为准；§0.7「行号引用基线声明」针对拆分前单体 `mha.py`（md5 `66305f03`）
+> 的历史行号读法不受影响（自检入口未改动 `mha.py`）。
 
 ### 11.3 命名规范
 
 - 目录名: `mha`（snake_case）✅ 已存在
-- kernel 文件: `mha.py`；测试文件: `test_mha.py`（顶部 `from mha import mha`）
-- kernel JIT 工厂: `mha_kernel`（内部 Python 级 form_a/form_b_mma/form_b_gemm_v0
-  三分支 prim_func 构建）；host 包装: `mha(query, key, value, scaleValue=-1.0,
-  is_causal=False)`
+- **wrapper 文件**: `mha.py`；**共享层**: `mha_common.py`；**三形态文件**:
+  `mha_form_a.py` / `mha_form_b_mma.py` / `mha_form_b_gemm_v0.py`（文件名 = 形态名，
+  与 §5.6 三分派谓词一一对应）；**测试文件**: `test_mha.py`（顶部 `from mha import mha`
+  入口不变）
+- **`mha_kernel`（语义改述，refactor_20261014）**：由「三形态 JIT 工厂（内部 Python 级
+  form_a/form_b_mma/form_b_gemm_v0 三分支 prim_func 构建）」改述为
+  **「wrapper 层分发器」**——`mha.py` 内的**纯 Python 函数**（不带 `@tilelang.jit`），
+  形参表 `(B, S, S_kv, N, D, dtype="float16", scaleValue=-1.0, is_causal=False)`
+  与返回值语义（编译后 kernel 对象，暴露 `.get_kernel_source()`、可 `kernel(q,k,v)`
+  调用）**均不变**；函数体 = `select_form(...)` 取形态 → `_FORM_FACTORIES[form](...)`
+  转发。原「三分支 prim_func 构建」职责下移到三个形态文件的 JIT 工厂。
+- **三形态 JIT 工厂**（新增命名）：`mha_form_a_kernel` / `mha_form_b_mma_kernel` /
+  `mha_form_b_gemm_v0_kernel`，三者形参表与拆分前 `mha_kernel` **完全一致**，装饰器
+  逐字为 `@tilelang.jit(out_idx=[3], workspace_idx=[4, 5, 6], pass_configs=pass_configs)`；
+  prim_func 一律命名 `main`（生成码入口名 `main_kernel` 因此与拆分前逐字节一致）。
+- **共享层 API**（新增命名）：`MhaConfig`（frozen dataclass，host 侧全部编译期常量）、
+  `derive_config(B,S,S_kv,N,D,dtype,scaleValue,is_causal) -> MhaConfig`、
+  `select_form(B,S,S_kv,N,D,...) -> FORM_A|FORM_B_MMA|FORM_B_GEMM_V0`、
+  `make_emit_v(cfg) -> emit_v`（返回绑定该配置的 `@T.macro` 对象）、
+  `_cube_core_num()`。
+- host 包装: `mha(query, key, value, scaleValue=-1.0, is_causal=False)`（不变）
+- **单一源纪律**：形态谓词只在 `derive_config`/`select_form` 出现一次；`emit_v` 只在
+  `mha_common.py` 定义一次（`grep -rn "def emit_v" examples/mha/` 恰 1 处）；三形态
+  文件不得复制二者，只可 import。
+- **自检入口命名（20261016 CI 修复新增）**：每个模块的可执行入口一律置于
+  `if __name__ == "__main__":` 守卫内（保证 import 零副作用，用途见 §11.2 注记）；
+  共享真机自检函数 `run_form_self_check(kernel_factory, *, form, B, S, S_kv, N, D, ...)`
+  与设备无关快检 `_host_self_check()` 均只在 `mha_common.py` 定义一份（torch 参考与
+  混合容差门唯一源），三形态模块入口只可调用，不得复制。
 
 ### 11.4 实现顺序（Stage 2 验收路径）
 

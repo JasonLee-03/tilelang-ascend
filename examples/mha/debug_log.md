@@ -574,3 +574,151 @@ examples/mha/cann_bench_submission/
 - **外部副本 `/mnt/workspace/cann/20260917_mha_V01/mha_submission/`** 仍为旧态 c316a004（r15 档案在案），本次范围外未同步。
 - wheel 非逐字节可复现（zip 时间戳），内容等价性以成员 md5 三方一致为准（r15 先例口径）。
 - B1b/A 变体未跑完整探针矩阵（B1b 仅 smoke+wall，被 <3% 规则否决后即停；A 未触发）——符合 §2 最小必要测量。
+
+
+## 三形态文件拆分重构（refactor_20261014）— post-SUCCESS 附加作业，纯结构性搬移
+
+> **任务分类**：post-SUCCESS 附加作业（**纯重构**），先例 = `submission_prep_20261005` / `platform_fix_20261009`。**非** Stage 1-3 状态机重启、**非**设计回退（`design_revision_count` 不变，仍 = 3）、**非**精度事件、**非**性能调优会话（`perf_session` 不变）。
+> **用户原始指令（逐字）**：「将mha算子文件Form A/Form B-mma/Form B gemm_v0 建议拆到三个文件,然后在 wrapper 层分发。根据修改要求更改mha.py, test_mha.py，DESIGN.md文件，路径 /mnt/workspace/cann/20260917_mha_V01/tilelang-ascend/examples/mha」
+> **用户已裁决的两项架构决策（Orchestrator 在 Primary 上下文问询，本轮不得推翻，已照此落地）**：① 新增 `mha_common.py` 共享模块承载三形态共享的 `emit_v`（538 行 `@T.macro`）+ 共享基础设施（理由：本文档 §8.4 与 mha.py docstring 均明确 `emit_v`「必须保持唯一一份」——TVMScript 解析期语义 + 精度不变量 1/2/3/4 全在其中，复制三份 = 3× 精度关键代码漂移风险）；② 保留 `mha_kernel(...)` 为 wrapper 层分发器（纯 Python 函数，签名与返回值语义不变），因 IR dump 工具链与外部脚本通过 `mod.mha_kernel(B=..., S=...)` 直接取 kernel 源码。
+> **证据主源**：`/tmp/opencode/r17_split/`（`scripts/` 7 脚本、`logs/` 13 日志、`ref_ir/` 22 形参照、`post_ir2/` 22 形分发器态、`post_ir_direct/` 22 形直调态、`cmp/` 三方比对树、`freename_analysis.md`、`verbatim_proof.log`、`binding_check.log`）；DESIGN.md 对应节 = **§0.7**（含全文 `mha.py:<line>` 行号引用基线声明 + 旧区间→新文件映射表）、§1.5 / §5.6 / §8.3 / §8.4 / §9.2 / §11.1-11.3 补注。
+> **纪律遵循**：AGENTS.md 6 项核心原则——①不凭记忆猜 API（框架源码逐处实证，见 R17-1）；②从示例入手（基线单体文件即最相似实现，全部搬移以其为源）；③内存层级不变（零 T.* 代码改动）；④**优先复用、定位问题而非重写**（机械切片搬移，非重写；见 R17-2 方法学）；⑤既有目录内作业；⑥编程模式仍为 Expert（`pass_configs` 4 项全 False 逐字随迁）。**本任务零算法/零性能/零精度层面改动**。
+
+### R17-0 基线取证与备份链（Step 0）
+
+**基线（Orchestrator 已定性为 10-13 上游 PR 就绪化处理后的良性权威态；本轮直接采信，未重复推算）**：
+
+| 文件 | 行数 | md5 | 备份 |
+| --- | --- | --- | --- |
+| `mha.py` | 2164 | `66305f037695b392d13776a14bf10725` | → `history_version/mha_impl_pre_split_20261014.py` |
+| `test_mha.py` | 902 | `bcfcfd29f4837d79e1754330996660c5` | → `history_version/test_mha_pre_split_20261014.py` |
+| `DESIGN.md` | 2290 | `457fdeabaaa33f0711ec82e73760b18e` | → `history_version/DESIGN_pre_split_20261014.md` |
+| `proto.yaml` | 27 | `3079c184700cfa1eaed32a86c909848b` | 禁止触碰，**零改动**（拆后 md5 复核一致） |
+
+三件备份 `cp -p` 后 **md5 双点核验全部 OK**（原文件 == 备份，三对逐一比对通过）。禁止清单全量 md5 快照改前落档 `logs/forbidden_md5_pre.txt`（**24077 条**：`history_version/` 全部既有内容 + `proto.yaml` + `OPTIMIZATION_HISTORY.md` + `PR_DESCRIPTION.md` + `debug_log.md` + `cann_bench_submission/` + `perf_tuning/` + `patches/` + 框架 `tilelang/**` 全部 .py/.cc/.h）。`debug_log.md` 改前映像另存 `logs/debug_log.md.pre_append` 以供 append-only 前缀证明。
+
+**新鲜 IR 参照（Step 0-2，强制重生成）**：任务书明示 `/tmp/opencode/r15_src_clean`、`/tmp/opencode/r16_platform_fix/src_post` 等旧 dump 均出自**不同 md5**，一律不可复用为参照。故以 `r16_dump_src.py` 的 **22-shape 清单照抄全表**（Form A 单块 4 + Form A 多块守卫 4 + Form B 单块守卫 4 + D256 decode 单块 2 + Form B 多块守卫 3 + kv_db 域 3 + 非 kv_db 哨兵 2）新写 `scripts/dump_src.py`（增 `--entry` 与 `sys.path.insert(0, <mha dir>)` 以适配多文件 import），**从基线 mha.py 现场生成** → `ref_ir/`（22 个 `.cc` + `_manifest.txt`，`[PROV] md5=66305f03…` 实证 dump 自基线同一文件；EXIT=0）。
+
+### R17-1 自由名分析（Step 1，任务书 §3 **强制前置动作**；本轮最高风险点）
+
+**未凭肉眼猜名单。** 先读框架源码确认解析机制（`3rdparty/tvm/python/tvm/script/parser/`）：
+- `tir/entry.py::prim_func` → `parse(func, utils.inspect_function_capture(func), …)`；
+- `core/utils.py::inspect_function_capture` → `{**func.__globals__, **get_func_nonlocals(func)}`；`get_func_nonlocals` 读 `func.__code__.co_freevars` × `func.__closure__`；
+- `core/parser.py::ScriptMacro.__call__`（`hygienic=True`，`@T.macro` 默认）→ **新建全新 `VarTable()`**，只注入 `closure_vars` + 宏自身形参，调用方 TVMScript 帧被 save aside、宏体内不可见（这正是 `emit_v` 必须收 28 个形参的原因）；
+- `core/diagnostics.py::Source.__init__` → `inspect.getsourcelines` 取回**源文本**后按 `start_column` 逐行去缩进 + `rstrip`，`as_ast()` 重新 `doc.parse` ⇒ **宏体文本即语义对象**。
+
+**关键发现（超出任务书 §3-5 的预期，已据此强化验证）**：`@T.prim_func` 与 `@T.macro` **走同一套** `inspect_function_capture` 机制（任务书原述「prim_func 自由名解析走正常 TVMScript 帧机制」——实测其自由名同样来自 `{**globals, **co_freevars}`，非调用帧 `f_locals`）。结论一致但更强：搬移后每段的自由名必须 (a) 存在于**新定义模块**的 globals，或 (b) 为 `co_freevars` 项即**同名**绑定为所属工厂函数的局部量。
+
+分析工具 `scripts/freename_analysis.py` **直读 CPython `symtable`**（即编译器自己产出 `co_freevars` / global-vs-local 分类的那张符号表），`Symbol.is_free()` ↔ `co_freevars` ↔ 必须为工厂局部量；`Symbol.is_global()` ↔ 查 `func.__globals__` ↔ 必须存在于定义模块命名空间。另附**独立手写 AST 双向交叉核验**（loaded-root-names 未被 symtable 解释者 / symtable 记录却从未被 load 者，两侧均须为空）。**不得凭肉眼猜名单**的要求以「读编译器答案 + 第二套方法交叉核对」兑现。
+
+结果（`freename_analysis.md` + `logs/step1_freename.log`；4 段 **UNRESOLVED 均为空**，AST 交叉核验双向 0 差异，`[GATE] PASS`）：
+
+| 段 | 基线行 | 需定义模块 globals | 需工厂同名局部量（co_freevars） |
+| --- | --- | --- | --- |
+| `emit_v` | 246-782 | 3：`CROSS_INTERVAL, NUM_STAGES, T` | **27**：`B, N, S, S_kv, is_causal, accum_dtype, sm_scale, block_M, block_N, causal_offset, flat_v, form_a, half_M, io3_is_alias, kv_iters, need_mask, offset_eff, s_blocks, single_kv_block, SEM_*×6, SIG_IO_UB, SIG_S_HALF` |
+| `prim_func_a` | 798-1196 | 5：+ `make_nz_layout, make_zn_layout` | **33**（含 `emit_v, core_num, q_tasks, r_tasks, sig_io3, SIG_K_L1/P_L1/V_L1/Q_L1/L0AB/L0C, D, dtype`） |
+| `prim_func_bm` | 1216-1686 | 4：+ `make_zn_layout` | **37**（含 `KC, NC, SIG_L0AO/L0AS/L0KC`） |
+| `prim_func_bg` | 1693-2069 | 3 | **29**（含 `gemm1_kL0, kv_db`） |
+
+`mha_kernel` 作用域实测：自有局部量 53、globals 引用 4（`NUM_STAGES, T, _cube_core_num, min`）；基线 mha.py 模块级 globals 12。
+
+### R17-2 拆分实施方法学（Step 2-4）：**机械切片，非重写**
+
+不手工誊抄 1900+ 行（转录错误风险不可接受），改写生成器 `scripts/split_files.py` + `scripts/make_wrapper.py`，**按行区间从基线文本切片**后组装；`x = cfg.x` 解包块由 symtable 名单**程序化生成**（`gen/_binding_plan.md` 落档；断言「required − MhaConfig 字段 = ∅」通过），故漏名在构造上不可能。
+
+**两处刻意设计使风险降到最低**：
+1. **`emit_v` 零 re-indent**：基线中它位于 `mha_kernel` 内 4 列缩进；`mha_common.py` 中它位于模块级函数 `make_emit_v` 内，**同为 4 列缩进** ⇒ 搬移后源文本**逐字节同一**（含上方 banner 注释）。`@T.macro` 的语义对象就是这段文本，故这是可达到的最强保证。
+2. **三个 prim_func 统一 de-indent 4 列**（基线 8 列，位于 `if form_a:` / `elif` / `else:` 内 → 新 4 列，位于模块级工厂内）。`ast.dump(include_attributes=False)` 对缩进/行号盲，故 AST 同一性门不受影响。
+
+`derive_config()` 函数体 = 基线 124-242 **原缩进原样**（同为 4 列），**45 条语句逐字**；`make_emit_v(cfg)` 的 27 行同名解包块置于宏定义之前（Python 自动生成闭包 cell）。三形态工厂各自：`cfg = derive_config(...)` → 形态守卫 assert → 同名解包块 → `emit_v = make_emit_v(cfg)` → 逐字 prim_func → `return main`；形参表与基线 `mha_kernel` **完全一致**，装饰器逐字为 `@tilelang.jit(out_idx=[3], workspace_idx=[4, 5, 6], pass_configs=pass_configs)`，prim_func 一律仍名 `main`（⇒ 生成码入口名 `main_kernel` 不变）。
+
+**784-794 公共注释块归属决策**（任务书要求说明）：**整块逐字随迁至 `mha_common.py`:341-351**（`make_emit_v` 上方），仅 de-indent 4 列。理由=该块主题是「为何 `emit_v` 必须是 `@T.macro`（plain-Python emitter 的 T.* 发射会被静默丢弃 → 生成体缺失 → aicore 挂在孤立 `WaitFlag<M_FIX>`）」+「V 侧 buffer 须在各 prim_func 内声明」+「分派是 Python 级」，与共享 emitter 同处一文最贴切；**不拆分不复制**以避免注释语义漂移或双份维护。Form B-mma 专属的形态说明注释（基线 1201-1214）按任务书随迁至 `mha_form_b_mma.py`:79-92。
+
+**新增（拆分前无对应区间，全部为结构必需，无一处算法/性能/精度改动）**：`MhaConfig` frozen dataclass（47 字段，按基线声明序）、`derive_config` 签名 + `return MhaConfig(...)`、`select_form()`（经 `derive_config` 派生 ⇒ 谓词单一源，不重述谓词）、`FORM_A/FORM_B_MMA/FORM_B_GEMM_V0` 常量、`make_emit_v(cfg)` 及其 27 行解包、三工厂的解包块 + 形态守卫 assert、`mha.py` 的 `_FORM_FACTORIES` 路由表 + `mha_kernel()` 分发器体、各新文件英文 docstring、`test_mha.py` 的 `run_l1_dispatch()`。
+
+**风格纪律（criterion 8）**：新文件延续上游 PR 就绪风格——全英文注释、**零内部术语**（`§|rev[0-9]|锚|BITEXACT` 命中 **0/0/0/0/0**）、**零非 ASCII 行**（0/0/0/0/0）；`r16(qk)`「round to 16-bit」记法在 `mha_common.py` 保留 6 处（与基线 8 处对应：另 2 处在 mha.py docstring，亦保留）。`test_mha.py` 保留其既有 `DESIGN.md §9.3.1` 式交叉引用；`DESIGN.md` 沿用 rev4 内部风格，未英文化。
+
+### R17-3 门禁结果（Step 5-10，判据 1-8 逐项）
+
+| # | 判据 | 结果 |
+| --- | --- | --- |
+| 1 | **IR 逐字节守卫 22/22（首要验收门）** | ✅ **三方 22/22 byte-identical**。RUN A（经 `mha.py::mha_kernel` 分发器，`[PROV] md5=b8e6c042…`）vs `ref_ir`：`cmp` identical=22 differing=0；RUN B（**绕过 wrapper**，直接 import 三形态模块、按 `select_form()` 路由后直调对应工厂）vs `ref_ir`：identical=22 differing=0；RUN A vs RUN B：identical=22。**`diff -rq` 三方两两退出码均 = 0**（仅比对 22 个 `.cc`；`_manifest.txt` 列数按设计不同——参照 3 列，直调 5 列含 form/factory 溯源）。**聚合 sha256 三方完全一致** = `abd65ef6a35ac3263121039778379a07ac67dda5fdcc76440586590c1a6c3828`。三工厂均被实跑：`{form_a: 8, form_b_gemm_v0: 10, form_b_mma: 4}`。**无任何 DIFF，门禁口径未降低** |
+| 2 | 四组形态 CLI 全过（Step 6，实跑 5 组） | ✅ 5/5 `Test Passed!`，EXIT 全 0：Form A D=64 `matched=0.99997 max_abs=4.883e-04`；Form A P2 `--causal --D 128` `matched=0.99978 max_abs=1.953e-03`；**Form B-mma** `--S 32 --S-kv 512 --D 256 --N 4` `matched=0.99994 max_abs=2.441e-04`；**Form B gemm_v0 kv_db 域** `--S 1 --S-kv 512 --D 256` `matched=1.00000 max_abs=2.441e-04`；**Form B gemm_v0** `--S 1 --S-kv 2048 --D 128` `matched=1.00000 max_abs=6.104e-05`（门 matched≥0.99 / fp16 max_abs≤1e-1） |
+| 3 | 分层测试 + 覆盖门禁（Step 7） | ✅ `--level l0` **10/10** `[PRECISION_PASS]` + `Test Passed!` EXIT=0；`--level l1` **19/19** `[PRECISION_PASS]` + **`[L1-DISPATCH] 16/16` shape + structural=True** + `Test Passed!` EXIT=0；`--level all` EXIT=0 + `Test Passed!`（L0 10/10、L1 19/19、L1-DISPATCH 16/16、**L2 12/12 correctly rejected**、**Boundary 6/6 within tolerance**、**PERF 4/4 哨兵 `PERF_PASS`** kernel_path 6.2-8.2s ≪ 120s 门、`all_sentinels_ok=True`）。全轮次 `[PRECISION_FAIL]` = **0**、`[BOUNDARY_WARN]` = **0**、`[PRECISION_PASS]` 58 / `[BOUNDARY_PASS]` 18 / `Test Passed!` 8。**`coverage_check.py --proto proto.yaml` = 19 PASS / 0 MISS / 0 N/A → PASS，19 个维度逐项计数与重构前完全一致（不劣化）**；新增分派守卫不带 `tags`，`COVERAGE_MANIFEST` / `COVERAGE_NA` **零改动**（无需同步更新）。**pytest 可收集面不变**：改前/改后均 `5 tests collected`（`test_mha_l0/l1/l2/boundary/perf` 同名同序） |
+| 4 | ruff | ✅ `ruff check` **All checks passed!**；`ruff format --check` **6 files already formatted**（6 个新增/修改 .py 全覆盖；仓库根 `pyproject.toml` 配置，line-length 140） |
+| 5 | `emit_v` 全仓唯一 | ✅ 活的算子源码集（`mha.py` + `mha_common.py` + 三形态文件 + `test_mha.py`）中 `def emit_v` **恰 1 处 = `mha_common.py:397`**；任务书命令 `grep -rn "def emit_v" examples/mha/` 在排除**改前既存**归档目录（`history_version/` 40 = 39 既存 + 1 本轮新增备份、`perf_tuning/` 15 既存探针变体、`cann_bench_submission/` 1 既存提交副本）后同样恰 1 处。拆分前基线 `mha.py` 亦恰 1 处 ⇒ **活体计数不变，仅所属文件迁移** |
+| 6 | 三形态 prim_func 体逐字等价（机器证明） | ✅ 方法学参照 `/tmp/opencode/r15_submission_prep/phase2_gate1_ast.log` AST 同一性门先例，三重独立手段（`scripts/verbatim_proof.py` → `verbatim_proof.log`，**VERDICT: PASS**）：**G1** = `ast.dump(include_attributes=False)` sha256 同一（对缩进/行号盲，故 4 列 de-indent 既不能掩盖也不能伪造差异）——7 段全 IDENTICAL：`emit_v` `158932f1f5659636`、`prim_func_a` `ad77069ac1a347da`、`prim_func_bm` `734f6b58fca8d8fc`、`prim_func_bg` `076b5483fcea0a23`、`mha_wrapper` `2ca5aa57690ad4c0`、`main_block` `71229b19be7cb80b`、`cfg_derive(124-242)` `b9113501dfd7f946`（45 vs 45 语句）。**G2** = `emit_v` **源文本逐字节同一**（最严形式；基线 244-782 共 539 行 vs `mha_common.py` 395-933，sha256 双侧 `b593e7d86ac597fbaf96729c33f5ae2a`）。**G3** = dedent 后文本同一：`prim_func_a` 399/399、`prim_func_bm` 471/471、`mha_wrapper` 38/38、`main_block` 51/51 均 hunks=0；`prim_func_bg` 377→373 行 hunks=2，**G3b（对两侧 dedent 文本重新 parse 后 ast.dump 仍须同一）= reparse-AST-IDENTICAL** ⇒ 通过。该 2 处 = `eff_kv_iters = (…)` 冗余括号被 `ruff format` 合并为单行（de-indent 后行长落入 140 列内所致，`logs/ruff_format_delta.log` 全量留存），括号不产生 AST 节点，**AST 同一**。另 `mha.py` 模块 docstring 变更为**纯增量**（`logs/docstring_delta.log`：基线 83 行/5191 字符 → 新 106 行/6606 字符，unified diff 仅 2 个 `+` 块 = File layout 段 20 行 + emit_v 归属 3 行，**零删除行**；基线 12 个段落起始句 100% 逐字留存 ⇒ 三形态/emit_v 唯一性/流水形状/4 项精度不变量/同步模型/约束/CLI 用法信息量全保留） |
+| 7 | 禁止清单零触碰 | ✅ 见 R17-4 表（`logs/forbidden_md5_post.txt` vs `forbidden_md5_pre.txt` 24077 条全量 join 比对：CHANGED = 仅 `debug_log.md`（本节 append，另证 append-only 前缀）、ADDED = 仅三件 pre-split 备份、REMOVED = 空） |
+| 8 | 新文件延续上游 PR 就绪风格 | ✅ 见 R17-2 风格纪律（术语 0 / 非 ASCII 0 / `r16(qk)` 记法保留） |
+
+**附加静态门（`scripts/binding_check.py` → `binding_check.log`，VERDICT: PASS）**：对 4 段逐一验 **C1**（required − provided = ∅，即无名字停止解析）、**C2**（新 `is_global` ⊆ 新模块 globals，否则 TVMScript 查表 NameError）、**C3**（**按配置变化的局部量未被误升为模块常量**——这是唯一能「编译过、生成体在、结果仍错」的静默失效模式），三检查 4 段全 OK；**C4 运行期实证**：`make_emit_v(cfg)` 返回 `TIRMacro(hygienic=True)`，`closure_vars` **49 项**，宏体所需 30 个名字**零缺失**、取值与 `derive_config` **零不一致**，且 `macro.source.source`（= TVMScript 实际重新解析的那份文本）sha256 `4eedbab6e37d355d1a85401fa8103c39` 与「基线 245-782 按 `Source.__init__` 同款归一化」**逐字节同一**；`select_form()` 8 探针分派表全对；三工厂两两互异。
+
+**外部消费面兼容实证**（改前 grep 全仓：活体外部消费者仅用 `cur.mha` 与 `cur.mha_kernel` 两个属性）：① `perf_tuning/bench_mha.py` 模式 `sys.path.insert(0, examples/mha); from mha import mha` → `callable=True`，signature `(query, key, value, scaleValue=-1.0, is_causal=False)` **不变**；② `perf_tuning/probe_*.py` 与 `/tmp/opencode/r16_platform_fix/scripts/r16_dump_src.py` 模式 `importlib.spec_from_file_location(...)` + `cur.mha_kernel(B=…, S=…)` → 返回 `JITKernel`，`hasattr(.get_kernel_source)=True`、`callable=True`，实取源码 8688 bytes 成功，`mha_kernel` 为纯 Python `function`（不带 `@tilelang.jit`），signature `(B, S, S_kv, N, D, dtype='float16', scaleValue=-1.0, is_causal=False)` **不变**。
+
+**性能口径**：判据 1 成立（22 shape 三方生成码逐字节同一、聚合 sha256 一致）⇒ **设备码不变 ⇒ 性能可证不变，无需 msprof 复测**（强于复测）。§12 全部性能目标、回退条款、cann-bench 71.79/0.9054x→72.59/0.96x 历史读数在拆分后**按原体继续有效**。
+
+### R17-4 过程事件与禁止清单完整性（如实记录）
+
+**过程事件**：
+1. **后台任务被工具层超时连带终止**（首次 `ref_ir` dump）：以 `nohup … &` 启动的 dump 在 shell 工具 120s 超时后被连带杀掉，18/22 形已落盘但 `_manifest.txt` 为空（manifest 仅在结束时写）。⇒ 清空 `ref_ir/` 改用 **`setsid nohup … & disown` 完全脱离会话**重启，22/22 + manifest + EXIT=0 完整落盘；后续全部长任务（IR 守卫双跑、Step 6+7）均 setsid 启动，未再发生。**该失败轮次产物已删除，未混入参照**（与 r16 档案「后续所有后台任务均 setsid 启动」教训一致）。
+2. **G3 校验脚本自身缺陷（非产物缺陷）**：首版 `verbatim_proof.py` 用 `ast.get_source_segment` 取段文本，该 API 自首行 `col_offset` 起切片 ⇒ 首行缩进已被削去 ⇒ `textwrap.dedent` 求得空公共前缀而**完全不去缩进**，于是三个 prim_func 全部报出「幻影 4 列差异」（G1 同期全 IDENTICAL，两者矛盾即暴露 harness bug）。改为按行号切片（保留首行缩进）后 G3 归零。教训：同一判据用两种独立手段互证时，**两者矛盾必先怀疑 harness**。
+3. **C4 首版比对基错位（非产物缺陷）**：直接以「文件内原始文本」比 `macro.source.source` 报 False（首行 `'    @T.macro'` vs `'@T.macro'`）。读 `core/diagnostics.py::Source.__init__` 实证其按 `start_column` 逐行去缩进 + `rstrip` ⇒ 改为对基线切片施加**同款归一化**后 sha256 双侧一致。教训：与框架内部表示比对，必须先读该表示的构造函数。
+4. **binding_check 首跑参数错误**：误将基线路径写作 `history_version/...`（相对 repo 根，实际在 `examples/mha/` 下）致无输出 EXIT=1；改正路径后 PASS。无产物污染。
+5. **`ruff format` 与「逐字搬移」的口径冲突已显式处置，未擅自降低门禁**：de-indent 使 `mha_form_b_gemm_v0.py` 2 处 `eff_kv_iters = (…)` 行长落入 140 列内，formatter 要求合并单行；若拒改则 `ruff format --check` 不 clean（判据 4 失败），若改则 G3 文本不再全等（判据 6 的文本臂）。**处置 = 接受 formatter（判据 4 为硬门）+ 为判据 6 增设 G3b（对两侧 dedent 文本重新 parse 后 ast.dump 仍须同一）作为唯一放行条件**，并把 2 处 hunk 全量落档、在 DESIGN.md §0.7 与 §8.3 明写。**未以「差不多」放行**：G1（AST 权威臂）与 G2（emit_v 字节臂）始终保持零豁免。
+
+**禁止清单 md5 前后对照（criterion 7）**：见 `logs/forbidden_md5_pre.txt` / `forbidden_md5_post.txt`（各 24077 / 24080 条）与 R17-5 表。`debug_log.md` 的 append-only 以「改前映像为当前文件的**精确前缀**」机器证明（`head -c <pre_size> | cmp -`）。
+
+### R17-5 未验证项与边界（如实分栏，禁止伪完成）
+
+- **`examples/bench_test.sh` 遗留运行器对 `./mha` 的收集面**：其 `collect_test_scripts` 以 `find ./mha -maxdepth 2 -name "*.py"`（仅排除 `__init__.py`/`*_golden.py`/`utils.py`）收集后**逐个当脚本执行**并要求 exit 0 + 输出含 `Test Passed!`/`Kernel Output Match`。**改前即已红**（实证：`perf_tuning/parse_prof.py` 裸跑 argparse 报「the following arguments are required: prof_dir, --case」、`cann_bench_submission/setup.py` 裸跑报「error: no commands supplied」，二者均无 pass token；`history_version/` 下 57 个 .py 亦被收集）。本轮新增 4 个库模块（`mha_common.py`/`mha_form_*.py`，无 `__main__`，import 无副作用）会使该已红集合多 4 项 [FAILED]——**性质未变、口径未变，未新增失败种类**。**未做**：为库模块添加 `__main__` 自检以刷 pass token（那会造成「假通过」，违反如实报告原则）；也**未做**：改 `ci/operator_test_manifest.yaml` 登记 `examples/mha/mha.py → examples/mha/test_mha.py`（该文件不在禁止清单，但改 CI 配置超出「纯重构」授权，且会同时把 `mha.py`/`test_mha.py` 移出遗留运行器 = 改变既有 CI 语义）。**如需上库，建议由 Orchestrator/用户裁决是否登记 manifest**——这是本项唯一遗留的 CI 面风险，其余门禁全绿。
+- **`perf_tuning/probe_*.py` 的源码级 patch 探针已失效（未修，属禁止触碰目录）**：`probe_bN512.py` / `probe_bN_wide.py` / `probe_d256_wide.py` / `probe_fc_equiv.py` 等以 `_make_patched()` 对**单体 mha.py 源文本**做正则/切片改写后重新 load；拆分后 kernel 本体已不在 `mha.py`，这类改写会落空。它们的**只读用法**（`import mha as cur; cur.mha_kernel(...)`）经实证仍完全可用（见 R17-3 外部消费面）。历史探针为调优会话 1-13 的一次性资产，其结论已固化入 `perf_tuning/final_report.md` / `optimization_log.md`，本轮未触碰、未重跑、未修复。
+- **未做 msprof / cann-bench 复测**：按判据 1 的「生成码逐字节同一 ⇒ 性能可证不变」口径豁免（强于复测）。若 Orchestrator 认为需实测背书，可对 case9/case15/case7 三点补跑，但本轮判断为负 EV。
+- **未跑 `pytest` 实执行（仅 `--collect-only`）**：任务书 Step 7 指定以 `python test_mha.py --level …` 脚本方式跑（已全绿），故 pytest 侧只验证收集面不变（5 tests collected，改前改后同名同序）。`test_mha_l1()` 经 `run_l1()` 已包含新分派守卫，故 pytest 路径与脚本路径覆盖同一断言集。
+- **`--level all` 的 PERF 哨兵依赖本地未跟踪的 `.golden_cache`（154MB/38 件）**：本轮在本地工作树跑通（4/4 `PERF_PASS`）；CI 干净检出下该层本就被 `@pytest.mark.ci_skip` 排除（`test_mha_perf` docstring 既有声明），拆分未改变这一点。
+- **`DESIGN.md` 全文 12 处 `mha.py:<line>` 引用未逐条重写**：按任务书指示改为 §0.7 增补「行号引用基线声明」+ 旧区间→新文件映射表（16 行区间逐项对应）。**这意味着直接按旧行号打开新 `mha.py`（251 行）会落空**——须按 §0.7 声明打开 `history_version/mha_impl_pre_split_20261014.py`（2164 行，md5 `66305f03` 双点核验）。同类旧行号亦存在于 `.agents/skill-journal/*.md` 与 `perf_tuning/*.md`（禁止触碰/范围外，未改）。
+
+## CI 修复（selfcheck_20261016）— 为 4 个库模块新增真实自检入口，修复遗留运行器 4×[FAILED]
+
+**任务分类**：CI 失败修复（post-SUCCESS 附加作业）。非 Stage 1-3 状态机重启、非设计回退、非精度事件、非性能调优。用户已裁决：修复路线 = 算子侧（禁改任何共享 CI 基础设施）；自检强度 = 数值对比（真机跑本形态 shape 与 torch 参考按混合容差门对比），**明确拒绝「只打印 token 的假自检」**。
+
+### 根因（orchestrator 实证，本轮直接采信）
+
+`examples/bench_test.sh` 遗留运行器以 `find "$dir" -maxdepth 2 -name "*.py"`（仅排除 `__init__.py`/`*_golden.py`/`sfa_golden.py`/`utils.py`）收集脚本并逐个执行，判定 = exit 0 **且** 输出匹配 `Kernel Output Match` / `Test Passed!`（大小写不敏感正则，bench_test.sh:485-500）。refactor_20261014 新增的 4 个模块（`mha_common.py` / `mha_form_a.py` / `mha_form_b_mma.py` / `mha_form_b_gemm_v0.py`）为纯库模块（无 `__main__`），执行后 exit 0 但零输出 ⇒ CI 判 4×`[FAILED] (Exit: 0)`。manifest 路线不可用：`scripts/ci/resolve_operator_tests.py:108-111` 强制 1 source : 1 test，多 source 映射同一 test 会 `duplicate test` ⇒ 全仓 manifest 解析失败（灾难性副作用，禁止）。
+
+### 改动清单（全部为纯新增 append，改前基线均备份 history_version/*_pre_selfcheck_20261016.py，md5 双点核验一致）
+
+| 文件 | 行数（前→后） | md5（前→后） | 新增内容 |
+|---|---|---|---|
+| `mha.py` | 251→251（**零改动**） | b8e6c042…（不变） | 无 |
+| `mha_common.py` | 935→1164 | f6b21478… → 5028a6da… | `run_form_self_check()`（三形态共享真机数值自检 helper：分派断言 + 工厂直建 kernel + seed0 确定性输入 + torch 参考（语义 = mha.py ref_mha 逐条一致：右下角对齐掩码、全掩码行置 0、输入 dtype 计算）+ 混合容差门（matched≥0.99 ∧ max_abs≤dtype 帽）+ 末行 `Test Passed!`；torch import 在函数体内）+ `_host_self_check()`（设备无关快检）+ `__main__` 守卫入口 |
+| `mha_form_a.py` | 476→492 | 361bcab0… → 10ccd794… | `__main__` 守卫入口：`run_form_self_check(mha_form_a_kernel, form=FORM_A, B=2,S=128,S_kv=128,N=8,D=64)`（单 KV 块域，FIX 直写路径） |
+| `mha_form_b_mma.py` | 567→585 | 15bd2b0a… → 2a82bdbb… | 同上，`form=FORM_B_MMA, B=1,S=32,S_kv=512,N=4,D=256`（多 KV 块 kv_iters=4，flat(task,kv) 流 + K/N-split 域） |
+| `mha_form_b_gemm_v0.py` | 445→462 | 6b063eba… → 3f58ecd0… | 同上，`form=FORM_B_GEMM_V0, B=2,S=1,S_kv=512,N=8,D=256`（kv_db 域：S≤16 ∧ D=256 ∧ S_kv>256） |
+
+**append 纯增机器证明**：4 个改后文件均 `current.startswith(backup_bytes) == True`（改前映像为改后文件的精确字节前缀）。首轮编辑曾意外使三个形态文件 emit_v 调用点 6 行缩进 +1 空格（编辑工具宽松匹配写回了误缩进的 newString），已按「backup + appended block」逐字节重建修复，`diff backup current` 零 `<` 行，`ruff format --check` 4 文件 clean。**kernel 本体最终零改动**。
+
+`mha_common._host_self_check()` 实断言内容（630 点网格 S∈{1,2,16,17,32,128,2048}×D∈{64,128,256}×S_kv∈{64,128,129,256,257,512,2048,4096}×causal×scale∈{-1,0.5}，全部先行以 scratch 脚本实证 0 失败后才写入）：三分派闭合/互斥/穷尽 + 与文档谓词 (S,D) 复述一致；block_M/block_N/gemm1_kL0 档位与 prefill 恒 (128,128)；half_M=block_M//2；s_blocks/kv_iters ceil 口径；single_kv_block/flat_v/kv_db 谓词；need_bound_mask/need_mask/causal_offset/offset_eff；block_num=B·N·s_blocks；core_num=min(block_num,cube)；q_tasks·core_num+r_tasks=block_num 精确覆盖；sm_scale 分支；io3_is_alias/sig_io3；SEM id 集合恰 {0..5}。`make_emit_v` 契约（7 个代表配置）：TIRMacro、`__name__=="emit_v"`、hygienic、宏源非空 + 5 个关键语句标记、`co_freevars`（27 名）在 `closure_vars` 零缺失、且凡属 MhaConfig 字段的捕获值 == cfg 对应值。
+
+### 门禁结果（10/10 全绿）
+
+1. **IR 逐字节同一**：`dump_src.py --module examples/mha/mha.py`（`tilelang.disable_cache()` + 专属 `TILELANG_CACHE_DIR`）22/22 shape 重导 → 与 `/tmp/opencode/r17_split/ref_ir/` 逐文件 `cmp` 22 identical / 0 differing；`diff -rq`（含 _manifest.txt）exit 0；排序拼接聚合 sha256 新旧两树均 `abd65ef6a35ac3263121039778379a07ac67dda5fdcc76440586590c1a6c3828`（方法先在 ref 树上自证复现）。
+2. **运行器模拟（cwd=examples/，判定逻辑 = bench_test.sh:488-494 原样正则）**：串行 5/5 `[PASSED]` (Exit: 0) + token（elapsed 8-17s/脚本，warm cache）；并行（5 进程同起，共享缓存）5/5 `[PASSED]`；**冷缓存并行加测**（全新专属 TILELANG_CACHE_DIR，5 进程同起）5/5 `[PASSED]`，冷缓存内新建 3 个唯一 kernel 条目（.so 写盘时间相互 0.3s 内 = 真并发编译）。本轮冷缓存日志未复现 CI 的 cython adapter 锁竞争消息（adapter 为机器级共享产物、本机已 warm）；CI 原始日志证明该竞争下 mha.py 本就 PASS，运行器可处理。
+3. **import 无副作用**：`import mha, mha_common, mha_form_a, mha_form_b_mma, mha_form_b_gemm_v0` → exit 0、6.89s（耗时主体为既有 tilelang/torch import 链）、stdout 0 字节、stderr 仅既有环境级 torch_npu UserWarning（裸 `import tilelang` 同样产生）、全新 TILELANG_CACHE_DIR 跑后 entries=[]（零编译产物）。
+4. **既有测试不回退**：`test_mha.py --level l0` → exit 0（73s），10/10 `[PRECISION_PASS]` + `Test Passed!`；`--level all` → exit 0（268s），L0 10/10 · L1 19/19 · L1-DISPATCH 16/16（structural=True）· L2 12/12 · Boundary 6/6 · PERF 4/4 哨兵 `all_sentinels_ok=True` + `Test Passed!`，0 处 PRECISION_FAIL/BOUNDARY_WARN —— coverage 口径与 PR_DESCRIPTION 既有声明完全一致。
+5. **ruff**：`ruff check` + `ruff format --check` 对 5 个算子 .py 全 clean（line-length 140）。
+6. **emit_v 唯一性**：`grep -rn "def emit_v" examples/mha/*.py` 恰 1 处（mha_common.py:397）。
+7. **共享 CI 基础设施零触碰**：bench_test.sh `bed88c41` / ci_cd.yml `121ef7ca` / operator_test_manifest.yaml `1f1b10d3` / resolve_operator_tests.py `248194f7` / proto.yaml `3079c184` 前后 md5 一致；`git status` 对 tilelang/、.github/、scripts/、ci/、cann_bench_submission/ 零修改（`M 3rdparty/tvm` 与 perf_tuning 未跟踪目录为改前既有状态，首查 git status 已记录在案）。
+8. **禁改文件 md5**：`test_mha.py` `3dde0c90`（不变）；PR_DESCRIPTION.md 仅 Testing 节插入自检入口段，`## Changes`（sha256 `4799dc87…`）、`## cann-bench 算子评测报告`（`41bdd907…`）、尾部含平台适配说明段（`0ea58a88…`）抽取后逐字节 == 改前映像；DESIGN.md 仅 §11.2 表后追加自检入口 + 行号新鲜度注记、§11.3 追加自检入口命名一条，其余章节零改动（§0.7 未触碰）。
+9. **备份**：5 模块改前映像 → `history_version/{mha,mha_common,mha_form_a,mha_form_b_mma,mha_form_b_gemm_v0}_pre_selfcheck_20261016.py`，md5 双点核验与原文件一致（mha.py 备份仅为完整性，本轮未改它）。
+10. **debug_log append-only**：本节为纯追加（改前映像 141438 字节为新文件精确前缀，`head -c | cmp` 机器证明，见下方校验记录）。
+
+### 文档同步
+
+PR_DESCRIPTION.md `## Testing` 末新增「各模块独立可执行自检入口」段（5 个 .py 均可独立执行 + `Test Passed!`、bench_test.sh 收集/判定规则缘由、三形态 shape 与 kv_db/多块域覆盖说明、630 点快检说明、IR 同一性与串并行实测结论）。DESIGN.md §11.2 表后新增注记（自检入口用途 + 「行数/md5 为拆分当轮快照，自检入口新增后以现文件为准」）、§11.3 新增自检入口命名纪律条目（`run_form_self_check` / `_host_self_check` 唯一源在 mha_common.py）。
+
+### 未验证项与已知风险（如实）
+
+- **CI 真实环境未复现**：本地无法完全复刻 A3 runner 的并行度、docker 环境与 `ASCEND_RT_VISIBLE_DEVICES=0` 限制；PR 分支的 `bench_test.sh`/`ci_cd.yml` 比本地工作树新，收集规则可能有细微差异（本地按 485-500 行判定正则与 225-236 行收集规则原样模拟）。
+- 冷缓存并行轮未复现 adapter 锁竞争消息（机器级 adapter 已 warm）；竞争路径本身由 CI 原始日志中 mha.py 在竞争下 PASS 佐证。
+- `--level all` 的 PERF 哨兵依赖本地未跟踪 `.golden_cache`（既有口径，CI 侧 `@pytest.mark.ci_skip` 排除，本轮未改变）。
+- 三个形态自检各只跑 1 个 shape（任务书裁决，控 CI 时长）；形态内其余子域（如 Form A 多 KV 块、gemm_v0 非 kv_db 档）由 `test_mha.py` 分层套件与 `mha.py` CLI 覆盖，口径未变。

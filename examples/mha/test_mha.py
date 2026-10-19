@@ -1,21 +1,49 @@
-"""MHA layered test suite: L0 gate + L1/L2/Boundary + perf sentinels (DESIGN rev2).
+"""MHA layered test suite: L0 gate + L1/L2/Boundary + perf sentinels.
 
-Run:
+Run (operator development, exit code carries the verdict):
     python examples/mha/test_mha.py --level l0      # precision convergence
     python examples/mha/test_mha.py --level all     # full suite + sentinels
 
-Precision criteria (DESIGN rev2 §9.3.1, user-ruled 2026-09-18, not changeable):
+Run (CI): examples/bench_test.sh runs this file as a script, so the default
+--level l0 gate plus the "Test Passed!" marker are what CI checks. The suite is
+also Pytest-collectable; see the "Pytest entry points" section at the bottom for
+how the two callers differ.
+
+Kernel file layout (three-form split). The operator under test is no longer one
+module. mha.py is the wrapper layer -- the host metadata contract, the three-way
+form dispatch and the runnable self-check -- and the kernels live in four
+siblings next to this file:
+
+    mha_common.py            pass_configs, NUM_STAGES / CROSS_INTERVAL, the whole
+                             host-side config derivation (derive_config ->
+                             MhaConfig), the dispatch predicate (select_form) and
+                             make_emit_v, the factory for the shared V-scope
+                             @T.macro (one definition, shared by all three forms)
+    mha_form_a.py            mha_form_a_kernel            Form A
+    mha_form_b_mma.py        mha_form_b_mma_kernel        Form B-mma
+    mha_form_b_gemm_v0.py    mha_form_b_gemm_v0_kernel    Form B gemm_v0
+
+Nothing about this suite's contract changed with that split. The entry point is
+still `from mha import mha`; `mha_kernel(B=..., S=...)` still returns the
+compiled kernel for the selected form, so a direct call and a dispatched call
+build the same device code; every gate below keeps its meaning and its
+thresholds; examples/bench_test.sh still runs this file as a script and reads
+main()'s exit code plus the "Test Passed!" marker; and Pytest still collects the
+test_mha_* functions at the bottom. The single addition is run_l1_dispatch(),
+which machine-guards the form-dispatch contract the split introduced, mounted on
+the blocking L1 layer (see the "L1 structural" section for why L1 and not L0).
+
+Precision criteria (DESIGN.md §9.3.1):
 - Blocking = mixed tolerance (§9.3.2: matched_ratio + max_abs_error dual gate)
   AND MARE_abs < 10*Threshold (float16: 9.77e-3; bfloat16: 7.81e-2).
 - MERE and MARE_rel are REFERENCE values: computed and printed on the
-  [PRECISION_*] lines, never blocking; the rev1 [MARE_REL_ESCALATION]
-  arbitration flow is abolished (rev2-C1).
+  [PRECISION_*] lines, never blocking.
 - Thresholds: float16 -> 2**-10; bfloat16 -> 2**-7 (MARE_abs gate = 10x).
 
-Perf sentinels (DESIGN rev2 §9.4):
+Perf sentinels (DESIGN.md §9.4):
 - Blocking feasibility gate = KERNEL-PATH wall time only: H2D -> kernel (incl.
   first JIT compile for the shape) -> D2H + synchronize, <= 120s per sentinel.
-- Blocking precision gate = revised §9.3 caliber (mixed tolerance + MARE_abs).
+- Blocking precision gate = the §9.3 criteria above (mixed tolerance + MARE_abs).
 - Golden-side cost control (mandatory): per-(b,n) chunked golden, persistent
   cross-run cache (.golden_cache/, test-side only), and — for the prefill
   sentinel only — deterministic sampled comparison (16 fixed-seed full (b,n)
@@ -34,15 +62,27 @@ import signal
 import sys
 import time
 
+import pytest
 import tilelang
 import torch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mha import mha  # noqa: E402  (kernel host wrapper under test)
 
+# Dispatch-guard imports (L1 structural layer). select_form() and the three form
+# identifiers are re-exported by the wrapper, so the guard reads the same single
+# source mha_kernel() dispatches through. The three factories are imported from
+# their own modules, which additionally proves each module is importable on its
+# own. `mha as mha_module` gives access to the wrapper's routing table.
+import mha as mha_module  # noqa: E402
+from mha import FORM_A, FORM_B_GEMM_V0, FORM_B_MMA, select_form  # noqa: E402
+from mha_form_a import mha_form_a_kernel  # noqa: E402
+from mha_form_b_gemm_v0 import mha_form_b_gemm_v0_kernel  # noqa: E402
+from mha_form_b_mma import mha_form_b_mma_kernel  # noqa: E402
 
-# ========== Golden reference (DESIGN §9.1, verbatim; renamed golden_mha to
-# avoid collision with the kernel import — semantics unchanged) ==========
+
+# ========== Golden reference (DESIGN.md §9.1), named golden_mha to avoid
+# colliding with the kernel import ==========
 def golden_mha(
     query: torch.Tensor,
     key: torch.Tensor,
@@ -50,34 +90,36 @@ def golden_mha(
     scaleValue: float = -1.0,
     is_causal: bool = False,
 ) -> torch.Tensor:
-    """多头注意力: query [B,S,N,D], key/value [B,S_kv,N,D] → 输出 [B,S,N,D]"""
+    """Multi-head attention: query [B,S,N,D], key/value [B,S_kv,N,D] -> output [B,S,N,D]."""
     B, S, N, D = query.shape
     S_kv = key.shape[1]
 
     if scaleValue <= 0:
         scaleValue = 1.0 / (D**0.5)
 
-    # 转置为 [B, N, S, D]
+    # transpose to [B, N, S, D]
     q = query.transpose(1, 2)
     k = key.transpose(1, 2)
     v = value.transpose(1, 2)
 
-    # 缩放点积注意力
+    # scaled dot-product attention
     scores = torch.matmul(q, k.transpose(-2, -1)) * scaleValue
     if is_causal:
         i = torch.arange(S, device=scores.device).unsqueeze(-1)
         j = torch.arange(S_kv, device=scores.device).unsqueeze(0)
-        causal_mask = j > (i + (S_kv - S))  # 右下角对齐：上三角置 -inf
+        causal_mask = j > (i + (S_kv - S))  # bottom-right aligned: upper triangle -> -inf
         scores = scores.masked_fill(causal_mask, float("-inf"))
-    # F217: 全 mask 行 (整行 = -inf) 在 softmax 时得 0/0 = NaN，对齐
-    # sparse_flash_attention 加显式保护 → 全 mask 行权重置 0。
+    # A fully masked row (every score -inf) would come out of softmax as 0/0 = NaN,
+    # so guard it explicitly and force its weights to 0 — the same protection
+    # sparse_flash_attention applies.
     scores_max = scores.max(dim=-1, keepdim=True).values
     all_masked = torch.isinf(scores_max) & (scores_max < 0)
     attn_weights = torch.nn.functional.softmax(scores, dim=-1)
     attn_weights = torch.where(all_masked, torch.zeros_like(attn_weights), attn_weights)
     attn_output = torch.matmul(attn_weights, v)
 
-    # 转回 [B, S, N, D]；transpose 只改 stride, 而输出契约要求 contiguous
+    # Back to [B, S, N, D]: transpose only changes strides, while the output
+    # contract requires a contiguous tensor.
     return attn_output.transpose(1, 2).contiguous()
 
 
@@ -102,7 +144,7 @@ def golden_mha_chunked(query, key, value, scaleValue=-1.0, is_causal=False):
     return out
 
 
-# ========== Precision standards (DESIGN §9.3) ==========
+# ========== Precision standards (DESIGN.md §9.3) ==========
 def get_precision(dtype):
     """§9.3.2 mixed tolerance: (atol, rtol, max_abs_error_limit, matched_ratio)."""
     fp_table = {
@@ -121,7 +163,7 @@ def eco_threshold(dtype):
 
 
 def check_special_masks(actual, golden):
-    """Position-sensitive NaN/+Inf/-Inf mask comparison (DESIGN §9.2 principle)."""
+    """Position-sensitive NaN/+Inf/-Inf mask comparison (DESIGN.md §9.2 principle)."""
     a, g = actual.float(), golden.float()
     masks_match = (
         torch.equal(torch.isnan(a), torch.isnan(g))
@@ -179,8 +221,8 @@ def make_inputs(B, S, S_kv, N, D, dtype_str, seed, vrange_qk=None, vrange_v=None
     """CPU-generated deterministic inputs (test prep stays on CPU, H2D once).
 
     Default (vrange_*=None): randn * U[-1,1] cast to dtype — the L0 scheme,
-    bit-stable with attempt1. vrange=(lo, hi): uniform U[lo, hi] cast to
-    dtype (L1 value-range dimensions D-VALRANGE-S/M/L/ASYM).
+    deterministic and bit-reproducible. vrange=(lo, hi): uniform U[lo, hi] cast
+    to dtype (L1 value-range dimensions D-VALRANGE-S/M/L/ASYM).
     """
     gen = torch.Generator().manual_seed(seed)
     dt = {"float16": torch.float16, "bfloat16": torch.bfloat16}[dtype_str]
@@ -223,7 +265,7 @@ def run_case(
 
     gen: optional dict forwarded to make_inputs (vrange_qk/vrange_v) plus
     post-processing flags: negzero_v=True negates V (exercises -0.0 paths on
-    all-zero inputs). Default None = attempt1 L0 scheme, bit-stable.
+    all-zero inputs). Default None = the L0 scheme (deterministic, bit-reproducible).
     """
     B, S, S_kv, N, D = shape
     info = {"name": name, "shape": shape, "dtype": dtype_str}
@@ -244,9 +286,8 @@ def run_case(
         mixed_ok, ratio, max_abs = check_precision(out, ref, dtype_str)
         mere, mare_abs, mare_rel = mere_mare(out, ref)
         thr = eco_threshold(dtype_str)
-        # rev2-C1 blocking caliber: mixed tolerance (§9.3.2) AND MARE_abs < 10*Threshold.
-        # MERE / MARE_rel are reference-only (printed, never gate; the rev1
-        # [MARE_REL_ESCALATION] arbitration flow is abolished).
+        # Blocking caliber: mixed tolerance (§9.3.2) AND MARE_abs < 10*Threshold.
+        # MERE / MARE_rel are reference-only: printed, never gating.
         mare_abs_ok = (mare_abs == mare_abs) and mare_abs < 10 * thr  # NaN -> False
         ok = mixed_ok and mare_abs_ok
 
@@ -266,10 +307,9 @@ def run_case(
         return False, info
 
 
-# ========== L0: gate cases (DESIGN §9.2, 10 cases, regular divisible shapes) ==========
-# Case table unchanged from DESIGN §9.2; tags added per its coverage-matrix
-# mapping (D-DTYPE-fp16: #1,2,5,6,9,10; D-DTYPE-bf16: #3,4,7,8;
-# D-PARAM-is_causal(True): #2,4,6,8,9; D-PARAM-scaleValue(explicit): #10).
+# ========== L0: gate cases (DESIGN.md §9.2, 10 cases, regular divisible shapes) ==========
+# Each case carries the tags of the coverage dimensions it exercises; the
+# aggregate per-dimension counts are declared in COVERAGE_MANIFEST below.
 L0_CASES = [
     # (name, (B,S,S_kv,N,D), dtype, scaleValue, is_causal, tags)
     ("l0_min_fp16", (1, 64, 64, 1, 64), "float16", -1.0, False, ["D-DTYPE-fp16", "D-SHAPE-ALIGNED"]),
@@ -285,8 +325,12 @@ L0_CASES = [
 ]
 
 
-def test_mha_l0():
-    """L0 gate: 10/10 must pass (DESIGN §9.2 pass standard, rev2-C1 caliber)."""
+def run_l0():
+    """L0 gate: 10/10 must pass (DESIGN.md §9.2 pass standard).
+
+    Returns the all-passed bool. Callers decide what that means: main() folds it
+    into its exit code, test_mha_l0() asserts on it.
+    """
     ok = True
     n_pass = 0
     for idx, (name, shape, dtype_str, scale, causal, tags) in enumerate(L0_CASES):
@@ -297,20 +341,20 @@ def test_mha_l0():
     return ok
 
 
-# ========== L1: functional cases (tilelang-op-test-design scenario B) ==========
-# Shapes deterministically generated per test-design §6 from block=(bM,bN)
+# ========== L1: functional cases (irregular shapes, value ranges, attrs) ==========
+# Shapes are derived deterministically from block=(bM,bN)
 # (D in {64,128} -> (64,64); D=256 -> (32,64)): TAIL-1 (bM*k+1 / bN*k+1),
 # TAIL-MID (bM*k+bM//2 / bN*k+bN//2), PRIME (nearest primes), EDGE (S=1 /
 # S_kv=1 / single-element). GEMM three-axis non-alignment: S axis (GEMM1/2 M)
 # via S=65/96/61/127; S_kv axis (GEMM1 N + GEMM2 reduction K) via S_kv=65/96/
 # 127/160/251/1; B·N grid axis via prime B=3/N=5 and N=3 cid decomposition.
 # GEMM1's K axis = D is host-constrained to {64,128,256} (always block-aligned;
-# illegal D is covered by L2 rejection cases). Mask 4-variant coverage (§5.6):
+# illegal D is covered by L2 rejection cases). Mask 4-variant coverage (DESIGN.md §5.6):
 # (F,T)/(T,T) in L0; (F,F) tail-clamp-only via l1_tail1_Skv_fp16 /
 # l1_tailmid_Skv_bf16 / l1_prime_bn_bf16 / l1_edge_Skv1; (T,F) causal+clamp via
 # l1_tail1_Skv_causal_bf16 / l1_tailmid_causal_fp16 / l1_prime_causal_fp16 /
 # l1_d256_tailmix_bf16 / l1_valrange_asym_causal.
-# Value-range magnitude calibration (measured, debug_log.md attempt2): the
+# Value-range magnitude calibration (measured): the
 # fp16/bf16 blocking gates are ABSOLUTE (MARE_abs < 9.77e-3 / 7.81e-2;
 # max_abs <= 1e-1 / 1e0) while any non-bit-exact attention output carries
 # >= 1 ulp(|out|) error; ulp(16)=1.56e-2 already exceeds the fp16 gate, so
@@ -392,9 +436,105 @@ L1_CASES = [
 ]
 
 
-def test_mha_l1():
-    """L1 functional tests: irregular/tail/prime shapes + value ranges + attrs.
-    Blocking layer ([PRECISION_*], rev2-C1 caliber). Returns all-passed bool."""
+# ========== L1 structural: three-way form dispatch guard ==========
+# The kernel is split across mha_form_a.py / mha_form_b_mma.py /
+# mha_form_b_gemm_v0.py, and the wrapper's mha_kernel() routes a shape to exactly
+# one of them through mha_common.select_form(). While all three branches lived in
+# one function, "mutually exclusive and exhaustive over (S, D)" was a comment; now
+# that it crosses module boundaries it is a contract, and this guard is what
+# enforces it. Predicates under test: Form A = S > 16 and D <= 128, Form B-mma =
+# S > 16 and D == 256, Form B gemm_v0 = S <= 16 for every D.
+#
+# Mounted on L1 rather than L0. L0 is the fixed 10-case precision convergence gate
+# whose count the whole debug_log history quotes, and this case compares no
+# numbers -- it is a host-side structural contract, so adding it to L0 would only
+# dilute that gate. It is blocking, though: a mis-routed shape builds the wrong
+# kernel body, which is a functional failure and not a warning, and L1 is the
+# blocking functional layer. It touches no device and no tensor (select_form() is
+# pure Python over scalars), so it adds no measurable time and cannot flake.
+DISPATCH_CASES = [
+    # (name, (B, S, S_kv, N, D), expected form). The (S, D) pair decides the form;
+    # B / S_kv / N are carried along because the wrapper hands over the full list.
+    # ---- Form A: S > 16 and D <= 128 ----
+    ("dispatch_a_d64_prefill", (2, 128, 128, 8, 64), FORM_A),
+    ("dispatch_a_d128_prefill", (2, 512, 128, 16, 128), FORM_A),
+    ("dispatch_a_S17_lower_edge", (1, 17, 17, 1, 128), FORM_A),  # first S above the decode threshold
+    ("dispatch_a_S2048_upper_edge", (1, 2048, 2048, 1, 64), FORM_A),  # documented S ceiling
+    ("dispatch_a_multi_kv_cross", (2, 128, 256, 12, 64), FORM_A),  # flat (task, kv) stream domain
+    # ---- Form B-mma: S > 16 and D == 256 ----
+    ("dispatch_bm_d256_prefill", (2, 32, 512, 4, 256), FORM_B_MMA),
+    ("dispatch_bm_S17_lower_edge", (1, 17, 17, 1, 256), FORM_B_MMA),
+    ("dispatch_bm_d256_single_kv", (1, 64, 64, 2, 256), FORM_B_MMA),  # single_kv_block sub-case
+    ("dispatch_bm_d256_causal_big", (4, 1024, 1024, 16, 256), FORM_B_MMA),
+    # ---- Form B gemm_v0: S <= 16, every D (decode fallback) ----
+    ("dispatch_bg_decode_S1_d64", (2, 1, 64, 2, 64), FORM_B_GEMM_V0),
+    ("dispatch_bg_decode_S1_d128", (1, 1, 2048, 32, 128), FORM_B_GEMM_V0),
+    ("dispatch_bg_mtp_S2_d128", (60, 2, 512, 32, 128), FORM_B_GEMM_V0),
+    ("dispatch_bg_S16_upper_edge_d128", (1, 16, 256, 4, 128), FORM_B_GEMM_V0),  # last S still in decode
+    ("dispatch_bg_S16_upper_edge_d256", (1, 16, 256, 4, 256), FORM_B_GEMM_V0),
+    ("dispatch_bg_kvdb_d256", (60, 1, 512, 16, 256), FORM_B_GEMM_V0),  # K/V L1 dual-side double-buffer domain
+    ("dispatch_bg_d256_single_kv", (1, 1, 256, 4, 256), FORM_B_GEMM_V0),  # D=256 but single KV block
+]
+
+
+def run_l1_dispatch():
+    """L1 structural guard: the three-way form dispatch is correct and exhaustive.
+
+    Blocking layer, device-free. Checks (1) select_form() returns the expected
+    form for every DISPATCH_CASES shape, including both edges of the S > 16
+    threshold at D=128 and D=256; (2) the three form identifiers are distinct and
+    select_form() never returns anything outside them; (3) the wrapper's routing
+    table maps each identifier to a callable, and the three entries are pairwise
+    distinct objects, so one shape can reach exactly one kernel body; (4) the
+    three form modules are independently importable and expose those same three
+    distinct factories. Returns the all-passed bool."""
+    ok = True
+    n_pass = 0
+    for name, (B, S, S_kv, N, D), expect in DISPATCH_CASES:
+        got = select_form(B, S, S_kv, N, D)
+        case_ok = got == expect
+        n_pass += int(case_ok)
+        ok &= case_ok
+        print(
+            f"[L1-DISPATCH] {name:<32} B={B} S={S} S_kv={S_kv} N={N} D={D} "
+            f"-> {got:<15} expect={expect:<15} {'OK' if case_ok else 'MISMATCH'}"
+        )
+
+    forms = (FORM_A, FORM_B_MMA, FORM_B_GEMM_V0)
+    ids_ok = len(set(forms)) == 3
+    ok &= ids_ok
+    print(f"[L1-DISPATCH] form identifiers pairwise distinct: {ids_ok} {forms}")
+
+    exhaust_ok = all(select_form(1, s, s, 1, d) in forms for s in (1, 16, 17, 128) for d in (64, 128, 256))
+    ok &= exhaust_ok
+    print(f"[L1-DISPATCH] select_form() closed over the three identifiers: {exhaust_ok}")
+
+    # The routing table mha_kernel() actually dispatches through. White-box on
+    # purpose: this is the table whose correctness the split made load-bearing.
+    routed = [mha_module._FORM_FACTORIES[f] for f in forms]
+    route_ok = all(callable(x) for x in routed) and len({id(x) for x in routed}) == 3
+    ok &= route_ok
+    for f, fac in zip(forms, routed):
+        print(f"[L1-DISPATCH] route {f:<15} -> {getattr(fac, '__name__', repr(fac)):<28} callable={callable(fac)}")
+    print(f"[L1-DISPATCH] wrapper routing table: 3 distinct callables = {route_ok}")
+
+    direct = [mha_form_a_kernel, mha_form_b_mma_kernel, mha_form_b_gemm_v0_kernel]
+    direct_ok = len({id(x) for x in direct}) == 3
+    ok &= direct_ok
+    same_ok = [id(a) == id(b) for a, b in zip(routed, direct)] == [True, True, True]
+    ok &= same_ok
+    print(f"[L1-DISPATCH] directly imported factories pairwise distinct: {direct_ok}")
+    print(f"[L1-DISPATCH] routing table entries are the directly imported factories: {same_ok}")
+
+    structural_ok = ids_ok and exhaust_ok and route_ok and direct_ok and same_ok
+    print(f"[L1-DISPATCH] summary: {n_pass}/{len(DISPATCH_CASES)} shape cases passed, structural={structural_ok}, ok={ok}")
+    return ok
+
+
+def run_l1():
+    """L1 functional tests: irregular/tail/prime shapes + value ranges + attrs,
+    plus the device-free structural form-dispatch guard.
+    Blocking layer ([PRECISION_*] / [L1-DISPATCH]). Returns the all-passed bool."""
     ok = True
     n_pass = 0
     for idx, (name, shape, dtype_str, scale, causal, gen, tags) in enumerate(L1_CASES):
@@ -402,15 +542,18 @@ def test_mha_l1():
         n_pass += int(case_ok)
         ok &= case_ok
     print(f"[L1] summary: {n_pass}/{len(L1_CASES)} passed, ok={ok}")
+    # Structural guard, device-free. Reported on its own [L1-DISPATCH] line so the
+    # precision-case count above stays comparable with the pre-split history.
+    ok &= run_l1_dispatch()
     return ok
 
 
 # ========== L2: negative tests (illegal inputs must be rejected; non-blocking) ==========
 # All rejections must come from the host metadata asserts (AssertionError)
-# BEFORE any JIT/NPU work (DESIGN §4.8/§5.6: unsupported inputs are rejected
+# BEFORE any JIT/NPU work (DESIGN.md §4.8/§5.6: unsupported inputs are rejected
 # by metadata validation without reading tensor data). NaN/Inf inputs are NOT
-# L2 cases (host cannot reject them without reading data — they are probed in
-# Boundary instead, per DESIGN §5.6 "非有限值输入…非阻塞探测").
+# L2 cases (the host cannot reject them without reading data — they are probed
+# in Boundary instead, as non-blocking out-of-domain inputs).
 def _l2_thunks():
     fp16, bf16, fp32 = torch.float16, torch.bfloat16, torch.float32
 
@@ -459,7 +602,7 @@ def run_l2_case(name, tags, fn):
     return False
 
 
-def test_mha_l2():
+def run_l2():
     """L2 negative tests (non-blocking; results recorded, never gate exit code)."""
     cases = _l2_thunks()
     n_pass = 0
@@ -469,7 +612,7 @@ def test_mha_l2():
 
 
 # ========== Boundary: special-value probes (position-sensitive; non-blocking) ==========
-# DESIGN §9.2 principle: the declared input domain is finite reals — NaN/Inf
+# DESIGN.md §9.2 principle: the declared input domain is finite reals — NaN/Inf
 # are OUT-of-domain probes (never all-NaN/all-Inf: finite base + SPARSE
 # injected specials, >=1 special and >=1 finite value). Comparison is
 # mask-first: NaN/+inf/-inf positions must match exactly (check_special_masks
@@ -565,7 +708,7 @@ def run_boundary_case(name, shape, dtype_str, scaleValue, is_causal, seed, injec
         return False
 
 
-def test_mha_boundary():
+def run_boundary():
     """Boundary special-value probes (non-blocking; WARN only recorded)."""
     n_pass = 0
     for idx, (name, shape, dtype_str, scale, causal, inject, tags) in enumerate(BOUNDARY_CASES):
@@ -573,8 +716,11 @@ def test_mha_boundary():
     print(f"[BOUNDARY] summary: {n_pass}/{len(BOUNDARY_CASES)} within tolerance (non-blocking)")
 
 
-# ========== Coverage bookkeeping (coverage_check.py; coverage-matrix.md) ==========
-COVERAGE_CATEGORY = "Fusion"  # CV-fused matmul+softmax+matmul (DESIGN §9.2)
+# ========== Coverage bookkeeping ==========
+# Read by .agents/skills/tilelang-op-test-design/scripts/coverage_check.py, which
+# parses these three module constants and scores them against the tags carried by
+# the L0/L1/Boundary case tables above.
+COVERAGE_CATEGORY = "Fusion"  # CV-fused matmul+softmax+matmul (DESIGN.md §9.2)
 COVERAGE_MANIFEST = {
     "D-DTYPE-fp16": 7,
     "D-DTYPE-bf16": 11,
@@ -601,13 +747,13 @@ COVERAGE_MANIFEST = {
 COVERAGE_NA = {}
 
 
-# ========== Perf sentinels (DESIGN rev2 §9.4) ==========
-# Gate structure (rev2-C4):
+# ========== Perf sentinels (DESIGN.md §9.4) ==========
+# Gate structure:
 #   1. kernel-path wall-time gate (BLOCKING, the only feasibility timing
 #      basis): H2D -> kernel (incl. first JIT compile for the shape) ->
 #      D2H + synchronize, <= KERNEL_PATH_GATE_S per sentinel. Warm-kernel
-#      time recorded separately as the Stage-3 baseline (informational).
-#   2. precision gate (BLOCKING): revised §9.3 caliber (mixed tolerance +
+#      time recorded separately as the tuning baseline (informational).
+#   2. precision gate (BLOCKING): the §9.3 criteria (mixed tolerance +
 #      MARE_abs < 10*Threshold); MERE/MARE_rel printed as reference.
 #   3. golden-side cost control (mandatory): per-(b,n) chunked golden +
 #      persistent cross-run cache + deterministic sampled comparison
@@ -625,7 +771,7 @@ SENTINELS = [
     ("perf_max_grid", (128, 128, 128, 64, 64), "float16", -1.0, True, False),
 ]
 
-# Deterministic prefill sampling scheme (§9.4-3 requires reproducibility):
+# Deterministic prefill sampling scheme (DESIGN.md §9.4-3 requires reproducibility):
 PREFILL_SAMPLE_SEED = 1234  # fixed seed selecting the full-comparison (b,n) pairs
 PREFILL_FULL_PAIRS = 16  # >=16 (b,n) chunk pairs get full-element comparison
 
@@ -643,7 +789,7 @@ def prefill_sample_rows(S, D):
     return rows
 
 
-# ---- Golden persistent cache (§9.4-3; test-side only, NOT a deliverable) ----
+# ---- Golden persistent cache (DESIGN.md §9.4-3; generated locally, untracked) ----
 GOLDEN_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".golden_cache")
 GOLDEN_CACHE_SCHEME = "mha-golden-v1"  # bump when make_inputs/golden semantics change
 
@@ -694,7 +840,7 @@ def golden_mha_rows(query, key, value, b, n, rows, scaleValue=-1.0, is_causal=Fa
 
 
 def sentinel_compare(name, shape, dtype_str, scaleValue, is_causal, seed, sampled, out_cpu, q, k, v):
-    """Golden (cost-controlled) + revised-§9.3 precision for one sentinel.
+    """Golden (cost-controlled) + §9.3 precision for one sentinel.
 
     sampled=True (prefill only): PREFILL_FULL_PAIRS fixed-seed (b,n) pairs get
     full-element chunked golden; every remaining pair is compared on the
@@ -756,9 +902,9 @@ def sentinel_compare(name, shape, dtype_str, scaleValue, is_causal, seed, sample
 
 
 def run_sentinel(name, shape, dtype_str, scaleValue, is_causal, sampled, seed):
-    """One §9.4 sentinel. BLOCKING: kernel-path <= 120s AND revised-§9.3
-    precision. NON-BLOCKING: case-level 1800s harness guard (a timeout there
-    is a harness defect, not an operator feasibility verdict)."""
+    """One DESIGN.md §9.4 sentinel. BLOCKING: kernel-path <= 120s AND the §9.3
+    precision criteria. NON-BLOCKING: case-level 1800s harness guard (a timeout
+    there is a harness defect, not an operator feasibility verdict)."""
     old = signal.signal(signal.SIGALRM, _alarm_handler)
     signal.alarm(CASE_WALLCLOCK_GUARD_S)
     try:
@@ -772,7 +918,7 @@ def run_sentinel(name, shape, dtype_str, scaleValue, is_causal, sampled, seed):
         out_cpu = out.cpu()  # D2H
         torch.npu.synchronize()
         kernel_path_s = time.time() - t0
-        # ---- warm kernel re-run (Stage-3 baseline, informational) ----
+        # ---- warm kernel re-run (tuning baseline, informational) ----
         t1 = time.time()
         mha(qn, kn, vn, scaleValue=scaleValue, is_causal=is_causal)
         torch.npu.synchronize()
@@ -805,12 +951,58 @@ def run_sentinel(name, shape, dtype_str, scaleValue, is_causal, sampled, seed):
         signal.signal(signal.SIGALRM, old)
 
 
-def test_mha_perf():
+def run_perf():
     ok = True
     for idx, (name, shape, dt, scale, causal, sampled) in enumerate(SENTINELS):
         ok &= run_sentinel(name, shape, dt, scale, causal, sampled, seed=9000 + idx)
-    print(f"[PERF] summary: all_sentinels_ok={ok} (kernel-path gate {KERNEL_PATH_GATE_S:.0f}s/sentinel, rev2 §9.4)")
+    print(f"[PERF] summary: all_sentinels_ok={ok} (kernel-path gate {KERNEL_PATH_GATE_S:.0f}s/sentinel, DESIGN.md §9.4)")
     return ok
+
+
+# ========== Pytest entry points ==========
+# Two callers reach this suite. Run as a script (`python test_mha.py --level
+# ...`) the verdict is main()'s exit code, which is what examples/bench_test.sh
+# and the operator development flow both read. Collected by Pytest — which the
+# test_*.py filename invites — a returned bool would mean nothing: Pytest
+# ignores return values, so a precision regression would have stayed green.
+# Hence the blocking layers assert here, while the layers DESIGN.md §9.2
+# declares non-blocking (L2 negative, Boundary special values) keep reporting
+# through their [BOUNDARY_WARN]/[L2] lines without gating.
+
+
+def test_mha_l0():
+    """L0 gate (blocking): 10/10 must pass — DESIGN.md §9.2 pass standard."""
+    assert run_l0(), "L0 precision gate failed — see the [PRECISION_FAIL] and [L0] summary lines above"
+
+
+def test_mha_l1():
+    """L1 functional layer (blocking): irregular/tail/prime shapes, value ranges, attrs."""
+    assert run_l1(), "L1 precision gate failed — see the [PRECISION_FAIL] and [L1] summary lines above"
+
+
+def test_mha_l2():
+    """L2 negative layer (non-blocking per DESIGN.md §9.2): illegal inputs rejected by host asserts."""
+    run_l2()
+
+
+def test_mha_boundary():
+    """Boundary special-value probes (non-blocking per DESIGN.md §9.2): WARN recorded, never gating."""
+    run_boundary()
+
+
+@pytest.mark.ci_skip
+def test_mha_perf():
+    """Perf sentinels (DESIGN.md §9.4) — skipped in every CI scenario.
+
+    They are a performance-feasibility gate rather than a code-regression test,
+    and CI should not run them: their golden side depends on the untracked
+    examples/mha/.golden_cache (154 MB of chunked-golden tensors), so a CI
+    workspace — cleaned by actions/checkout on every run — would recompute
+    goldens for shapes up to (8, 2048, 4096, 32, 128) from scratch, under the
+    1800s per-case harness guard. Run by hand:
+    `python examples/mha/test_mha.py --level perf`.
+    """
+    assert run_perf(), "perf sentinel gate failed — see the [PERF_FAIL] lines above"
 
 
 # ========== Main: --level dispatch + exit code ==========
@@ -819,20 +1011,20 @@ def main():
     parser.add_argument("--level", default="l0", choices=["l0", "l1", "l2", "boundary", "perf", "all"])
     args = parser.parse_args()
 
-    tilelang.disable_cache()  # avoid stale compilation artifacts (checklist #11)
+    tilelang.disable_cache()  # avoid stale compilation artifacts
     torch.manual_seed(0)
 
     blocking_ok = True  # only L0/L1/perf are blocking
     if args.level in ("l0", "all"):
-        blocking_ok &= test_mha_l0()
+        blocking_ok &= run_l0()
     if args.level in ("l1", "all"):
-        blocking_ok &= test_mha_l1()
+        blocking_ok &= run_l1()
     if args.level in ("l2", "all"):
-        test_mha_l2()  # negative: non-blocking
+        run_l2()  # negative: non-blocking
     if args.level in ("boundary", "all"):
-        test_mha_boundary()  # special values: non-blocking
+        run_boundary()  # special values: non-blocking
     if args.level in ("perf", "all"):
-        blocking_ok &= test_mha_perf()
+        blocking_ok &= run_perf()
 
     if blocking_ok:
         print("Test Passed!")

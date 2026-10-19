@@ -387,6 +387,8 @@ for k in T.serial(loop_k):
 
 **注意**：向量化改造必须保证运算逻辑不变，特别是存在数据依赖或累加操作的场景，需仔细验证等价性。
 
+**CV 耦合算子 régime 警示**：算子为 AIC/AIV 跨核耦合闭环（FlashAttention/MHA/GQA 类）且 V 侧非 pacing 管时，本节手段属「单侧指令削减类」，wall 转化率可为**负**（实测判例：机制签名全部兑现但 V.vec 主管道 +21.8% 吞没节省，wall +12.4% 回滚）。立项前必须先做税种判别，见 [attention_tuning_playbook.md §3.7](best-practices/attention_tuning_playbook.md)。本节收益数据（如逐行循环 2D 化的 -33%~-51%）产生于非耦合态。
+
 **优化前**（循环中多次 scalar 运算）：
 ```python
 for h_i in range(block_M // 2):

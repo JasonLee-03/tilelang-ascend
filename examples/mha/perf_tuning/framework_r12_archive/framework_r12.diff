@@ -1,0 +1,124 @@
+diff --git a/src/tl_templates/ascend/common.h b/src/tl_templates/ascend/common.h
+index 3b0d36a0..9496f50f 100644
+--- a/src/tl_templates/ascend/common.h
++++ b/src/tl_templates/ascend/common.h
+@@ -1184,13 +1184,36 @@ static constexpr uint32_t L0AB_EVENT = 0;
+ 
+ template <typename T1, typename T2, uint32_t M, uint32_t N, uint32_t K,
+           bool transpose_A = false, bool transpose_B = false,
+-          uint32_t kL0Size = 128>
++          uint32_t kL0Size = 128, int32_t kMTE2Sync = -1>
+ CATLASS_DEVICE void
+ gemm_v0(LocalTensor<T1> const &A, LocalTensor<T1> const &B,
+         LocalTensor<T2> const &C, // this must be located in l0c
+         AscendC::TBuf<AscendC::TPosition::A2> &l0a_,
+         AscendC::TBuf<AscendC::TPosition::B2> &l0b_, bool clear,
+         uint32_t n_actual = N) {
++  // kMTE2Sync: opt-in caller-managed per-buffer MTE2->MTE1 synchronization.
++  // Default -1 keeps the historical behaviour byte-identical: the prologue
++  // self-issues SetFlag<MTE2_MTE1>(L0AB_EVENT) + WaitFlag, which drains the
++  // WHOLE MTE2 queue (every copy enqueued before this call, including
++  // prefetches for later gemms, joins this call's critical path). When >= 0,
++  // the caller is responsible for having issued
++  // SetFlag<MTE2_MTE1>(kMTE2Sync) into the MTE2 queue AFTER the last operand
++  // copy (A/B in L1) this gemm consumes -- FIFO position semantics then make
++  // the flag an exact per-buffer "operands resident" event: the prologue only
++  // WaitFlags that id (no self-set), so MTE2 copies enqueued after the
++  // caller's SetFlag (prefetches for subsequent gemms) keep streaming instead
++  // of being absorbed. Contract: (1) one Set per Wait, strict 1:1
++  // alternation per (MTE2_MTE1, id) -- safe under both 1-bit and counting
++  // flag semantics; (2) the caller's Set must postdate ALL operand copies of
++  // this call in issue order (a Set placed after only some operands does not
++  // cover later-enqueued ones); (3) valid id range 0..5 (AscendC static-Tensor
++  // programming forbids event ids 6/7 -- may collide with internal usage);
++  // (4) if opt-in and default-mode gemm_v0 calls coexist in one kernel, the
++  // caller id must avoid L0AB_EVENT (0) which the default prologue self-sets.
++  static_assert(kMTE2Sync == -1 || (kMTE2Sync >= 0 && kMTE2Sync <= 5),
++                "gemm_v0 kMTE2Sync must be -1 (default pipe-level drain) or "
++                "an event id in [0,5] (ids 6/7 are reserved by AscendC in "
++                "static-Tensor programming scenarios)");
+   // n_actual: runtime output-column count (<= N), only honoured on the
+   // transpose_B (QK) path -- computes/loads just the real window columns
+   // instead of the full template N. Defaults to N, so all existing callers are
+@@ -1303,8 +1326,16 @@ gemm_v0(LocalTensor<T1> const &A, LocalTensor<T1> const &B,
+   // N-tiling version) instead serialised the tiles. For nL0split == 1 (every
+   // pre-existing caller, and the QK transpose-B path) tileIdx == kL0Idx, so
+   // this is byte-for-byte the original K ping-pong.
+-  SetFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
+-  WaitFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
++  if constexpr (kMTE2Sync >= 0) {
++    // Opt-in per-buffer mode: the caller already set MTE2_MTE1(kMTE2Sync)
++    // right after this gemm's operand copies; waiting that id blocks MTE1
++    // only until those copies retire (FIFO prefix), leaving later-enqueued
++    // prefetch MTE2s in flight. See the kMTE2Sync contract above.
++    WaitFlag<HardEvent::MTE2_MTE1>(kMTE2Sync);
++  } else {
++    SetFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
++    WaitFlag<HardEvent::MTE2_MTE1>(L0AB_EVENT);
++  }
+   SetFlag<HardEvent::FIX_M>(L0AB_EVENT);
+   WaitFlag<HardEvent::FIX_M>(L0AB_EVENT);
+ 
+diff --git a/tilelang/language/ascend.py b/tilelang/language/ascend.py
+index 08caae3c..41e79460 100644
+--- a/tilelang/language/ascend.py
++++ b/tilelang/language/ascend.py
+@@ -415,7 +415,8 @@ def shmem_ub_get_nbi(dst: Buffer, src: Buffer, nelems: PrimExpr, newPe: PrimExpr
+     )
+ 
+ 
+-def gemm_v0(A, B, C, transpose_A=False, transpose_B=False, init=False, kL0Size=128, n_actual=None):
++def gemm_v0(A, B, C, transpose_A=False, transpose_B=False, init=False, kL0Size=128, n_actual=None,
++            mte2_sync=None):
+     """
+     Performs a block-level General Matrix Multiplication (GEMM).
+ 
+@@ -457,6 +458,20 @@ def gemm_v0(A, B, C, transpose_A=False, transpose_B=False, init=False, kL0Size=1
+             gemm, e.g. QK over the actual window length). None -> compile-time N
+             (byte-identical to before). A compile-time-constant value is validated;
+             a runtime tir expression is the caller's responsibility.
++        mte2_sync (int, optional, advanced): Opt-in caller-managed per-buffer
++            MTE2->MTE1 synchronization event id. None (default) keeps the
++            historical behaviour byte-identical: the device template prologue
++            self-issues SetFlag/WaitFlag<MTE2_MTE1>(0), draining the WHOLE MTE2
++            queue (any copy enqueued before this call -- including prefetches
++            for later gemms -- joins this call's critical path). When set to an
++            event id in [0, 5], the prologue instead only WaitFlags that id:
++            the caller MUST have issued ``T.set_flag("MTE2", "MTE1", mte2_sync)``
++            AFTER the last L1 operand copy this gemm consumes (FIFO position
++            semantics make the flag an exact per-buffer readiness event), with
++            strict one-Set-per-Wait alternation per id. Ids 6/7 are forbidden
++            (reserved by AscendC in static-Tensor programming). If opt-in and
++            default-mode gemm_v0 calls coexist in one kernel, avoid id 0
++            (the default prologue self-sets MTE2_MTE1 id 0).
+ 
+     Returns:
+         tvm.tir.Call: A TIR intrinsic call to `tl.ascend_gemm_v0`.
+@@ -519,10 +534,26 @@ def gemm_v0(A, B, C, transpose_A=False, transpose_B=False, init=False, kL0Size=1
+         if isinstance(_na, int):
+             assert 0 < _na <= N, f"gemm_v0 n_actual ({_na}) must be in (0, N={N}]"
+             assert _na % 16 == 0, f"gemm_v0 n_actual ({_na}) must be a multiple of 16 (fractal column granularity)"
++    # mte2_sync: opt-in caller-managed per-buffer MTE2->MTE1 event id. None ->
++    # the template string is byte-identical to the historical 8-arg form
++    # (default pipe-level drain in the device template prologue).
++    _gemm_v0_tpl = (
++        f"{_dtype(A)}, {_dtype(C)}, {M}, {N}, {K}, "
++        f"{str(transpose_A).lower()}, {str(transpose_B).lower()}, {kL0Size}"
++    )
++    if mte2_sync is not None:
++        assert isinstance(mte2_sync, int) and not isinstance(mte2_sync, bool), (
++            f"gemm_v0 mte2_sync ({mte2_sync}) must be a compile-time int event id"
++        )
++        assert 0 <= mte2_sync <= 5, (
++            f"gemm_v0 mte2_sync ({mte2_sync}) must be in [0, 5] "
++            "(AscendC forbids event ids 6/7 in static-Tensor programming scenarios)"
++        )
++        _gemm_v0_tpl += f", {mte2_sync}"
+     return T.call_intrin(
+         "handle",
+         tir.op.Op.get("tl.ascend_gemm_v0"),
+-        f"gemm_v0<{_dtype(A)}, {_dtype(C)}, {M}, {N}, {K}, {str(transpose_A).lower()}, {str(transpose_B).lower()}, {kL0Size}>",
++        f"gemm_v0<{_gemm_v0_tpl}>",
+         Aptr,
+         Bptr,
+         Cptr,

@@ -1,6 +1,6 @@
 ---
 name: tilelang-perf-optimization
-description: TileLang 算子性能调优与潜在性能劣化模式检查。提供性能数据采集、瓶颈诊断、优化实施、效果验证能力；也用于生成或评审算子时对照常见性能劣化模式示例检查当前 kernel 代码。触发：算子精度通过后需要优化性能、性能不及预期时。
+description: TileLang 算子性能调优与潜在性能劣化模式检查。提供性能数据采集、瓶颈诊断、优化实施、效果验证能力；也用于生成或评审算子时对照常见性能劣化模式示例检查当前 kernel 代码。内置 attention 家族（MHA/GQA/MLA/FlashAttention）等 CV 融合（Cube+Vector 跨核耦合）算子的深度调优实战手册（14 会话实证：机制定律、立项判据、消融上界探针法、msprof/camodel 读数纪律）。触发：算子精度通过后需要优化性能、性能不及预期时；用户提到 attention/MHA/FA/GQA 算子调优、cann-bench 提分、msprof/camodel 归因与读数解读（ratio / wait_id / stall 占比 / pipe 利用率含义）、跨核流水重叠度、CV 耦合瓶颈分析、调优候选立项/回滚判定时，务必使用本 skill。
 ---
 
 # TileLang 性能优化
@@ -30,6 +30,7 @@ Step 1: 基线采集（性能 + 精度）
 - **编程模式**：[tilelang-programming-model-guide](../tilelang-custom-skill/tilelang-programming-model-guide/SKILL.md)
 - **cube最佳实践**：[cube_optimization_path.md](references/best-practices/cube_optimization_path.md)
 - **vector最佳实践**：[vector-practices/](references/vector-practices/)
+- **attention/CV 耦合深度调优手册**：[attention_tuning_playbook.md](references/best-practices/attention_tuning_playbook.md) —— Step 2 判定为**混合型（CV 融合）**时必读；含测量纪律（msprof/camodel 读数陷阱）、归因方法学（双向 A/B、带宽墙四步法、毒化矩阵）、立项前判据（杠杆性质分类、GATE 0 消融上界门）、机制定律库（吸收律、守恒律、bN 上界定理）、守卫工程与候选治理
 ---
 
 ## 执行步骤
@@ -61,11 +62,21 @@ print(func.get_kernel_source())
 |---------|------|---------|
 | `IS_ASCEND_AIC` 出现 | Cube 型 | GEMM、MatMul、Linear |
 | `IS_ASCEND_AIV` 出现 | Vector 型 | RoPE、Softmax、Add |
-| 两者均出现 | 混合型 | FlashAttention、SparseFlashAttention |
+| 两者均出现 | 混合型 | FlashAttention、SparseFlashAttention、MHA/GQA/MLA |
+
+**混合型（CV 融合）判定后**：在进入 Step 3 之前通读 [attention_tuning_playbook.md](references/best-practices/attention_tuning_playbook.md) 的 §0-§4。CV 耦合闭环算子（Cube 与 Vector 经 workspace/L0C 通道互为生产者-消费者）的读数语义与立项判据和单管算子有系统性差异——「让某一侧更快」的直觉候选会被对侧等待 1:1 吸收（吸收律），跳过该手册直接列优化点清单大概率浪费迭代预算在结构性无效候选上。
 
 ### Step 3: 识别优化点（强制，禁止与 Step 4 合并）
 
-先读取 `optimization-guide.md` 的目录和各章节标题 + `performance-antipatterns.md` 的各条目标题，根据算子类型（Step 2 判定）和算子实现特征初步筛选出可能适用的优化点清单。再针对每个候选优化点，读取其"适用场景"、"约束"、"使用条件"等描述，确认是否真正适用。如果是 cube 核额外参考 `best-practices/cube_optimization_path.md`，如果是 vector 核额外参考 `vector-practices/` 目录下的文档。
+先读取 `optimization-guide.md` 的目录和各章节标题 + `performance-antipatterns.md` 的各条目标题，根据算子类型（Step 2 判定）和算子实现特征初步筛选出可能适用的优化点清单。再针对每个候选优化点，读取其"适用场景"、"约束"、"使用条件"等描述，确认是否真正适用。如果是 cube 核额外参考 `best-practices/cube_optimization_path.md`，如果是 vector 核额外参考 `vector-practices/` 目录下的文档，如果是混合型（CV 融合）额外参考 `best-practices/attention_tuning_playbook.md`。
+
+**混合型（CV 融合）候选附加门禁**（playbook §3，Part A 清单必须体现）：
+
+1. 每个候选先做**杠杆性质前置分类**（§3.1）：交接结构删除类 / 单侧吞吐类 / 结构框架类——分类决定判决路径；
+2. **单侧吞吐类**（加速/减字节/削指令/宽化）在 wall 双侧各有大等待余量或已有 1:1 吸收实证时不立项；其余情况必须先过 **GATE 0 消融上界门**（§3.2，≈25 分钟 timing-only 探针钉死 EV 天花板，上界 < 采纳门即证据性关闭，不进入实现）；
+3. **交接结构删除类**优先立项，EV 用 flat 收益模型预估（§4.9：批深空缺率 × 任务边界密度）；
+4. 缩块/调用数×N 类先做固定段税预算带（§3.5，EV 报名义/净双口径）；
+5. 立项引用模型聚合项时逐项下钻到可攻击加数（§3.6 G-8），静态预算审计「过门」不构成可行性证据（G-9）。
 
 在 `optimization_log.md` 中输出：
 
@@ -133,13 +144,15 @@ Edit 调用方、dispatch 或 planner 前，再写 `[KERNEL-REUSE-AUDIT]` 复核
 
 | 算子类型 | 文档 | 核心优化技术 |
 |---------|------|-------------|
-| Vector 型 | [RoPE 优化](references/best-practices/rope-developer-mode.md)、[归约遍数融合](references/vector-practices/vector_reduce_pass_fusion.md) | | NPU 内动态生成 Mask、Tile API 向量化、参数简化 |
+| Vector 型 | [RoPE 优化](references/best-practices/rope-developer-mode.md)、[归约遍数融合](references/vector-practices/vector_reduce_pass_fusion.md) | NPU 内动态生成 Mask、Tile API 向量化、参数简化 |
 | Cube 型 | [GEMM Intrinsic](references/best-practices/gemm_intrinsic_optimize.md) | 多缓冲流水线、细粒度 Flag 同步、MMA intrinsic、L0 分块、负载均衡 |
-| CV 融合型 | [Flash Attention](references/best-practices/flash_attn_optimize.md) | num_stages 流水线、批量 Softmax、Cross-core Semaphore、数据布局优化；**多 shape 适配**（BSND 免转置、Sq==1 decode 窄块、加性 mask 屏蔽变长 Skv） |
+| CV 融合型 | [Flash Attention](references/best-practices/flash_attn_optimize.md)（技术点实现）、[Attention CV 耦合调优手册](references/best-practices/attention_tuning_playbook.md)（判据/定律/纪律） | num_stages 流水线、批量 Softmax、Cross-core Semaphore、数据布局优化、flat (task,kv) 槽流；**多 shape 适配**（BSND 免转置、Sq==1 decode 窄块、加性 mask 屏蔽变长 Skv） |
 
 ### Step 5: 效果验证
 
 每个优化点后执行：精度验证 → `msprof op` → 记录 → 对比基线。精度失败时保持优化调试，不撤销。
+
+**CV 融合型附加验证纪律**（playbook §5/§7）：精度门按变更性质分层（调度类 = vs 改前态 BITEXACT 主判据；数值类 = 阻塞口径）；压力/探针门必须核对**路径覆盖**（继承配置可能全部打在旧路径上，§5.3）；A/B 验证一律 `disable_cache=True` 或会话专属缓存目录（§5.4 JIT 缓存键缺口）；回滚执行三重验证（md5 + 行数 + IR 守卫集还原，§5.5）；采纳后重判 pacing 管身份（§2.6）；关闭/回滚候选按 §7 归档（前提清单 + 失效触发器 + 推演负/实测负分级）。
 
 调试手段：`T.printf`、`T.dump_tensor`、`get_kernel_source()`，详见 [Programming Guide](../../../docs/TileLang-Ascend%20Programming%20Guide.md)。
 
