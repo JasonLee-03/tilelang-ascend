@@ -1,0 +1,12 @@
+base1_fused  arm=base1 task=fused  csv_lines=433
+    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_fused_sampling/2616692-1791702187548982857/124c18542182426382010d673204c8fc_2616692_20261011150307649_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv
+base1_mask  arm=base1 task=mask  csv_lines=433
+    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_mask_sample/2619141-1791702307535917603/124c18542182426382010d673204c8fc_2619141_20261011150507621_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv
+cand_fused  arm=cand task=fused  csv_lines=529
+    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_fused_sampling/2620899-1791702429714686482/124c18542182426382010d673204c8fc_2620899_20261011150709816_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv
+cand_mask  arm=cand task=mask  csv_lines=481
+    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_mask_sample/2623417-1791702546737849487/124c18542182426382010d673204c8fc_2623417_20261011150906824_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv
+base2_fused  arm=base2 task=fused  csv_lines=433
+    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_fused_sampling/2625986-1791702673462674172/124c18542182426382010d673204c8fc_2625986_20261011151113575_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv
+base2_mask  arm=base2 task=mask  csv_lines=433
+    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_mask_sample/2627859-1791702787872407622/124c18542182426382010d673204c8fc_2627859_20261011151307957_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv

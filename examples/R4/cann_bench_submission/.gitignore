@@ -1,0 +1,14 @@
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Generated at build time by build.sh (verbatim copy of ../r4_fused_sampling.py)
+cann_bench/_r4_kernels.py
+
+# Harness build log
+_compile.log
+
+# Python caches
+__pycache__/
+*.py[cod]

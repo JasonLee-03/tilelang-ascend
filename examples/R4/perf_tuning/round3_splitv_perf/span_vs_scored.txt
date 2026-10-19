@@ -1,0 +1,72 @@
+======================================================================================================================
+SCORED口径 (sum of device Durations == cann-bench elapsed_us)  vs  WALL-CLOCK SPAN口径
+======================================================================================================================
+
+########## fused ##########
+case | #ln b #ln c |  scored_b  scored_c      x |    span_b    span_c      x |    gap_b    gap_c
+   1 |     2     2 |     35.30     34.38  1.027 |    419.75    391.50  1.072 |   384.46   357.06
+   2 |     2     2 |     42.12     41.98  1.003 |    419.50    396.75  1.057 |   377.44   354.81
+   3 |     2     4 |    100.30     57.52  1.744 |    440.50   1387.25  0.318 |   338.42  1329.77
+   4 |     2     4 |     85.50     41.80  2.045 |    439.00   1379.75  0.318 |   353.60  1337.91
+   5 |     2     2 |     55.10     54.08  1.019 |    423.00    402.25  1.052 |   367.66   347.45
+   6 |     2     2 |     77.98     77.16  1.011 |    431.25    409.25  1.054 |   353.27   331.65
+   7 |     2     4 |    728.42    179.06  4.068 |    732.00   1360.25  0.538 |     3.00  1181.19
+   8 |     2     4 |     91.22     43.04  2.119 |    442.75   1380.00  0.321 |   350.63  1337.12
+   9 |     2     2 |     85.98     85.66  1.004 |    424.50    411.50  1.032 |   338.62   325.76
+  10 |     2     2 |     42.50     42.18  1.008 |    415.75    394.50  1.054 |   373.25   351.12
+  11 |     2     2 |     62.96     62.92  1.001 |    421.75    414.75  1.017 |   357.79   350.75
+  12 |     2     4 |    160.98    108.18  1.488 |    470.50   1386.25  0.339 |   309.64  1278.27
+  13 |     2     2 |     23.62     23.06  1.024 |    416.00    394.75  1.054 |   392.40   371.69
+  14 |     2     2 |     37.44     37.48  0.999 |    413.50    394.75  1.047 |   376.18   357.27
+  15 |     2     2 |   1470.62   1470.76  1.000 |   1473.25   1473.50  1.000 |     2.82     2.79
+  16 |     2     2 |    695.62    695.66  1.000 |    698.50    698.50  1.000 |     2.85     2.66
+  17 |     2     4 |    736.42    437.94  1.682 |    739.25   1385.25  0.534 |     3.03   945.73
+  18 |     2     2 |    650.66    650.00  1.001 |    662.50    653.00  1.015 |    11.42     2.91
+  geomean SCORED speedup: all=1.2796x  launch-count-changed([3, 4, 7, 8, 12, 17])=2.0624x  unchanged=1.0079x
+  geomean SPAN   speedup: all=0.7443x  launch-count-changed=0.3831x  unchanged=1.0375x
+  host gap per launch (base arm, cases whose first kernel is SHORT): 362.7 us
+
+########## mask ##########
+case | #ln b #ln c |  scored_b  scored_c      x |    span_b    span_c      x |    gap_b    gap_c
+   1 |     2     2 |     26.44     26.10  1.013 |    401.00    389.75  1.029 |   374.60   363.71
+   2 |     2     2 |     33.96     33.98  0.999 |    422.75    392.25  1.078 |   388.79   358.25
+   3 |     2     3 |     70.60     50.92  1.386 |    413.50    992.75  0.417 |   343.24   941.46
+   4 |     2     3 |     55.82     34.20  1.632 |    405.25    999.75  0.405 |   349.40   964.47
+   5 |     2     2 |     40.24     39.76  1.012 |    424.00    394.75  1.074 |   383.70   354.99
+   6 |     2     2 |     55.80     54.78  1.019 |    446.00    396.25  1.126 |   391.06   340.53
+   7 |     2     3 |    461.14    172.86  2.668 |    473.75   1031.00  0.460 |    12.57   858.14
+   8 |     2     3 |     59.94     37.88  1.582 |    450.50   1005.75  0.448 |   390.56   967.95
+   9 |     2     2 |     69.28     69.58  0.996 |    448.00    406.00  1.103 |   378.28   336.42
+  10 |     2     2 |     34.28     34.08  1.006 |    442.00    399.75  1.106 |   407.72   365.91
+  11 |     2     2 |     47.18     46.96  1.005 |    441.25    396.25  1.114 |   392.85   349.51
+  12 |     2     3 |    103.64     73.92  1.402 |    452.25   1019.25  0.444 |   348.61   945.53
+  13 |     2     2 |     14.84     14.64  1.014 |    445.50    396.50  1.124 |   430.66   381.86
+  14 |     2     2 |     29.12     29.18  0.998 |    449.25    397.25  1.131 |   420.13   368.07
+  15 |     2     2 |    933.10    933.98  0.999 |    936.00    937.00  0.999 |     2.90     2.93
+  16 |     2     2 |    466.70    466.62  1.000 |    470.75    469.25  1.003 |     4.05     2.63
+  17 |     2     3 |    472.78    321.32  1.471 |    483.75   1046.25  0.462 |    10.97   725.18
+  18 |     2     2 |    423.78    423.96  1.000 |    470.75    427.00  1.102 |    46.37     3.04
+  geomean SCORED speedup: all=1.1840x  launch-count-changed([3, 4, 7, 8, 12, 17])=1.6435x  unchanged=1.0050x
+  geomean SPAN   speedup: all=0.8005x  launch-count-changed=0.4387x  unchanged=1.0814x
+  host gap per launch (base arm, cases whose first kernel is SHORT): 386.2 us
+
+======================================================================================================================
+INTERPRETATION (stated plainly, no spin)
+======================================================================================================================
+
+  * The BASE arm already pays ~300-650 us of host-side time per launch for every case whose first
+    kernel is SHORTER than that overhead. It is hidden only when a kernel runs long enough for the
+    host to queue the next one asynchronously (base case7/15/16/17/18: gap ~3 us because K1 alone
+    runs 390-860 us).
+  * rev3 splits one long kernel into several SHORT ones, so on the split cases the overhead that
+    was previously hidden becomes exposed: the SCORED device time drops sharply (case7 fused
+    728->179 us) while the SPAN grows, because 4 launches x ~300-540 us of host time now dominate.
+  * Therefore: rev3's win is REAL in device-time / core-utilisation terms (which is what cann-bench
+    scores, what the roofline attainment measures, and what a captured ACL graph would execute),
+    but it is NOT visible -- and reverses -- in eager-mode end-to-end wall clock under this
+    harness, where Python/ACL launch preparation costs ~2 orders of magnitude more than the
+    kernels themselves.
+  * This is a HOST-side software-overhead finding, not a device regression: no kernel got slower.
+    It is reported because the task requires that rev3 not be made to look better than it is.
+
+wrote /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_splitv_perf/span_vs_scored.json

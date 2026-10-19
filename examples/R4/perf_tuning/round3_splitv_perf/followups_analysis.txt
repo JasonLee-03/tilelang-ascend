@@ -1,0 +1,80 @@
+================================================================================================================
+(A) ROOFLINE ATTAINMENT  attain% = 100 * t_hw_us / elapsed_us   (same t_hw for both arms)
+================================================================================================================
+                task case    path  t_hw_us   t_read   t_vect |   base_us   cand_us | att_base% att_cand%      x | t_hw_2pass  att2p_c%  bound2p
+      fused_sampling    1    curr   1.0000   0.0011   0.0056 |     35.30     34.38 |     2.833     2.909  1.027 |     1.0000     2.909   vector
+      fused_sampling    2    curr   1.0000   0.0085   0.0335 |     42.12     41.98 |     2.374     2.382  1.003 |     1.0000     2.382   vector
+      fused_sampling    3   SPLIT   1.0589   0.2731   1.0589 |    100.30     57.52 |     1.056     1.841  1.744 |     1.0589     1.841   vector
+      fused_sampling    4   SPLIT   1.0000   0.1366   0.5295 |     85.50     41.80 |     1.170     2.392  2.045 |     1.0000     2.392   vector
+      fused_sampling    5    curr   1.0000   0.0644   0.2535 |     55.10     54.08 |     1.815     1.849  1.019 |     1.0000     1.849   vector
+      fused_sampling    6    curr   1.0000   0.1707   0.6643 |     77.98     77.16 |     1.282     1.296  1.011 |     1.0000     1.296   vector
+      fused_sampling    7   SPLIT   4.8946   1.2672   4.8946 |    728.42    179.06 |     0.672     2.733  4.068 |     4.8946     2.733   vector
+      fused_sampling    8   SPLIT   1.0000   0.1366   0.5283 |     91.22     43.04 |     1.096     2.323  2.119 |     1.0000     2.323   vector
+      fused_sampling    9    curr   2.1467   0.5467   2.1467 |     85.98     85.66 |     2.497     2.506  1.004 |     2.1467     2.506   vector
+      fused_sampling   10    curr   1.0000   0.0342   0.1342 |     42.50     42.18 |     2.353     2.371  1.008 |     1.0000     2.371   vector
+      fused_sampling   11    curr   1.0000   0.1366   0.5319 |     62.96     62.92 |     1.588     1.589  1.001 |     1.0000     1.589   vector
+      fused_sampling   12   SPLIT   4.2260   1.0924   4.2260 |    160.98    108.18 |     2.625     3.906  1.488 |     4.2260     3.906   vector
+      fused_sampling   13    curr   1.0000   0.0289   0.1135 |     23.62     23.06 |     4.234     4.337  1.024 |     1.0000     4.337   vector
+      fused_sampling   14    curr   1.0000   0.0685   0.2869 |     37.44     37.48 |     2.671     2.668  0.999 |     1.0000     2.668   vector
+      fused_sampling   15    curr  78.3136  20.2757  78.3136 |   1470.62   1470.76 |     5.325     5.325  1.000 |    78.3136     5.325   vector
+      fused_sampling   16    curr  33.8077   8.7392  33.8077 |    695.62    695.66 |     4.860     4.860  1.000 |    33.8077     4.860   vector
+      fused_sampling   17   SPLIT  19.6185   5.0794  19.6185 |    736.42    437.94 |     2.664     4.480  1.682 |    19.6185     4.480   vector
+      fused_sampling   18    curr  33.7692   8.7387  33.7692 |    650.66    650.00 |     5.190     5.195  1.001 |    33.7692     5.195   vector
+         mask_sample    1    curr   1.0000   0.0011   0.0027 |     26.44     26.10 |     3.782     3.831  1.013 |     1.0000     3.831   vector
+         mask_sample    2    curr   1.0000   0.0085   0.0096 |     33.96     33.98 |     2.945     2.943  0.999 |     1.0000     2.943   vector
+         mask_sample    3   SPLIT   1.0000   0.2731   0.2943 |     70.60     50.92 |     1.416     1.964  1.386 |     1.0000     1.964     READ
+         mask_sample    4   SPLIT   1.0000   0.1366   0.1471 |     55.82     34.20 |     1.791     2.924  1.632 |     1.0000     2.924     READ
+         mask_sample    5    curr   1.0000   0.0643   0.0735 |     40.24     39.76 |     2.485     2.515  1.012 |     1.0000     2.515   vector
+         mask_sample    6    curr   1.0000   0.1707   0.1864 |     55.80     54.78 |     1.792     1.825  1.019 |     1.0000     1.825   vector
+         mask_sample    7   SPLIT   1.3464   1.2672   1.3464 |    461.14    172.86 |     0.292     0.779  2.668 |     2.5345     1.466     READ
+         mask_sample    8   SPLIT   1.0000   0.1366   0.1460 |     59.94     37.88 |     1.668     2.640  1.582 |     1.0000     2.640     READ
+         mask_sample    9    curr   1.0000   0.5465   0.6175 |     69.28     69.58 |     1.443     1.437  0.996 |     1.0000     1.437   vector
+         mask_sample   10    curr   1.0000   0.0342   0.0386 |     34.28     34.08 |     2.917     2.934  1.006 |     1.0000     2.934   vector
+         mask_sample   11    curr   1.0000   0.1366   0.1496 |     47.18     46.96 |     2.120     2.129  1.005 |     1.0000     2.129   vector
+         mask_sample   12   SPLIT   1.1676   1.0924   1.1676 |    103.64     73.92 |     1.127     1.580  1.402 |     2.1847     2.955     READ
+         mask_sample   13    curr   1.0000   0.0288   0.0328 |     14.84     14.64 |     6.739     6.831  1.014 |     1.0000     6.831   vector
+         mask_sample   14    curr   1.0000   0.0685   0.0958 |     29.12     29.18 |     3.434     3.427  0.998 |     1.0000     3.427   vector
+         mask_sample   15    curr  21.5422  20.2756  21.5422 |    933.10    933.98 |     2.309     2.306  0.999 |    21.5422     2.306   vector
+         mask_sample   16    curr   9.3405   8.7389   9.3405 |    466.70    466.62 |     2.001     2.002  1.000 |     9.3405     2.002   vector
+         mask_sample   17   SPLIT   5.3964   5.0793   5.3964 |    472.78    321.32 |     1.141     1.679  1.471 |    10.1587     3.162     READ
+         mask_sample   18    curr   9.3020   8.7385   9.3020 |    423.78    423.96 |     2.195     2.194  1.000 |     9.3020     2.194   vector
+
+  r4_fused_sampling:
+    attainment geomean  ALL 18 : base 2.1961% -> cand 2.8101%  (1.2796x)
+    attainment geomean  SPLIT 6: base 1.3612% -> cand 2.8073%  (2.0624x)
+    attainment geomean  CURR  12: base 2.7894% -> cand 2.8115%
+    2-pass GM-read口径 (section 15.3.2): 0/6 split cases have their t_hw floor CHANGED by charging the second logits read:
+        none -- every split case stays vector-bound with 2*t_read still below t_vector, so the published t_hw is unaffected by the reload.
+        unchanged: cases [3, 4, 7, 8, 12, 17] (still vector-bound under the 2-pass accounting)
+
+  r4_mask_sample:
+    attainment geomean  ALL 18 : base 1.9493% -> cand 2.3080%  (1.1840x)
+    attainment geomean  SPLIT 6: base 1.0803% -> cand 1.7754%  (1.6435x)
+    attainment geomean  CURR  12: base 2.6185% -> cand 2.6315%
+    2-pass GM-read口径 (section 15.3.2): 3/6 split cases have their t_hw floor CHANGED by charging the second logits read:
+        case7   t_hw 1.3464 -> 2.5345 us (1.882x), bound READ, attain_cand 0.779% -> 1.466%
+        case12  t_hw 1.1676 -> 2.1847 us (1.871x), bound READ, attain_cand 1.579% -> 2.955%
+        case17  t_hw 5.3964 -> 10.1587 us (1.882x), bound READ, attain_cand 1.679% -> 3.162%
+        unchanged: cases [3, 4, 8] (still vector-bound under the 2-pass accounting)
+
+================================================================================================================
+(B) GUARD-RELAXATION BLAST RADIUS on the delivered test tables (nothing is modified)
+================================================================================================================
+  test-file case entries with a (B, V, K_MAX, BV) shape scanned : 84
+  entries whose path would FLIP current->split at a_launch=1.54 : 4
+    L1_CASES               l1_tailmid_V                           B=8    V=10240   K=256 BV=4096  S=3 NBS=1 S_TAIL=2
+    L1B_CASES              l1b_tailmid_V                          B=8    V=10240   K=256 BV=4096  S=3 NBS=1 S_TAIL=2
+    STAB_CASES             stab_B7_V4409_bv2048_gumbel            B=7    V=4409    K=256 BV=2048  S=3 NBS=1 S_TAIL=2
+    STAB_CASES             stab_B5_V10240_gumbel                  B=5    V=10240   K=256 BV=4096  S=3 NBS=1 S_TAIL=2
+
+  KEY STRUCTURAL FACT: `_SPLIT_A_LAUNCH_US` is read ONLY inside the cost guard, AFTER
+  S/NBS/S_TAIL have been derived. So a relaxation flips the `use_split` BOOLEAN and cannot
+  change S/NBS/S_TAIL for any shape -> it admits NO new JIT specialization geometry, only
+  routes existing ones. The cb6/cb11 geometries (S=3/NBS=1/S_TAIL=2 and S=2/NBS=1/S_TAIL=-1)
+  are already compiled and statically asserted clean in the Stage-2 static gate
+  (perf_tuning/rev3_probes/stage2/static_gate_all.log: '--- cb6:' / '--- cb11:', FAILURES: 0).
+  RESIDUAL RISK if the guard is relaxed: 4 test-table entries carry a hardcoded
+  `expect_use_split` field that would go stale (False while the code now splits), so the
+  test file must be updated in the same change -- a test edit that needs Orchestrator approval.
+
+wrote /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_splitv_perf/followups_analysis.json

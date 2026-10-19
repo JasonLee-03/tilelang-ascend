@@ -1,0 +1,550 @@
+{
+ "_meta": {
+  "description": "criterion-2 arbitration on the harness\u53e3\u5f84: pooled base/cand mask samples",
+  "base_arms": [
+   "base1",
+   "base2",
+   "base_r1",
+   "base_r2",
+   "base_r3"
+  ],
+  "cand_arms": [
+   "cand",
+   "cand_r1",
+   "cand_r2",
+   "cand_r3"
+  ],
+  "threshold_pct": 3.0,
+  "rule": "flagged pair is scatter iff the arm distributions OVERLAP and the median delta is inside the pooled within-arm spread; disjoint-with-cand-above => real regression => roll back",
+  "flagged_case": 13,
+  "structural_fact": "case 13 (B=6,V=2304,K_MAX=128,BV=2048) has n_blk_full=1 < 2 so _r4_split_plan returns (False,2,1,1) at BOTH guard values; the cost guard is never reached and the dispatch is identical"
+ },
+ "per_case": [
+  {
+   "case": 1,
+   "base_samples": [
+    26.1,
+    26.48,
+    26.16,
+    26.52,
+    26.12
+   ],
+   "cand_samples": [
+    26.8,
+    25.98,
+    26.6,
+    26.0
+   ],
+   "base_median": 26.16,
+   "cand_median": 26.3,
+   "base_min": 26.1,
+   "base_max": 26.52,
+   "cand_min": 25.98,
+   "cand_max": 26.8,
+   "base_spread_pct": 1.606,
+   "cand_spread_pct": 3.118,
+   "median_delta_pct": 0.535,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 3.118,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 2,
+   "base_samples": [
+    33.88,
+    34.04,
+    33.98,
+    34.06,
+    34.12
+   ],
+   "cand_samples": [
+    34.06,
+    33.9,
+    34.2,
+    33.96
+   ],
+   "base_median": 34.04,
+   "cand_median": 34.010000000000005,
+   "base_min": 33.88,
+   "base_max": 34.12,
+   "cand_min": 33.9,
+   "cand_max": 34.2,
+   "base_spread_pct": 0.705,
+   "cand_spread_pct": 0.882,
+   "median_delta_pct": -0.088,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.882,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 3,
+   "base_samples": [
+    50.94,
+    51.44,
+    50.72,
+    51.26,
+    50.96
+   ],
+   "cand_samples": [
+    51.3,
+    50.28,
+    51.58,
+    50.54
+   ],
+   "base_median": 50.96,
+   "cand_median": 50.92,
+   "base_min": 50.72,
+   "base_max": 51.44,
+   "cand_min": 50.28,
+   "cand_max": 51.58,
+   "base_spread_pct": 1.413,
+   "cand_spread_pct": 2.553,
+   "median_delta_pct": -0.078,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 2.553,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 4,
+   "base_samples": [
+    34.44,
+    34.46,
+    34.64,
+    34.14,
+    34.18
+   ],
+   "cand_samples": [
+    34.6,
+    34.3,
+    34.4,
+    34.16
+   ],
+   "base_median": 34.44,
+   "cand_median": 34.349999999999994,
+   "base_min": 34.14,
+   "base_max": 34.64,
+   "cand_min": 34.16,
+   "cand_max": 34.6,
+   "base_spread_pct": 1.452,
+   "cand_spread_pct": 1.281,
+   "median_delta_pct": -0.261,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 1.452,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 5,
+   "base_samples": [
+    39.9,
+    40.06,
+    40.18,
+    40.48,
+    39.82
+   ],
+   "cand_samples": [
+    40.2,
+    40.08,
+    40.02,
+    40.04
+   ],
+   "base_median": 40.06,
+   "cand_median": 40.06,
+   "base_min": 39.82,
+   "base_max": 40.48,
+   "cand_min": 40.02,
+   "cand_max": 40.2,
+   "base_spread_pct": 1.648,
+   "cand_spread_pct": 0.449,
+   "median_delta_pct": 0.0,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 1.648,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 6,
+   "base_samples": [
+    55.16,
+    55.46,
+    55.34,
+    55.6,
+    55.56
+   ],
+   "cand_samples": [
+    44.56,
+    44.72,
+    44.54,
+    44.46
+   ],
+   "base_median": 55.46,
+   "cand_median": 44.55,
+   "base_min": 55.16,
+   "base_max": 55.6,
+   "cand_min": 44.46,
+   "cand_max": 44.72,
+   "base_spread_pct": 0.793,
+   "cand_spread_pct": 0.584,
+   "median_delta_pct": -19.672,
+   "distributions_overlap": false,
+   "pooled_within_arm_spread_pct": 0.793,
+   "delta_inside_pooled_spread": false,
+   "flagged": false
+  },
+  {
+   "case": 7,
+   "base_samples": [
+    174.22,
+    174.92,
+    174.3,
+    173.92,
+    173.96
+   ],
+   "cand_samples": [
+    174.08,
+    173.96,
+    174.4,
+    174.14
+   ],
+   "base_median": 174.22,
+   "cand_median": 174.11,
+   "base_min": 173.92,
+   "base_max": 174.92,
+   "cand_min": 173.96,
+   "cand_max": 174.4,
+   "base_spread_pct": 0.574,
+   "cand_spread_pct": 0.253,
+   "median_delta_pct": -0.063,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.574,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 8,
+   "base_samples": [
+    38.24,
+    38.14,
+    38.02,
+    38.02,
+    38.04
+   ],
+   "cand_samples": [
+    37.96,
+    37.9,
+    38.12,
+    37.9
+   ],
+   "base_median": 38.04,
+   "cand_median": 37.93,
+   "base_min": 38.02,
+   "base_max": 38.24,
+   "cand_min": 37.9,
+   "cand_max": 38.12,
+   "base_spread_pct": 0.578,
+   "cand_spread_pct": 0.58,
+   "median_delta_pct": -0.289,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.58,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 9,
+   "base_samples": [
+    69.76,
+    69.7,
+    70.22,
+    69.24,
+    69.56
+   ],
+   "cand_samples": [
+    69.76,
+    69.96,
+    69.88,
+    69.42
+   ],
+   "base_median": 69.7,
+   "cand_median": 69.82,
+   "base_min": 69.24,
+   "base_max": 70.22,
+   "cand_min": 69.42,
+   "cand_max": 69.96,
+   "base_spread_pct": 1.406,
+   "cand_spread_pct": 0.773,
+   "median_delta_pct": 0.172,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 1.406,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 10,
+   "base_samples": [
+    34.02,
+    34.08,
+    34.0,
+    34.08,
+    34.06
+   ],
+   "cand_samples": [
+    34.16,
+    34.1,
+    34.0,
+    34.12
+   ],
+   "base_median": 34.06,
+   "cand_median": 34.11,
+   "base_min": 34.0,
+   "base_max": 34.08,
+   "cand_min": 34.0,
+   "cand_max": 34.16,
+   "base_spread_pct": 0.235,
+   "cand_spread_pct": 0.469,
+   "median_delta_pct": 0.147,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.469,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 11,
+   "base_samples": [
+    47.16,
+    47.24,
+    47.02,
+    47.08,
+    47.0
+   ],
+   "cand_samples": [
+    43.36,
+    42.46,
+    44.18,
+    43.02
+   ],
+   "base_median": 47.08,
+   "cand_median": 43.19,
+   "base_min": 47.0,
+   "base_max": 47.24,
+   "cand_min": 42.46,
+   "cand_max": 44.18,
+   "base_spread_pct": 0.51,
+   "cand_spread_pct": 3.982,
+   "median_delta_pct": -8.263,
+   "distributions_overlap": false,
+   "pooled_within_arm_spread_pct": 3.982,
+   "delta_inside_pooled_spread": false,
+   "flagged": false
+  },
+  {
+   "case": 12,
+   "base_samples": [
+    74.56,
+    74.84,
+    74.72,
+    74.28,
+    74.74
+   ],
+   "cand_samples": [
+    75.02,
+    75.04,
+    74.78,
+    74.5
+   ],
+   "base_median": 74.72,
+   "cand_median": 74.9,
+   "base_min": 74.28,
+   "base_max": 74.84,
+   "cand_min": 74.5,
+   "cand_max": 75.04,
+   "base_spread_pct": 0.749,
+   "cand_spread_pct": 0.721,
+   "median_delta_pct": 0.241,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.749,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 13,
+   "base_samples": [
+    14.62,
+    14.72,
+    14.58,
+    14.78,
+    14.7
+   ],
+   "cand_samples": [
+    15.24,
+    14.7,
+    14.96,
+    14.8
+   ],
+   "base_median": 14.7,
+   "cand_median": 14.88,
+   "base_min": 14.58,
+   "base_max": 14.78,
+   "cand_min": 14.7,
+   "cand_max": 15.24,
+   "base_spread_pct": 1.361,
+   "cand_spread_pct": 3.629,
+   "median_delta_pct": 1.224,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 3.629,
+   "delta_inside_pooled_spread": true,
+   "flagged": true
+  },
+  {
+   "case": 14,
+   "base_samples": [
+    29.38,
+    29.46,
+    29.8,
+    29.2,
+    29.48
+   ],
+   "cand_samples": [
+    29.42,
+    29.58,
+    29.72,
+    29.14
+   ],
+   "base_median": 29.46,
+   "cand_median": 29.5,
+   "base_min": 29.2,
+   "base_max": 29.8,
+   "cand_min": 29.14,
+   "cand_max": 29.72,
+   "base_spread_pct": 2.037,
+   "cand_spread_pct": 1.966,
+   "median_delta_pct": 0.136,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 2.037,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 15,
+   "base_samples": [
+    931.24,
+    931.98,
+    933.64,
+    932.54,
+    935.38
+   ],
+   "cand_samples": [
+    933.22,
+    934.58,
+    932.2,
+    931.92
+   ],
+   "base_median": 932.54,
+   "cand_median": 932.71,
+   "base_min": 931.24,
+   "base_max": 935.38,
+   "cand_min": 931.92,
+   "cand_max": 934.58,
+   "base_spread_pct": 0.444,
+   "cand_spread_pct": 0.285,
+   "median_delta_pct": 0.018,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.444,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 16,
+   "base_samples": [
+    466.5,
+    466.08,
+    466.24,
+    466.3,
+    466.2
+   ],
+   "cand_samples": [
+    466.38,
+    466.0,
+    466.04,
+    466.06
+   ],
+   "base_median": 466.24,
+   "cand_median": 466.05,
+   "base_min": 466.08,
+   "base_max": 466.5,
+   "cand_min": 466.0,
+   "cand_max": 466.38,
+   "base_spread_pct": 0.09,
+   "cand_spread_pct": 0.082,
+   "median_delta_pct": -0.041,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.09,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 17,
+   "base_samples": [
+    322.04,
+    321.74,
+    322.26,
+    321.94,
+    321.94
+   ],
+   "cand_samples": [
+    320.78,
+    320.86,
+    320.26,
+    319.92
+   ],
+   "base_median": 321.94,
+   "cand_median": 320.52,
+   "base_min": 321.74,
+   "base_max": 322.26,
+   "cand_min": 319.92,
+   "cand_max": 320.86,
+   "base_spread_pct": 0.162,
+   "cand_spread_pct": 0.293,
+   "median_delta_pct": -0.441,
+   "distributions_overlap": false,
+   "pooled_within_arm_spread_pct": 0.293,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  },
+  {
+   "case": 18,
+   "base_samples": [
+    424.12,
+    424.76,
+    424.56,
+    423.84,
+    424.06
+   ],
+   "cand_samples": [
+    424.36,
+    424.74,
+    424.48,
+    424.22
+   ],
+   "base_median": 424.12,
+   "cand_median": 424.42,
+   "base_min": 423.84,
+   "base_max": 424.76,
+   "cand_min": 424.22,
+   "cand_max": 424.74,
+   "base_spread_pct": 0.217,
+   "cand_spread_pct": 0.123,
+   "median_delta_pct": 0.071,
+   "distributions_overlap": true,
+   "pooled_within_arm_spread_pct": 0.217,
+   "delta_inside_pooled_spread": true,
+   "flagged": false
+  }
+ ],
+ "flagged_verdict_scatter": true,
+ "other_unexplained_regressions": [],
+ "accuracy_all_arms_ok": true,
+ "criterion2_satisfied": true
+}

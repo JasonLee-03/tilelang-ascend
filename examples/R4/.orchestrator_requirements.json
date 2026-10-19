@@ -1,0 +1,80 @@
+{
+  "_comment": "Orchestrator-owned requirements snapshot. Persisted so user is NOT re-asked on retry. programming_mode is a hard user choice, MUST NOT be defaulted/overridden. Tracks BOTH cycles: V01-a (delivered) and V01-b (current).",
+  "op_name": "r4_fused_sampling",
+  "op_dir": "examples/R4",
+  "source_design_draft": "examples/R4/DESIGN_script.md",
+  "current_cycle": "V01-b",
+
+  "programming_mode": {
+    "value": "developer",
+    "form": "Developer 主体 + T.tile.* 混合形态",
+    "chosen_by_user_at": "V01-a 需求预检",
+    "ra_decision": "用户确认接受混合形态（Developer body + T.tile.topk for the one step lacking a high-level equivalent）",
+    "carry_over_to_v01b": true,
+    "carry_over_rationale": "V01-b 是同一算子 R4 的变体，扩展同一 K2；新增 LCG 用 T.tile.{arith_progression,add,mul,fill}、argmax-with-index 用 T.tile.topk(K=1)，均属已认可的混合形态家族；零 Expert 判别标志。不重新问用户（沿用其对本算子的显式选择，非默认值）。"
+  },
+
+  "cycles": {
+    "V01-a": {
+      "status": "DELIVERED (SUCCESS)",
+      "delivered_at": "2026-10-06T16:19:27Z",
+      "scope": "K1 r4_topk_stats + K2 r4_mask_sample (FUSE_GUMBEL=False -> w_out[B,V]); host keeps torch.multinomial; fp32; single spec S1' (K_MAX=256, BV=4096)",
+      "result": "L0 8/8 + L1 18/18 + coverage 24/24 PASS; verified on NPU Ascend910_9362/A3; perf sentinel K1+K2 B=64->1.2ms, B=256->3.6ms",
+      "artifacts": ["r4_fused_sampling.py", "r4_ref.py", "test_r4_fused_sampling.py", "DESIGN.md (V01.1)", "proto.yaml", "debug_log.md"],
+      "journal": ".agents/skill-journal/r4_fused_sampling-20261006-160832.md (11 entries)"
+    },
+    "V01-b": {
+      "status": "IN_PROGRESS (Stage 1 design)",
+      "started_at": "2026-10-06T16:29:47Z",
+      "goal": "Gumbel-max 融合采样：给 K2 增加 FUSE_GUMBEL=True 路径，直接输出 tok_out[B] int32，消除 host torch.multinomial（6 op -> 2 op）。保留 V01-a 的 w_out 路径与已验证 K1 不变。",
+      "math": "定理 T3（草稿 §3.6）：y_i = argmax_{j in S_i}[z'_ij + G_ij]，S_i={j: z_ij>=tau_i}（复用 K1 的 tau/m/s/valid），z 域直接 argmax，免 exp/div/log/归一化。Gumbel 噪声 G_ij = -ln(-ln(clamp(u_ij, 2^-24, 1-2^-24)))，u 由 LCG 导出。草稿 §3.5 Step7b + §3.7 Pass2 V01-b + §5.4 K2 + D6。",
+      "input_spec": {
+        "shape": "V01-a inputs (logits[B,V] f32, top_ks[B] i32, top_ps[B] f32, min_ps[B] f32, need_min_p bool) + rand[B] int32 (per-row LCG seed; Design C CONFIRMED by user; kernel inline LCG expands to [B,V] noise)",
+        "dtype": "logits f32; top_ks i32; top_ps f32; min_ps f32; rand i32",
+        "dynamic_axes": ["B"]
+      },
+      "rand_decision": {
+        "question": "rand input shape: Design C (rand[B] per-row seed + in-kernel inline LCG) vs Design D (rand[B,V]/[B,BV] host-generated stream)? Draft was self-contradictory (sec3.2 [B,BV] host stream vs sec5.3.4 inline LCG vs sec8.3 2-read memory accounting).",
+        "user_answer": "Design C: rand[B] seed + inline LCG (Recommended)",
+        "resolved_at": "2026-10-07T01:46:44Z",
+        "rationale": "Design C aligns with draft sec8.3 V01-b core memory benefit (2 reads / 297MB), is bitwise reproducible (strong L0 criterion via reference_random_1d), and is more self-contained (fits V01-b goal of reducing host ops). Design D would degrade to 3 reads / 445MB + require host to generate large tensor.",
+        "implication": "DESIGN_v01b.md (D-RAND, Design C) is APPROVED as-is. Developer implements rand[B] + in-kernel inline LCG. Do NOT switch to Design D."
+      },
+      "output_spec": {
+        "shape": "tok_out[B] int32 (采样 token id); 可选保留 w_out[B,V] f32 for debug/FUSE_GUMBEL=False path",
+        "dtype": "tok_out int32"
+      },
+      "lcg": "examples_experiment/random_1d (A=1103515245, C=12345, state=seed+idx then 3x state=state*A+C, int32 wrap mod 2^32, element-independent). reference_random_1d (ctypes.c_int32) gives exact golden. V01-b inlines LCG in kernel via T.tile.{fill,arith_progression,add,mul}.",
+      "verification": "分布一致性（NOT bitwise, 因 LCG RNG != torch.multinomial RNG）。草稿 §9.2：χ² p>0.01、KL(p_ref||p_ours)<1e-3、top-k 覆盖率>1-1e-4、熵相对误差<1%，N≈100k 采样。需要可复现的受控 rand 种子方案。",
+      "carry_over": ["Developer + T.tile 混合形态", "single spec S1' (K_MAX=256, BV=4096)", "fp32", "K1 r4_topk_stats unchanged (reuse tau/m/s/valid)", "run constraints: installed wheel, no set_env.sh, ACL_OP_INIT_MODE=1, persistent TILELANG_CACHE_DIR, no disable_cache"],
+      "key_risks": [
+        "R13 LCG maturity (examples_experiment) - formula simple + exact reference, low risk",
+        "f32 Gumbel numerical stability - clamp to [2^-24, 1-2^-24] to avoid ln(0)/ln(1)->-/+inf (draft D3 f32 pitfall)",
+        "argmax-with-index (T3): wholereducemax(ORDER_VALUE_INDEX) is @deprecated -> use T.tile.topk(K=1) returning (val,idx), or find non-deprecated reduce-with-index",
+        "distribution test harness is a NEW paradigm vs V01-a bitwise (needs N~100k sampling, chi2/KL/coverage/entropy, controlled seeds)",
+        "rand[B,BV] seeding strategy for reproducible tests + production"
+      ],
+      "out_of_scope": ["deterministic seed path (float64 Gumbel, D3 excluded)", "SGLang backend integration", "logprob fusion", "ACLGraph", "full multi-specialization table", "bf16"]
+    }
+  },
+
+  "env_facts": {
+    "chip": "Ascend910_9362 (910_93* -> platform A3 -> arch22/DAV_2201)",
+    "cores": "cube_core_num=20, vector_core_num=40 (runtime detect_vec_core_num, VEC_NUM=2, DO NOT hardcode 48)",
+    "L2_cache_MB": 168, "UB_per_vec_core_KB": 192, "vector_usable_UB_KB": 184,
+    "cann": "9.2.0", "torch": "2.7.1", "torch_npu": "2.7.1.post4",
+    "tilelang": "0.1.4+ubuntu.24.4.cann920 (installed wheel @ ~/.local/lib/python3.12/site-packages/tilelang, bundles tvm, commit d75300ed)",
+    "run_constraints": "Use INSTALLED wheel. DO NOT 'source set_env.sh' (repo tilelang/ source shadows wheel -> No module named tvm). Run from neutral cwd / script dir. Set ACL_OP_INIT_MODE=1. Persistent TILELANG_CACHE_DIR; no disable_cache()/clear_cache() in repeated runs.",
+    "env_check": "quick_verify.py passed (exit 0); env_check_passed=true this session -> SKIP re-check for V01-b"
+  },
+
+  "v01a_known_issues_for_v01b_awareness": [
+    "narrow-reduce real_shape/BufferRegion <=256B (64 fp32) hard constraint (codegen_ascend.cc:2145) -> tail block uses exact-size [1,TAIL] buffer + full reduce (V01-b tail handling must reuse this)",
+    "scalar T.alloc_var unreliable / scalar T.exp/T.log cannot codegen -> use [1]/[1,1] alloc_shared + T.tile.* (V01-b Gumbel ln/clamp must use T.tile.ln/max/min on buffers)",
+    "1-element UB->UB T.copy crashes aicore 507015 (<32B DMA align) -> no scalar T.copy between UB buffers",
+    "T.serial(0) empty loop -> dead buffer 'Cannot find pre-allocated address' (codegen_ascend.cc:828) -> guard allocations with compile-time if n_blk_full>0 (V01-b V<BV cases)",
+    "T.tile.topk writes -inf padding in-place on fp32 src (UB scratch only, never GM view)",
+    "TOP_K_ALL = 1<<30 (not -1); valid guard = k_ok AND ok_p AND tie_ok"
+  ],
+  "last_updated": "2026-10-06T16:29:47Z"
+}

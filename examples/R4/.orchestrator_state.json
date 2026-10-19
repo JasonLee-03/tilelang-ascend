@@ -1,0 +1,980 @@
+{
+  "operator_name": "R4",
+  "env_check_passed": true,
+  "current_stage": 3,
+  "terminal_state": "SUCCESS",
+  "stage_status": {
+    "1": "completed",
+    "2": "completed",
+    "3": "completed"
+  },
+  "stage_retry_count": {
+    "1": 0,
+    "2": 0,
+    "3": 0
+  },
+  "stage2_failure_breakdown": {
+    "runtime_fail": 0,
+    "precision_fail": 1
+  },
+  "design_revision_count": 2,
+  "last_failure_reason": null,
+  "resolved_failure": {
+    "reason": "precision_fail_intermittent_tau_out (discovered by cann-bench evaluation, NOT by the delivered test suite)",
+    "discovered_at": "2026-10-08T10:45:00Z",
+    "discovered_by": "cann-bench staged-eval, bench_lab/tilelang_ascend_bench/r4_fused_sampling case_id 5 (B=7, V=4409, TAIL=313)",
+    "symptom": "tau_out intermittently returned garbage large finite floats (2.7231e+19 .. 4.4785e+37) while logits value_range was only [-10,10]; invariant tau <= row_max violated. valid stayed 1 so D-GUARD/D-TIE did not fire and the bad threshold propagated: tok_out collapsed to 0. m_out/s_out always correct.",
+    "failure_rate_before_fix": "2 of 15 harness executions (~13%); one execution failed stage 3 after passing stage 2 on identical inputs and identical wheel",
+    "resolved_at": "2026-10-09T03:00:00Z",
+    "resolution": "Stage 2 precision_fix, cycle V01-b rev2, attempt 1/5 -> [PRECISION_PASS]; independently re-verified by orchestrator gate check -> VERIFIED",
+    "root_cause_ESTABLISHED": {
+      "mechanism": "NOT a race. Deterministic read of UNINITIALISED UB whose content is set by device history; the 'silent phase' is simply 'UB happens to hold benign values'. Therefore 'passed N times' carries NO evidential weight in either direction.",
+      "defect_A": "T.tile.topk with count not a multiple of 32: Sort32 consumes ceil(count/32)*32 elements and tl::ascend::Sort() repairs the remainder with a masked AscendC::Duplicate that DOES NOT TAKE EFFECT on dav_c220 (tilelang/src/tl_templates/ascend/common.h:1663-1707; pre-fix padCount = 320-313 = 7) -> 7 stale-UB slots sorted as real candidates",
+      "defect_B": "pre-existing and independent: UB->UB T.copy (copy_ub_to_ub / AscendC::DataCopy) with a non-32B-multiple count SILENTLY TRUNCATES to a multiple of 8 fp32, dropping tail indices (TAIL//8)*8..TAIL-1 (proven by sentinel sweep: 313->{312}, 261->{256..260}, 511->{504..510}, 257->{256})",
+      "disproved_hypotheses": [
+        "odd-B out-of-range row guard (B=2 with TAIL=313 also reproduces; case 2 B=1 has TAIL=0 so the tail branch never runs)",
+        "1-element scalar UB buffers in the tau_k/tau_p/tau T.tile.max merge chain (gather_mask/topk are innocent: 0 errors at M=313,K=256 under poisoning)",
+        "submission wrapper / task definition / harness invocation (4 kernel copies md5-identical; other 13 cases bit-exact; reproduced outside the harness)"
+      ],
+      "fix": "TAIL_PAD = ceil(TAIL/32)*32; stage the top-k source through ztp=[1,TAIL_PAD] loaded from GM with pad_value=-inf; hop exactly TAIL_PAD (a 32B multiple, cannot truncate); call topk(..., TAIL_PAD) so padCount == 0 and the broken masked branch is unreachable. Generalises to every TAIL by construction. UB 150084 -> 151364 B of 196352 (+1280 B), no BV reduction needed.",
+      "change_scope": "4 diff hunks, all inside K1 r4_topk_stats tail path + module docstring. r4_mask_sample / r4_gumbel_sample / host wrapper byte-identical (region sha256). r4_ref.py and proto.yaml untouched.",
+      "fixed_kernel_sha256": "bbe47fa4dd75b2c8aed614446a5ac2b3023045899f227bd2b10ece7eb22bdf9f",
+      "prefix_kernel_sha256": "2b3fcd3a553b34474511227cc1d64ea0eab938e4e0d3a3307af37aff3f959fde",
+      "verification_evidence": [
+        "codegen-level structural proof (independent of any run): pre-fix TopK(...,313) padCount=7 + 1252B UB->UB copy truncated to 312 elems; post-fix TopK(...,320) padCount=0 + 1280B copy",
+        "UB poisoning amplifier: pre-fix 8/8 arms FAIL with tau_out == fp32(1e30) (the poison literal); post-fix 8/8 arms PASS while still poisoned",
+        "differential: same test file, only kernel swapped -> pre-fix --level stability exit 1 (3/3 runs) and --level stress exit 1; post-fix exit 0",
+        "tail-adversary sentinel sweep byte-identical across 3 pre-fix runs; FIXED 24/24 configs bitwise-identical to golden, PREFIX 6/24 deviate",
+        "orchestrator gate: --level all exit 0 from BOTH a cold cache (291 s, 41 entries) and a warm cache (20 s) -> 74 PRECISION_PASS / 0 FAIL, 38 BOUNDARY_PASS / 0 WARN",
+        "coverage gate coverage_check.py --proto proto.yaml -> 25 PASS / 0 MISS / 0 N/A, exit 0",
+        "distribution gate unchanged: chi2=22.98/dof=39 p=0.9807, KL=7.82e-4, cov=1.000000, H_relerr=2.02e-3",
+        "no pre-existing test assertion weakened (diff of test file vs backup: only a docstring line and the argparse choices list changed)"
+      ],
+      "residual_risk": "--level all does NOT include the stress (UB-poison) layer; on a freshly-booted device with benign UB the pre-fix kernel could pass 'all' via the stale-UB half (the truncation half is still caught unconditionally by the tail-adversary). Recommend folding a poisoning pass into stability, or adding stress to all. See skill-journal rev2 e4.",
+      "perf_cost_of_fix": "not measurable. case 5 (TAIL=313, the only pre-existing non-32-aligned tail): fused 91.02 -> 91.48 / 90.78 us (+0.5% / -0.3%), mask 65.42 -> 64.86 / 64.96 us (-0.9% / -0.7%); both straddle the pre-fix value and are at or below the run-to-run noise floor (fused max spread 1.19%, mask 0.51%). Honest statement: 'indistinguishable from zero', not 'zero'. No case >5% slower; like-for-like 14-case score delta within +/-0.03."
+    }
+  },
+  "perf_tuning_requested": "yes",
+  "perf_iteration": {
+    "count": 4,
+    "last_improvement": 1.7,
+    "consecutive_no_improvement": 0,
+    "cumulative_across_rounds": 6,
+    "round": 3,
+    "max_iterations": 10
+  },
+  "cann_bench_evaluation": {
+    "final_run_at": "2026-10-09T03:22:45Z",
+    "hardware": "910b2 (Ascend910_9362, 2 chips, cube_core_num=20, vector_core_num=40)",
+    "software": {
+      "cann": "9.2.0",
+      "torch": "2.7.1+cpu",
+      "torch_npu": "2.7.1.post4",
+      "tilelang": "0.1.4+d75300ed (installed wheel)",
+      "python": "3.12.9"
+    },
+    "kernel_under_test_sha256": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+    "tasks": [
+      "bench_lab/tilelang_ascend_bench/r4_fused_sampling",
+      "bench_lab/tilelang_ascend_bench/r4_mask_sample"
+    ],
+    "cases_per_task": 18,
+    "submission": "examples/R4/cann_bench_submission",
+    "reports": "examples/R4/bench/reports",
+    "final_reports": {
+      "R4FusedSampling": [
+        "cann_final_eval_20261009_110101",
+        "cann_final_eval_20261009_110214",
+        "cann_final_eval_20261010_012731"
+      ],
+      "R4MaskSample": [
+        "cann_final_eval_20261009_110320",
+        "cann_final_eval_20261009_110425",
+        "cann_final_eval_20261010_012928"
+      ]
+    },
+    "runs": "4 full three-stage runs, all rc=0; 36/36 correctness and 36/36 performance in every run; case 5 and case 17 passed in ALL runs",
+    "scores": {
+      "convention_A_capped_published_official": {
+        "R4FusedSampling": 56.4658,
+        "R4MaskSample": 56.0392,
+        "breakdown": "comp 20.0 + func 30.0 + perf 6.4658 / 6.0392"
+      },
+      "convention_B_uncapped_raw_measured": {
+        "R4FusedSampling": 93.2391,
+        "R4MaskSample": 95.3158,
+        "breakdown": "comp 20.0 + func 30.0 + perf 43.2391 / 45.3158"
+      }
+    },
+    "score_recomputation_delta": "per-case HAP max |delta| = 0.0 (36/36); operator score delta 0.0 (fused) and 1.776e-15 (mask, single-ulp)",
+    "geomean_speedup_vs_raw_torch_baseline": {
+      "R4FusedSampling": 6.73,
+      "R4MaskSample": 11.02,
+      "arithmetic_mean": {
+        "R4FusedSampling": 7.31,
+        "R4MaskSample": 13.9
+      },
+      "median": {
+        "R4FusedSampling": 6.93,
+        "R4MaskSample": 9.01
+      },
+      "min": {
+        "R4FusedSampling": "2.52x (case 7)",
+        "R4MaskSample": "3.37x (case 1)"
+      },
+      "max": {
+        "R4FusedSampling": "13.36x (case 15)",
+        "R4MaskSample": "51.46x (case 15)"
+      },
+      "note": "18-case matrix, computed from cann_final_eval_20261009_11* reports (mean of the 2 runs per operator) over metadata_staging/baseline_raw_910b2_18cases.json; cross-validated by an independent geomean of the per-case speedups. The earlier 14-case matrix gave 5.88 / 8.25. CORRECTION: an earlier revision of this file and of the final report quoted 10.4 / 16.5 -- those figures had no source and were wrong."
+    },
+    "production_shape_case15_B64_V152064": {
+      "fused": {
+        "elapsed_us": 1974.74,
+        "K1_us": 914.56,
+        "K2_us": 1060.18,
+        "t_hw_us": 78.31,
+        "achieved_fraction": 0.0397,
+        "raw_baseline_us": 26369.69,
+        "speedup_vs_raw": 13.35,
+        "HAP_raw": 0.9327
+      },
+      "mask": {
+        "elapsed_us": 985.44,
+        "K1_us": 909.28,
+        "K2_us": 76.24,
+        "t_hw_us": 21.54,
+        "achieved_fraction": 0.0219,
+        "raw_baseline_us": 50735.95,
+        "speedup_vs_raw": 51.49,
+        "HAP_raw": 0.9813
+      }
+    },
+    "repeatability": {
+      "fused_max_spread_pct": 1.19,
+      "fused_mean_spread_pct": 0.32,
+      "mask_max_spread_pct": 0.51,
+      "mask_mean_spread_pct": 0.18
+    },
+    "anti_cheat": "0 aclrtMemcpy* rows in all 4 api_statistic.csv (pure TileLang direct-launch, 0 aclnn ops) -> the >5 threshold rule is structurally unreachable; cpu_fallback_detected never set; score_error_code None in all 12 JSONs",
+    "sanity_gates": "9/9 PASS (elapsed_us>0 for 72 values; kernel_details.csv present+non-empty 4/4; exactly 2 NPU kernels per call; elapsed_us>=t_hw_us 72/72; 0 aclrtMemcpy; repeatability; Block Num == ceildiv(B,2) 16/16; K1+K2 identity median(K1_i+K2_i)==elapsed_us 72/72; wall time 1769 s)",
+    "known_gaps_and_caveats": [
+      "cap binds on 36/36 entries (clamp factor 16.99x-336.81x, median 55.91x) -> convention-A scores are set by the t_hw model, not by comparison against the measured baseline; convention B must always be disclosed alongside",
+      "22/36 entries still sit on the model's 1.0us t_hw floor (all pre-existing cases 1-14); there HAP degenerates to 9/(T_cand+8), a launch-overhead proxy. All 8 new cases escape the floor (t_hw 5.40-78.31us)",
+      "HAP is NOT comparable across the two tasks: on identical case-15 shape t_hw is 78.31 (fused) vs 21.54 (mask), a 3.6x gap driven by vector op counts 45.25 vs 10.25 per element",
+      "V01-a (r4_mask_sample) is evaluated as the fused MASK CHAIN producing w_out only; the end-to-end V01-a sampling step needs host torch.multinomial, which violates SUB-BEH-001 and is therefore out of the evaluated contract (documented in desc.md, r4_ops.py and README.md)",
+      "recipe-(a) cases carry a residual fp32-tie exposure: two fp64 draws landing in one fp32 bucket make a row valid=0 (correct host-fallback semantics, not a kernel defect). Measured ~0.27%/row => ~15% per case for case 15. The harness default eval_seed=0 is clean for all cases in both tasks, verified twice in two independent processes",
+      "t_hw depends on the reverse-calibrated 910b2 constants (160/160 published values within <=2%, worst 0.4545%); l2 and l2cap are UNCALIBRATED placeholders proven inert inside the documented region l2>=hbm, but for the new mask cases 15-18 that bound is load-bearing (no 1us-floor protection)",
+      "harness bugs worked around, not fixed: html_generator.py:494 crashes on flat-layout suites (int('g')) killing the run before the perf stage -> PYTHONPATH sitecustomize shim gated on R4_HTML_SHIM=1; and LD_LIBRARY_PATH must be prefixed with /usr/local/sqlite3/lib or msprof_analysis fails and every elapsed_us silently becomes 0",
+      "0 new JIT specializations were compiled during the final campaign (cache already warm from upstream work) -> compile time is NOT included in any reported number"
+    ],
+    "perf_bottleneck_for_future_stage3": "grid = ceildiv(B, VEC_NUM=2), i.e. parallelism is bound to BATCH only and the vocab is scanned serially inside each block. Verified Block Num: case 7 (B=4) -> 2 of 20 core groups; case 15 (B=64) -> 32; case 16 (B=128) -> 64. Achieved fraction t_hw/elapsed is only 1-4%. split-V parallelisation (grid extended along V + cross-split reduction for m/s/tau, partial-argmax merge in K2) is the single highest-leverage optimisation, especially for small-B LLM decode.",
+    "kernel_under_test_sha256_superseded": "bbe47fa4dd75b2c8aed614446a5ac2b3023045899f227bd2b10ece7eb22bdf9f (pre-Stage-3; t_hw/baseline metadata intentionally still reference it for roofline provenance)",
+    "post_stage3_note": "Stage 3 adopted 2 optimisations; 36/36 cases re-evaluated PASS on kernel ac8eba47. Score columns in the 20261009 block above describe the PRE-Stage-3 kernel and are superseded by perf_tuning_result for timing; convention-A/B scores were NOT recomputed by the orchestrator.",
+    "kernel_under_test_sha256_history": [
+      "bbe47fa4 (pre-Stage-3)",
+      "ac8eba47 (round 1 converged)",
+      "19e51e8d (round 2 #4)",
+      "a764e117 (Stage 2 rev3 split-V)",
+      "a764e117 re-verified by round-3 3-arm A/B (same sha, now MEASURED)",
+      "c59a83bc (round-3 item A: guard relaxed to the measured a_launch)"
+    ]
+  },
+  "artifacts": {
+    "operator": [
+      "examples/R4/r4_fused_sampling.py (rev3 split-V + item A guard, 7 jit kernels, 1280 lines, sha256 c59a83bc...)",
+      "examples/R4/r4_ref.py (unchanged)",
+      "examples/R4/test_r4_fused_sampling.py (rev3 + item A: L0 15 cases, Tier-2 bitwise layer, static layer 48 shapes, split-path STAB/ADV incl. case6/11, sha256 dc69ad6f...)",
+      "examples/R4/proto.yaml (UNCHANGED 41ab7970 throughout)",
+      "examples/R4/cann_bench_submission/cann_bench/_r4_kernels.py (synced, cmp identical, wheel rebuilt and extraction-verified)",
+      "examples/R4/DESIGN.md (rev3, sha256 ca664d58...)"
+    ],
+    "backups": "examples/R4/history_version/*_impl_s2_v01b_rev2_attempt1.py (3 files)",
+    "cann_bench_tasks": [
+      ".agents/skills/cann-bench/bench_lab/tilelang_ascend_bench/r4_fused_sampling/",
+      ".agents/skills/cann-bench/bench_lab/tilelang_ascend_bench/r4_mask_sample/"
+    ],
+    "cann_bench_metadata": ".agents/skills/cann-bench/bench_lab/tilelang_ascend_bench/metadata/910b2.json (+148 lines, 36 R4 entries, 0 deletions)",
+    "hap_constants": ".agents/skills/cann-bench/docs/hap_thw_model/hap_platform_constants.json (reverse-calibrated 910b2/950pr; 910c marked placeholder)",
+    "submission": "examples/R4/cann_bench_submission/",
+    "bench_tooling": [
+      "examples/R4/bench/baseline_refs.py",
+      "examples/R4/bench/validate_baseline.py",
+      "examples/R4/bench/measure_baseline.py",
+      "examples/R4/bench/hap_thw_model/",
+      "examples/R4/bench/metadata_staging/",
+      "examples/R4/bench/reports/",
+      "examples/R4/bench/MERGE_REPORT.md",
+      "examples/R4/bench/EXTEND_REPORT.md"
+    ],
+    "journals": [
+      ".agents/skill-journal/r4_fused_sampling-20261006-160832.md (V01-a, 11 entries)",
+      ".agents/skill-journal/r4_fused_sampling-20261007-115721.md (V01-b rev1)",
+      ".agents/skill-journal/r4_fused_sampling-20261008-185113.md (bench setup, 6 entries; e3 now marked superseded)",
+      ".agents/skill-journal/r4_fused_sampling-20261009-113013.md (rev2 fix cycle, 6 entries)",
+      ".agents/skill-journal/r4_fused_sampling-20261010-095041.md (Stage 3 perf-tuning cycle, 8 entries: 6 high / 1 medium / 1 low; +2 recurrence registrations)",
+      ".agents/skill-journal/r4_fused_sampling-20261013-104006.md (round2 #2/#3 -> Stage1 rev3 -> Stage2 rev3 -> round3 verify + item B + item A; 11 entries: 9 high / 2 medium; +4 recurrence registrations)"
+    ],
+    "perf_tuning": [
+      "examples/R4/perf_tuning/baseline.json",
+      "examples/R4/perf_tuning/optimization_log.md",
+      "examples/R4/perf_tuning/final_report.md"
+    ],
+    "stage3_backups": [
+      "examples/R4/history_version/r4_fused_sampling_impl_s3_attempt0_baseline.py",
+      "examples/R4/history_version/r4_fused_sampling_impl_s3_attempt1.py",
+      "examples/R4/history_version/r4_fused_sampling_impl_s3_attempt2.py",
+      "examples/R4/history_version/test_r4_fused_sampling_impl_s3_attempt0_baseline.py",
+      "examples/R4/history_version/r4_fused_sampling_impl_s3r2_item4_attempt0.py (ac8eba47)",
+      "examples/R4/history_version/r4_fused_sampling_impl_s3r3_itemA_attempt0.py (a764e117)",
+      "examples/R4/history_version/test_r4_fused_sampling_impl_s3r3_itemA_attempt0.py (cea988cb)"
+    ],
+    "design": "examples/R4/DESIGN.md (rev3, sha256 ca664d58ea70a82d4454c44f1e6e5c23374bf1ad8154d185cf628327ae84ab4e, 2941 lines)",
+    "stage2_backups": [
+      "examples/R4/history_version/r4_fused_sampling_impl_s2r3_attempt1_base.py (19e51e8d)",
+      "examples/R4/history_version/test_r4_fused_sampling_impl_s2r3_attempt1_base.py (02a44b79)"
+    ]
+  },
+  "pending_work": [
+    "#3 BV tile-size sweep: CLOSED as BLOCKED (contract attribute, no legal landing point). Do NOT retry inside Stage 3; would require changing the bench-level proto.yaml/cases.yaml contract and re-deriving t_hw.",
+    "DESIGN.md §4.5 UB model is wrong (K1 underestimated 34%, K2g absent, 'BV<=6400' bound false) -- needs a Stage-1 documentation fix; it materially misinformed the orchestrator's round-2 planning.",
+    "split-V parallelisation (Stage-3 #3): referred as a Stage 1 REDESIGN CANDIDATE, not a Stage-3 patch. Estimated +30~50% geomean (ANALYTICAL ESTIMATE, NOT MEASURED). Requires 4+ new kernels + GM workspace + dual-path dispatch, and changes reduction order which threatens the bitwise-exact match gate via s->tau_p/okp->tau/valid/tok_out. Needs Stage-2-level bitwise rigour.",
+    "recompute convention-A/B cann-bench scores for kernel ac8eba47 if the submission is to be re-published (orchestrator did NOT recompute; only raw elapsed_us and raw-torch geomean were verified)",
+    "re-derive t_hw roofline constants for kernel ac8eba47 (achieved-fraction numbers currently reuse the pre-Stage-3 lower bound)",
+    "m2d scalar-src1 elimination in K1 (would free a further 16384 B -> K1 margin ~41116 B). Deferred from #4 because it changes arithmetic instructions and conflicts with a bitwise-identity criterion; needs its own round with a tolerance-based (not bitwise) gate.",
+    "Revise DESIGN.md §5.3 N2: it was over-conservative (correctly rejected rank-1 for a narrow column slice, but that was over-generalised to the full-width block). Revise together with the §4.5 UB-model defects found in #3.",
+    "K1 block-level threshold pruning: CLOSED as NO-GO (pruning rate 0/5478 on i.i.d. logits; analytical ceiling 0.0022% vs the 3% threshold). Do NOT retry unless the production logits distribution becomes spatially ordered -- under the current contract no such input exists.",
+    "GATE BLINDNESS (new, from #2): no test config has n_blk_full > 2 (STAB max 2, ADV max 1, L2 special-value all 1). Any future optimisation whose behaviour depends on multi-block iteration count is UNVERIFIABLE by the current suite. Recommend adding a large-V multi-block config to the stability layer.",
+    "Test whether T.Else (two-branch) codegens correctly on Ascend -- untested, and required by any future pruning implementation for NaN correctness.",
+    "PRE-EXISTING defect (rev2, surfaced by rev3's V-S4 probes): a row whose FIRST whole BV-block is entirely -inf poisons s_run with NaN via -inf-(-inf), giving valid=0 and a host torch fallback. Production-reachable under heavy prefix masking. Degrades SAFELY (never a silently wrong token). Fixing it violates rev3 hard-constraints 2 and 3 and changes m/s bit patterns -> needs separate user authorisation and a redefinition of the Tier-2 bitwise criterion's scope.",
+    "Stage 3 must: (1) re-run cann-bench 36/36 mismatch_count; (2) measure a_launch with the updated k1_split.py and backfill _SPLIT_A_LAUNCH_US (currently the conservative 8.0us default); (3) measure case8 (K_MAX=128) separately -- fallback is to add `and K_MAX==256` to the guard if it regresses >3%; (4) run gates_report.py to confirm GATE 1-4 still PASS; (5) collect msprof runtime Block Num to close U4/V-S7.",
+    "RESOLVED (see host_overhead_investigation): HOST LAUNCH OVERHEAD (highest-value remaining lever, independent of rev3): ~350-460us per launch in eager mode, currently unattributed. case13 fused spends 94% of wall clock on it (scored 23.84us vs span 416.75us). Needs (a) root-cause attribution, (b) an ACL-graph-capture measurement to determine whether rev3's device win materialises in a realistic deployment mode.",
+    "Guard relaxation (a_launch measured <1.540us vs the shipped 8.0us default): would add cases 6 and 11 for a MEASURED +2.82% on the 36-case geomean (fused 1.2796->1.3222x, mask 1.1840->1.2114x). Blocked on orchestrator approval + updating 4 stale expect_use_split test fields + full re-verification. Both geometries are already compiled and statically clean.",
+    "Re-calibrate DESIGN §12.2's F(K_MAX) as a function of b_num (falsified as b_num-independent; needs a b_num sweep). Per-case absolute model predictions are unreliable for small-n_blk split cases, though the geomean bands held.",
+    "Cases 6/11 have NO runtime precision coverage on the split path today (only a single-distribution bitwise probe + static cleanliness). Required before relaxing the guard.",
+    "DESIGN §16.2 option A (4-pass decomposition, theoretical ~6x vs rev3's ~3.1x) remains available as an increment on top of rev3. The decision is now blocked on the ACL-graph-capture measurement, because a_launch<1.54us argues FOR option A while ~360us/launch eager host cost argues AGAINST adding 2 more launches.",
+    "M1 ACL graph capture + D2D copy-in is the ONLY mitigation that eliminates the root cause (per-launch host 200-500us -> 2.8-6.6us, 30-70x; bitwise-proven on 4 cases x 5 value sets). It requires NO kernel change but DOES require a deployment-mode decision: captured graphs bake in device addresses, so cann-bench's input rotation must use the copy-in pattern, and each shape needs its own capture. Only 4/18 cases measured.",
+    "M2 framework-level fix (lazy Analyzer + cached stream, -95.9% of the bare launch cost) belongs to TILELANG, not to this operator. Analyzer() alone is 122.6us of the 200.5us bare per-launch cost, and an EMPTY tilelang kernel already pays 160-180us -> worth filing upstream.",
+    "DESIGN §16.2 option A (4-pass, theoretical ~6x) is NOT pursued: its device advantage was never measured, the model's absolute predictions are already falsified, and its bitwise case rests on two exact-replay proofs vs rev3's constructive one. Prerequisites to revisit are listed in host_overhead_investigation.OPTION_A_VERDICT.",
+    "gates_report.py GATE 1-4 and the roofline table were NOT re-run after item A: case6/11 changed from vector-bound single-kernel to split-kernel attribution, so that table no longer describes the delivered dispatch. t_hw itself is unaffected (n_blk_full unchanged; only which core processes which block changed).",
+    "stab_B5_V10240_gumbel lost its current-path control role when item A flipped it to the split path. Coverage counts are unaffected, but the suite no longer has a 32B-aligned-tail CURRENT-path stability control. Restoring it needs one more table entry.",
+    "ACL graph deployment would make rev3 a wall-clock WIN (SPAN all-18 1.12x fused / 1.08x mask, split-6 1.41x / 1.27x) but case6/11 remain <1 even under graph (0.90x/0.81x fused) because their device gain (19.50/8.58us) is smaller than the ~31.2us device-timeline residual of +2 launches. If graph deployment is ever adopted, consider excluding the smallest-gain cases from the split path."
+  ],
+  "recommendations_not_actioned": [
+    "fold a UB-poisoning pass into --level stability or add stress to --level all (residual detection gap, journal rev2 e4)",
+    "file the html_generator.py:494 flat-layout crash upstream to cann-bench (also affects gemm and flash_attention in the same suite)",
+    "report the two TileLang wheel defects upstream: Sort()'s masked Duplicate pad ineffective on dav_c220, and copy_ub_to_ub silently truncating non-32B-multiple counts",
+    "extend tests/ut/test_bench_lab_metadata_contract.py SUITES to cover bench_lab/tilelang_ascend_bench (currently only kernel_bench and omni-ops_bench are CI-guarded)",
+    "fold a UB-poisoning pass into --level stability or add stress to --level all -- STILL OPEN; Stage 3 gate had to run stress separately for exactly this reason",
+    "upstream: T.cumsum raises an Ascend InternalError (blocks the tau_p prefix-sum cumsum optimisation, Stage-3 #4)",
+    "upstream: T.Parallel over a small 1-D epilogue range is lowered to scalar GetValue/SetValue with a per-iteration PipeBarrier<PIPE_ALL> -- 768 full-pipeline drains for a 256-element loop (Stage-3 #1 root cause)",
+    "upstream: T.tile.topk has no partial-select path; topk(K=1, 4096) performs a full Sort of 4096 elements (Stage-3 #2 root cause)",
+    "set_env.sh prepends TL_ROOT to PYTHONPATH, so the un-built source tilelang/ (needs tvm) shadows the installed wheel 0.1.4+d75300ed; running the test suite requires cwd outside the repo root and PYTHONPATH without TL_ROOT"
+  ],
+  "last_updated": "2026-10-13T02:47:51Z",
+  "perf_tuning_params": {
+    "goal_type": "best_effort",
+    "target_value": null,
+    "baseline_path": [
+      "examples/R4/bench/reports/cann_final_eval_20261009_110101.json",
+      "examples/R4/bench/reports/cann_final_eval_20261009_110214.json",
+      "examples/R4/bench/reports/cann_final_eval_20261009_110320.json",
+      "examples/R4/bench/reports/cann_final_eval_20261009_110425.json",
+      "examples/R4/bench/metadata_staging/baseline_raw_910b2_18cases.json"
+    ],
+    "test_shapes": "full 18-case matrix (r4_fused_sampling + r4_mask_sample)",
+    "noise_threshold_pct": 3.0,
+    "max_iterations": 10,
+    "stop_condition": "reached max_iterations OR 3 consecutive no-improvement rounds",
+    "artifact_change_scope": "main files editable; must re-run precision gate + cann-bench 3-stage eval and refresh metadata/submission sha256",
+    "confirmed_at": "2026-10-09T00:00:00Z",
+    "design_doc_section": "examples/R4/DESIGN.md §12"
+  },
+  "skill_journal": {
+    "path": ".agents/skill-journal/r4_fused_sampling-20261013-104006.md",
+    "entries": 11,
+    "severity": {
+      "high": 9,
+      "medium": 2
+    },
+    "artifact": {
+      "skill": 9,
+      "troubleshooting": 2
+    },
+    "skills_consulted": [
+      "tilelang-perf-optimization",
+      "tilelang-op-design",
+      "tilelang-op-develop",
+      "tilelang-op-test-design",
+      "tilelang-custom-skill/tilelang-api-best-practices",
+      "tilelang-custom-skill/tilelang-programming-model-guide",
+      "tilelang-custom-skill/tilelang-env-check"
+    ],
+    "entry_coverage": "4/7 = 57% (>= 50% required)",
+    "recurrence_registrations": 4,
+    "top_3_entries": [
+      "e1 perf skill has no SCORED-vs-SPAN duality (a 4.05x device win was a 1.90x wall-clock loss)",
+      "e2 antipatterns list lacks 'launch-count inflation exposing framework host dispatch cost' + the measured constants (Analyzer()=122.6us; an EMPTY tilelang kernel already costs 160-180us/launch)",
+      "e7 ACL graph capture is entirely undocumented in api-best-practices yet is the single highest-value mitigation (per-launch host 200-500us -> 2.8-6.6us, bitwise-proven)"
+    ],
+    "next_step": "run /tilelang-skill-review to aggregate"
+  },
+  "perf_tuning_result_round1": {
+    "completed_at": "2026-10-10T00:12:28Z",
+    "goal_type": "best_effort",
+    "noise_threshold_pct": 3.0,
+    "max_iterations": 10,
+    "measurement": "msprof via cann-bench msprof_analysis (no Python/torch timing)",
+    "kernel_sha256_before": "bbe47fa4dd75b2c8aed614446a5ac2b3023045899f227bd2b10ece7eb22bdf9f",
+    "kernel_sha256_after": "ac8eba47f77e11342eabb9c4e30a44531b3e655b481b0dc28fd5a66a2738fc5b",
+    "test_file_sha256_unchanged": "02a44b79624e477c570c3c632fcdcef01dcf60041de3372a177aa947d53efb50",
+    "submission_copy_synced": true,
+    "geomean_speedup_vs_raw_torch": {
+      "R4FusedSampling": {
+        "before": 6.72,
+        "after": 10.35,
+        "delta_pct": 54.0,
+        "min": 3.37,
+        "max": 18.1,
+        "median": 11.02
+      },
+      "R4MaskSample": {
+        "before": 11.01,
+        "after": 15.69,
+        "delta_pct": 42.5,
+        "min": 6.52,
+        "max": 54.27,
+        "median": 13.07
+      },
+      "verified_by": "ORCHESTRATOR independent recomputation from raw eval JSON x baseline_raw_910b2_18cases.json (not taken from subagent summary)"
+    },
+    "geomean_time_reduction": {
+      "R4FusedSampling": 1.5386,
+      "R4MaskSample": 1.4242
+    },
+    "per_case_regression": "0 of 36 cases regressed >3%; worst delta = +0.00% (no regression at all); 36/36 improved",
+    "notable_cases": {
+      "case15_B64_V152064": {
+        "fused_us": [
+          1974.21,
+          1476.94
+        ],
+        "mask_us": [
+          985.92,
+          934.84
+        ]
+      },
+      "case1_small_B": {
+        "fused_us": [
+          64.05,
+          35.24
+        ],
+        "mask_us": [
+          50.35,
+          26.06
+        ]
+      },
+      "case7_B4_V152064": {
+        "fused_us": [
+          978.77,
+          731.74
+        ],
+        "mask_us": [
+          487.61,
+          462.58
+        ]
+      }
+    },
+    "roofline_achieved_fraction_geomean": {
+      "R4FusedSampling": [
+        0.0143,
+        0.0219
+      ],
+      "R4MaskSample": [
+        0.0137,
+        0.0195
+      ],
+      "caveat": "t_hw NOT re-derived for ac8eba47; same fixed lower bound used, so the gain comes from elapsed_us falling. A/B conclusion unaffected."
+    },
+    "precision_gates_reverified_by_orchestrator": {
+      "level_all": {
+        "exit": 0,
+        "precision_pass": 74,
+        "precision_fail": 0,
+        "boundary_pass": 38,
+        "boundary_warn": 0
+      },
+      "level_stability": {
+        "exit": 0,
+        "note": "tail-adversary sentinel sweep dropped=0 for TAIL=257/511/261 (defect-B truncation absent)"
+      },
+      "level_stress": {
+        "exit": 0,
+        "note": "8/8 UB-poison configs x 200 reps, selfdiff=0 goldenfail=0 invariant=0 -> precision red line intact"
+      },
+      "coverage_check": {
+        "exit": 0,
+        "pass": 25,
+        "miss": 0,
+        "na": 0
+      },
+      "cann_bench_eval": {
+        "exit": 0,
+        "cases": "36/36 PASS (fused 18 + mask 18)"
+      },
+      "run_date": "2026-10-10"
+    },
+    "artifacts": [
+      "examples/R4/perf_tuning/baseline.json",
+      "examples/R4/perf_tuning/optimization_log.md",
+      "examples/R4/perf_tuning/final_report.md"
+    ],
+    "backups": [
+      "examples/R4/history_version/r4_fused_sampling_impl_s3_attempt0_baseline.py",
+      "examples/R4/history_version/r4_fused_sampling_impl_s3_attempt1.py",
+      "examples/R4/history_version/r4_fused_sampling_impl_s3_attempt2.py",
+      "examples/R4/history_version/test_r4_fused_sampling_impl_s3_attempt0_baseline.py"
+    ],
+    "new_eval_reports": [
+      "cann_final_eval_20261010_012731 (R4FusedSampling)",
+      "cann_final_eval_20261010_012928 (R4MaskSample)"
+    ],
+    "round": "1"
+  },
+  "stage3_round2": {
+    "opened_at": "2026-10-10T06:43:18Z",
+    "trigger": "user request 2026-10-10: do tier-1/2 items #1 #2 #3 #4, reorder by risk, verify after each",
+    "baseline_kernel_sha256": "ac8eba47f77e11342eabb9c4e30a44531b3e655b481b0dc28fd5a66a2738fc5b",
+    "baseline_perf": {
+      "note": "round-1 converged result = round-2 baseline",
+      "geomean_speedup_vs_raw_torch": {
+        "R4FusedSampling": 10.35,
+        "R4MaskSample": 15.69
+      },
+      "reports": [
+        "cann_final_eval_20261010_012731 (fused)",
+        "cann_final_eval_20261010_012928 (mask)"
+      ]
+    },
+    "user_decisions": {
+      "numbering_interpretation": "tier numbering (#1 split-V, #2 K1 block pruning, #3 BV tile size, #4 = Part-A [#7] UB->UB copy elimination)",
+      "split_v_scope": "1a ONLY (split K2m). 1b/1c/1d DEFERRED pending evaluation after 1a/#2 measured gains + UB budget headroom",
+      "stage1_rollback": "NOT triggered this round (1a needs no cross-core reduction; 1b/1c would require Stage 1 redesign)",
+      "execution_order": "REVISED 2026-10-10 after the orchestrator's K1/K2 share + wave-law analysis: #2 -> #5 -> #1a. #1a retained per user but re-classified as technical validation. #1b/#1c/#1d deferred pending the #1b go/no-go evaluation after #5.",
+      "verification": "Orchestrator independently re-runs all 4 precision gates + 36-case perf recompute after EACH item; no batch verification at the end",
+      "item5_added": "yes -- user approved adding the newly discovered K2g int32-And halving over-allocation as #5",
+      "item1a_retained_despite_roi": "yes -- user chose to keep #1a as a technical validation / pathfinder for #1b, accepting that its measured ROI ceiling (+3.18% theoretical, +1.55% realistic on the 36-case merged geomean) is at or below the 3% adoption threshold."
+    },
+    "plan": [
+      {
+        "seq": 1,
+        "id": "#2",
+        "name": "K1 block-level threshold pruning (reduce number of blocks needing full Sort)",
+        "risk": "medium-high",
+        "basis": "ORCHESTRATOR INFERENCE, NOT MEASURED, not in Part A. [#6] proved TopK always full-Sorts (no partial-select primitive) so the only lever is sorting FEWER blocks",
+        "mechanism": "cheap per-block reduce_max (primitive already used by K1) -> maintain running tau_k estimate -> only blocks with block_max > tau_k_run enter topk+merge; others contribute only to online-softmax m/s",
+        "mandatory_precondition": "OFFLINE FEASIBILITY STUDY FIRST using golden only (count how many of the 38 blocks at V=152064 would be pruned per case across all 18 cases). Do NOT write kernel code if pruning rate is low.",
+        "redline": "skipping blocks changes the tie candidate set -> may shift tau_k boundary and n_eq count -> directly touches the D-TIE graded criterion. Must prove bitwise identity under --level stress + tail-adversary sentinel sweep",
+        "status": "NO_GO_VERIFIED",
+        "wave_law_from_orchestrator": "K1_us ~= ceil(ceil(B,2)/20) * scan(V)  (20 = cube_core_num). Verified on 2 independent pairs: same V=152064, case7 b_num=2 (1 wave) K1=451.3us vs case15 b_num=32 (2 waves) K1=911.6us -> ratio 2.02 == wave ratio 2.00; same V=32768, case12 b_num=8 (1 wave) 120.3us vs case16 b_num=64 (4 waves) 532.9us -> 4.43 vs 4.00. Per-wave unit cost is near-constant (V~152064: case 7/15/17 = 451.3/455.8/455.9 us).",
+        "why_this_matters": "#2 reduces scan(V) itself, so it benefits ALL 18 cases regardless of wave count -- unlike split-V which only helps b_num<20. K1 is 91.5-96.5% of the mask task and 46-79% of the fused task and has NOT been touched by any adopted optimisation so far ([#1] only hit K1's epilogue, #4 was perf-neutral).",
+        "ub_headroom_now": "K1 margin is 24732 B (was 8348 B before #4) -- #4 was sequenced first precisely to make room for #2's new buffers",
+        "correctness_analysis_by_orchestrator": "tau_k_run (the 256th largest seen so far) is MONOTONICALLY NON-DECREASING because the 256th order statistic of a superset is >= that of a subset. Therefore a block whose max is BELOW tau_k_run cannot contribute to the global top-256. THE PRUNE CONDITION MUST BE STRICT '<', NOT '<=': a block with max == tau_k_run may hold elements equal to the final threshold, and dropping them corrupts n_eq and hence the D-TIE graded criterion and tau_p/L.",
+        "mandatory_precondition_STRENGTHENED": "offline study must measure BOTH (a) the pruning rate per case AND (b) the Sort-vs-online-softmax cost split inside one K1 block. (b) is the binding ceiling: online softmax (reduce_max+exp+reduce_sum over BV) must still run on EVERY block, so only the topk+merge portion is saveable. If Sort is a small share of per-block cost, #2 cannot reach 3% no matter how high the pruning rate is. Report the ceiling BEFORE writing any kernel code.",
+        "outcome": "[ITEM2_NO_GO] -- rejected at the mandatory offline feasibility gate. ZERO kernel code written, 0 Edits, sha256 before==after==19e51e8d.",
+        "measured_ceiling": "pruning rate 0/5478 blocks across all 18 bench cases -> 36-case geomean ceiling 0.000000% (measured) / 0.002212% (analytical) vs the 3% threshold, i.e. ~1356x short. Implementing would be a NET REGRESSION because the predicate itself costs +0.100% to +0.948% (mean +0.185%) in PipeBarrier<PIPE_ALL> + 2x GetValue + branch even when it never fires.",
+        "root_cause": "a property of the DATA DISTRIBUTION, not of the mechanism. block_max is an EXTREME order statistic (sits near the upper bound) while tau_k_run is only the 256th largest (a high quantile, far from extreme). Under i.i.d. logits a whole 4096-element block essentially never falls entirely below the running 256th-largest. Analytical expectation is seed-independent and needs V >~ 1e6 to become material; the contract's max V is 152377.",
+        "mechanism_was_sound": "Two of the three preconditions were CONFIRMED WORKING, so this is not a capability failure: (i) block-level conditional skip DOES lower to a real C++ runtime branch on Ascend (emitted_cc/K1_case15_pruned.cc:127-137 shows `if (tau_run.GetValue(0) <= m_blk.GetValue(0)) { TopK... }` with the Sort inside the branch body, NOT masked), so the feared 'mask-only => zero gain' outcome is ruled out; (ii) topk+merge really is the dominant per-block cost: msprof 3-variant measurement gives 26.4% / 55.3% / 60.0% / 66.6% / 78.5% / 78.8% of K1 for cases 2/3/8/16/7/15, cross-checked against a static emitted-code census (per block at case 15: softmax side = 5 full-width passes over 4096 + 6 scalars; topk side = 48x MrgSort + 144 Sort32 repeats).",
+        "strict_lt_confirmed": "prune condition was implemented as the dual `keep = (tau_run <= block_max)`, i.e. strict `<` on the prune side, so equal-valued blocks are RETAINED and n_eq / tau_p / L / D-TIE are not corrupted -- as the orchestrator required.",
+        "orchestrator_verification": {
+          "verified_at": "2026-10-10T11:23:35Z",
+          "sha256": "kernel 19e51e8d..., test 02a44b79..., submission copy 19e51e8d... -- all UNCHANGED; gate_sha256_before.txt == gate_sha256_after.txt (diff empty) independently confirms zero Edits",
+          "gates_recounted_from_logs": "gate_exits all 0; all=74 PASS/0 FAIL/38 BOUND/0 WARN; stability=12; stress=8; coverage=25 PASS/0 MISS/0 N/A. Caveat upheld: this proves 'the study did not contaminate the deliverable', NOT 'an optimisation passed the gates' -- there is no candidate.",
+          "independent_pruning_recomputation": "ORCHESTRATOR re-implemented the block loop from scratch in numpy with a DIFFERENT RNG seed (12345) over 6 cases incl. the largest: case7 0/144, case15 0/2304, case17 0/576, case16 0/896, case3 0/24, case12 0/112 -> TOTAL 0/4056 prunable, min_margin always positive (+0.098 to +1.248). CONFIRMS the subagent's 0/5478.",
+          "independent_analytical_recomputation": "E[U^BV] with U=F(tau_k_run)~Beta(n-K+1,K): orchestrator MEAN over blocks = 1.153e-4 vs subagent's 1.122e-4 (3% agreement). The orchestrator initially computed the MAX over blocks (1.078e-3) and mistakenly treated the 10x gap as a discrepancy -- resolved: it is max-vs-mean, both yield the same verdict (expected prunable blocks at case-15 scale = 0.27 vs measured 0).",
+          "scaling_confirmed": "P(50% pruning) requires n ~ 1e6 (orchestrator's own sweep: n=1e5 -> 3.4e-5, n=1e6 -> 0.351, n=1e7 -> 0.901). Contract max V=152377 -> structurally unreachable.",
+          "conclusion": "NO-GO UPHELD. The mandatory feasibility gate did its job: it avoided an implementation+validation cycle whose best possible outcome was a net regression."
+        },
+        "second_independent_no_go_reason_GATE_BLINDNESS": "Even had the pruning rate been high, the four gates CANNOT detect a pruning-logic error: parsing the UNMODIFIED test file gives STAB max n_blk_full=2, ADV max=1, and the L2 special-value cases (NaN/-inf/dbound) are all B=4,V=4096,BV=4096 -> n_blk_full=1; 38 configs / 2661 blocks -> 0 prunable. A wrong predicate (inverted or mistyped) would produce byte-identical output, so the code would be unverifiable dead code. The UB-poison stress layer does NOT help either: pruning that never fires creates no new residual-UB state.",
+        "orchestrator_errors_corrected": [
+          "ERROR 1 (dispatch prompt §5.4): the orchestrator asserted '--level stress (UB poison) is the most direct detector' for pruning errors. DISPROVED -- pruning that never triggers produces no new residual-UB state, and no gate config has n_blk_full large enough to exercise pruning at all. The orchestrator over-generalised from round-1's TAIL_PAD defect, where stress WAS the right detector because that defect was live on every run.",
+          "ERROR 2 (sequencing rationale): the orchestrator justified running #4 before #2 partly as 'to make room for #2's new buffers' (K1 margin 8348 -> 24732 B). MOOT -- #2 needs only ~32 B (a single [1,1] tau_run scalar; block_max reuses the existing reduce_max). #4 remains correctly adopted on its own criterion-(b) merits (bitwise identical, removes a per-block 16 KB UB->UB copy + one PipeBarrier<PIPE_V>), but that specific justification was wrong.",
+          "ERROR 3 (original tier list): #2 was the orchestrator's own inference ('my inference, not measured, not in Part A'). The inference that 'Sort dominates so pruning must pay' was half right -- Sort does dominate (up to 78.8%) -- but the orchestrator never checked whether any block is actually prunable, which is the binding factor. This is exactly why the offline feasibility gate was made mandatory."
+        ],
+        "side_findings_not_implemented": [
+          "NaN semantics divergence: the Else-free `keep = (block_max >= tau)` form is NOT equivalent to the canonical `prune = (block_max < tau)` under NaN (the former prunes, the latter keeps). The only NaN gate config has n_blk_full=1 so it is insensitive. Any future implementation MUST use a two-branch (T.Else) form. NOTE: whether T.Else codegens correctly on Ascend was NOT tested.",
+          "the 16384 B freed by #4 is idle w.r.t. #2; the orchestrator should re-scope which future item actually needs it (candidates: m2d scalar-src1 elimination, or z_ub double-buffering which needs exactly 188004 <= 196352 and is now statically feasible though still mode-blocked)",
+          "3 alternative directions listed in feasibility_study.md §7.3, none implemented or measured: partial-select instead of full sort (blocked upstream, = round-1 [#6]); two-level coarse block granularity that does NOT touch the contract BV; and the antipattern 'task count below physical core count' = #1a/#1b"
+        ],
+        "artifacts": [
+          "perf_tuning/round2_item2/ (28 files: feasibility_study.md 11 sections, prune_rate.py+result.json+log, analytic_prune_bound.py+json, ceiling_fold.py+json, gate_blindness.py+json+log, probe_k1_nosort.py, probe_k1_pruned.py, probe_run_perf.py, probe_perf.json+log, probe_insn_census.py, insn_census.txt, probe_dump_cc.py, emitted_cc/, 5 gate logs, run_gates.sh, gate_sha256_before/after.txt)"
+        ],
+        "design_error": "NO. Not triggered: no implementation was attempted, and the root cause is a data-distribution/mechanism mismatch, not a tiling or memory-hierarchy defect. DESIGN.md never claimed pruning was viable; #2 was always a candidate and this study is precisely the screening it needed."
+      },
+      {
+        "id": "#5",
+        "name": "K2g int32 And 'halving' workaround -> 2*BV over-allocation",
+        "location": "r4_fused_sampling.py:405-415 (rationale comment), :435-442 (allocs), :468-476 (arith_progression at BV2)",
+        "mechanism": "int32 AscendC::And/Or are int16-only, so TileLang int32 bitwise_and consumes count as int16 and processes only count/2 int32 elements. Workaround: state_ub/h_ub/tmp_ub are over-allocated to int32[2*BV] with real data in [0:BV), and count=2*BV so the halved pass covers all BV int32.",
+        "cost": "TWO wastes, not one: (a) MEMORY 3 buffers x 2*BV x 4B = 24*BV instead of 12*BV -> 12*BV = 49152 B wasted at BV=4096 (33% of K2g's 148452 B); (b) COMPUTE every And executes at 2x element count. lowbias32 = 3 rounds of [xor-shift, multiply] and XOR is emulated as x+t-2*(x&t), so 3 Ands per element at 2x count.",
+        "why_bv_cannot_fix": "constant-factor waste, orthogonal to BV",
+        "constraints_noted_in_code": "int32 xor/not don't compile; scalar-and unregistered. So removing the And is not trivial -- needs an alternative full-count int32 bitwise path (e.g. split into 2x int16 halves, or replace bitwise ops with compare/select arithmetic).",
+        "status": "DEFERRED_by_user_2026-10-10 (user chose to go straight to #1b via Stage 1). Orchestrator ROI estimate: 36-case merged ceiling +0.82%..+3.12%, likely below the 3% threshold; main value would be 49152 B UB freed in K2g (75.6%->50.6%). CORRECTION recorded: the '2x And instruction count' claim made by both the orchestrator and the #2 subagent is WRONG -- count=2*BV int16 = 4*BV bytes = exactly BV int32, so the And does exactly the required byte work. Real waste = memory 12*BV plus arith_progression(...,BV2) and fill(state_ub,0) running at 2*BV.",
+        "risk": "medium-high",
+        "seq": 2,
+        "basis": "DISCOVERED during #3 by the perf-tuner subagent; verified by orchestrator against r4_fused_sampling.py:405-415/435-442/468-476",
+        "redline": "tok_out is under the bitwise exact-match gate; int32 xor/not do not compile and scalar-and is unregistered, so the And cannot simply be deleted -- needs an alternative full-count int32 bitwise path (e.g. 2x int16 halves, or compare/select arithmetic)"
+      },
+      {
+        "seq": 3,
+        "id": "#1a",
+        "name": "split-V restricted to K2m (mask task only)",
+        "risk": "medium (no cross-core reduction)",
+        "basis": "optimization_log.md L49 'K2m: 无需归约，可直接切'; K2m UB is only 98912/196352 (50.4%) so there is ample room",
+        "why": "no GM workspace, no cross-core reduction primitive, does NOT change online-softmax reduction order -> does not touch the tok_out/valid exact-match gate. Targets round-1's weakest results: mask case 7 only -5.1%, case 15 only -5.2%",
+        "redline": "grid change breaks the cann-bench sanity gate 'Block Num == ceildiv(B,2)' -- that gate MUST be consciously updated, not silently broken",
+        "status": "DEFERRED_by_user_2026-10-10 (user chose #1b). Its value as a #1b pathfinder is now largely superseded: #2 PROVED that block-level runtime conditional branching lowers to a real C++ `if` on Ascend (emitted_cc/K1_case15_pruned.cc:127-137), which was the main unknown #1a would have retired.",
+        "role_CHANGED": "user decision 2026-10-10: #1a is retained but RE-CLASSIFIED as a TECHNICAL VALIDATION / pathfinder for #1b, NOT as a performance optimisation. Its ROI ceiling is already known to be below the adoption threshold.",
+        "roi_ceiling_measured_by_orchestrator": {
+          "K2m_share_of_mask_task": "3.1% min / 5.9% median / 10.2% max (K2m exists ONLY in the mask task; the fused task uses K2g)",
+          "if_K2m_became_free": "mask geomean +6.45%, fused +0.00%, 36-case merged +3.18% (== the 3% threshold, and physically unreachable)",
+          "if_K2m_halved_realistic": "mask +3.12%, fused +0.00%, 36-case merged +1.55% -> BELOW the 3% adoption threshold",
+          "cost": "grid restructure + consciously breaking the 'Block Num == ceildiv(B,2)' sanity gate + possible t_hw re-derivation"
+        },
+        "adoption_rule_SPECIAL": "Because the perf ceiling is known to be below threshold, #1a is adopted on a DIFFERENT criterion: (i) split-V mechanics proven to work on NPU, (ii) NO case regresses >3%, (iii) bitwise or explicitly-justified accuracy, (iv) the Block Num sanity gate is consciously updated (not silently broken), (v) a written hand-off note describing what #1b can reuse. Perf gain is NOT an adoption criterion for #1a.",
+        "ordering_rationale": "placed LAST so that its grid change does not pollute the perf-attribution baseline for #2 and #5, and so the split-V rehearsal lands immediately before the #1b go/no-go decision"
+      }
+    ],
+    "stop_conditions": [
+      "all 4 items done",
+      "OR 10 iterations reached",
+      "OR 3 consecutive no-improvement",
+      "OR an item fails precision gates irrecoverably (roll back to last history_version backup)"
+    ],
+    "artifacts": [],
+    "adoption_rule_for_perf_neutral_enablers": "A change is adopted if (perf gain > 3% geomean) OR (perf within +/-3% AND bitwise-identical AND the change is REQUIRED to make a later approved item fit the UB budget). Otherwise revert from the history_version backup. The 3% threshold governs performance-improvement adoption; UB-headroom enablers are a separate category and must be explicitly justified.",
+    "orchestrator_analysis_k1_k2_share": {
+      "source": "perf_tuning/baseline.json (round-1 baseline kernel bbe47fa4), recomputed by orchestrator",
+      "mask_task_K1_share": "91.5% - 96.5% (K2m only 3.1-10.2%)",
+      "fused_task_K1_share": "46.1% - 78.9% at baseline; ~62% at case 15 after round-1 [#2] halved K2g",
+      "conclusion": "K1 is the dominant cost in BOTH tasks and is the only target that moves the 36-case geomean materially. #2 attacks scan(V) (all cases); #1b would attack the wave count (only b_num<20, i.e. 14 of 18 cases)."
+    },
+    "closed_at": "2026-10-10T11:27:54Z",
+    "closure_summary": "3 of 5 planned items executed: #3 BLOCKED_VERIFIED (0 Edits), #4 ADOPTED criterion-b (sha256 ac8eba47 -> 19e51e8d, bitwise 220/220, K1 UB margin 8348 -> 24732 B), #2 NO_GO_VERIFIED (0 Edits). #5 and #1a DEFERRED by user decision to pursue #1b via a Stage 1 redesign. Net perf gain of round 2: NONE measurable (all effects were inside the +/-3% noise band); net structural gain: 16384 B of K1 UB freed with zero correctness risk."
+  },
+  "stage3_round2_closed": true,
+  "perf_tuning_result_round2": {
+    "round": "2",
+    "closed_at": "2026-10-10T11:27:54Z",
+    "items_executed": [
+      "#3 BLOCKED_VERIFIED",
+      "#4 ADOPTED_criterion_b",
+      "#2 NO_GO_VERIFIED"
+    ],
+    "items_deferred": [
+      "#5 (user decision)",
+      "#1a (user decision)"
+    ],
+    "kernel_sha256_before": "ac8eba47f77e11342eabb9c4e30a44531b3e655b481b0dc28fd5a66a2738fc5b",
+    "kernel_sha256_after": "19e51e8d8ee126b920cf48c915d863a9be3a349e2c68cf728d35d482b48bcc57",
+    "measurable_perf_gain": "NONE -- every measured effect was inside the +/-3% noise band. Stated plainly: round 2 did not make the operator faster in a provable way.",
+    "structural_gain": "K1 UB worst-case 188004 -> 171620 B (margin 8348 -> 24732 B); one 16 KB UB->UB copy and one PipeBarrier<PIPE_V> removed per full block; bitwise identical (220/220 tensors).",
+    "precision_gates": "all four re-verified by the orchestrator on 19e51e8d: all=74/0+38/0, stability=12, stress=8/8, coverage=25/0/0, all exit 0",
+    "key_knowledge_gained": [
+      "K1_us ~= ceil(ceil(B,2)/20) * scan(V) -- verified wave law; K1 is 91.5-96.5% of mask and 46-79% of fused",
+      "block-level runtime conditional branching DOES lower to a real C++ if on Ascend (not masked) -- retires the biggest unknown for #1b/#2-style work",
+      "topk+merge is 26.4-78.8% of K1 per-block cost (msprof 3-variant measurement)",
+      "threshold pruning is structurally dead on i.i.d. logits (block_max is an extreme order statistic vs the 256th order statistic)",
+      "GATE BLINDNESS: no test config has n_blk_full > 2, so multi-block-dependent logic is unverifiable by the current suite",
+      "BV is a bench contract attribute, not an implementation free parameter",
+      "DESIGN §4.5 UB model underestimates K1 by 34% and has no K2g accounting; §5.3 N2 was over-conservative"
+    ]
+  },
+  "design_revision_2": {
+    "triggered_at": "2026-10-10T11:27:54Z",
+    "trigger": "USER_DIRECTED_ENHANCEMENT",
+    "is_design_error": false,
+    "explicit_note": "This is NOT a [DESIGN_ERROR] rollback. Both Stage 3 subagent rounds answered design_error: no, and the current design is correct (four gates green, cann-bench 36/36 mismatch_count=0). The orchestrator's own protocol forbids self-judged rollbacks; this one is executed on the user's explicit instruction of 2026-10-10. Recorded under a distinct trigger value so the design_error telemetry is not polluted.",
+    "objective": "split-V parallelisation of K1 (r4_topk_stats) -- plan items #1b (split K1 along V with cross-split reduction of m/s and a top-256 list merge) and #1d (conditional dispatch so large-B cases keep the current single-wave path).",
+    "quantified_motivation": {
+      "wave_law": "K1_us ~= ceil(ceil(B,2)/20) * scan(V), 20 = cube_core_num. Verified on two independent pairs: same V=152064, case7 b_num=2 (1 wave) K1=451.3us vs case15 b_num=32 (2 waves) K1=911.6us -> ratio 2.02 vs wave ratio 2.00; same V=32768, case12 b_num=8 (1 wave) 120.3us vs case16 b_num=64 (4 waves) 532.9us -> 4.43 vs 4.00. Per-wave unit cost near-constant (V~152064: cases 7/15/17 = 451.3/455.8/455.9 us).",
+      "K1_share": "91.5-96.5% of the mask task, 46-79% of the fused task; untouched by every adopted optimisation so far",
+      "core_starvation": "14 of 18 cases have b_num < 20. Worst: case 7 (B=4) uses 2 of 20 core groups, roofline achieved fraction 0.67%.",
+      "split_v_only_helps_small_b": "CRITICAL: for b_num >= 20 split-V is neutral or harmful. case15 (b_num=32) with S=2 -> blocks=64 -> waves=ceil(64/20)=4 x scan(V/2)=228us -> 912us, identical to the current 911.6us. Hence #1d conditional dispatch is MANDATORY, not optional.",
+      "estimated_upside": "case 7 K1 ~10x potential (451us at 1 wave -> ~45-90us if V is split 10 ways to fill 20 groups). Round-1's analytical estimate for full split-V was +30~50% geomean, never measured."
+    },
+    "known_risks": [
+      "cross-split reduction changes the online-softmax reduction ORDER -> s differs by ulp -> tau_p/okp can flip at p_i boundaries -> tau changes -> threatens valid/tok_out. Needs Stage-2-level rigour and a decided accuracy criterion.",
+      "no existing pure-Vector cross-core reduction example in examples/ to copy; Developer mode has no simple cross-core reduction primitive (round-1 finding).",
+      "requires 4+ new kernels (K1_partial + K1_reduce, and for K2g a partial-argmax merge) + GM workspace + dual-path dispatch.",
+      "TAIL semantics change -> must re-prove topk padCount==0 and 32B-multiple UB->UB copies (the round-1 precision red line).",
+      "UB budget: partial buffers + workspace must fit; K1 margin is now 24732 B, K2g 47900 B, K2m 97440 B.",
+      "the cann-bench sanity gate 'Block Num == ceildiv(B,2)' will fail and must be consciously updated.",
+      "t_hw depends on BV and on the block decomposition (r4_thw_common.py:219/234/310-328) -> the roofline model and possibly the published scores need re-derivation."
+    ],
+    "design_backup": "examples/R4/history_version/design_rev2.md (copy of the pre-rollback DESIGN.md, which itself contains the Stage-3 §12 performance-target section appended on 2026-10-09)",
+    "delivered_kernel_at_rollback": "19e51e8d8ee126b920cf48c915d863a9be3a349e2c68cf728d35d482b48bcc57 (four gates green, cann-bench 36/36) -- this is the fallback if the redesign does not converge",
+    "design_rev3_sha256": "ca664d58ea70a82d4454c44f1e6e5c23374bf1ad8154d185cf628327ae84ab4e",
+    "stage1_completed_at": "2026-10-11T03:48:34Z"
+  },
+  "stage1_rev3_gate": {
+    "checked_at": "2026-10-11T03:48:34Z",
+    "result": "PASS 9/9",
+    "design_md_sha256": "ca664d58ea70a82d4454c44f1e6e5c23374bf1ad8154d185cf628327ae84ab4e",
+    "design_md_bytes": 2941,
+    "required_sections": {
+      "算子名": "PASS (title: r4_fused_sampling rev3)",
+      "I/O 规格": "PASS (§4)",
+      "编程模式": "PASS (§2+§2.5, Developer, compile-proven)",
+      "API 映射": "PASS (§3)",
+      "tiling 策略": "PASS (§5+§5.8)",
+      "内存层级": "PASS (§4 L658: GM<->UB, no L1/L0A/L0B/L0C)",
+      "同步策略": "PASS (§7)",
+      "验证方案+L0 计划": "PASS (§9, 15 cases, all CPU-run against golden_r4 with valid_ref all 1)",
+      "技术约束检测结论": "PASS (§3.5: 三维Kernel/threads/动态边界/流水线/L0C each item + compile evidence)"
+    },
+    "proto_yaml": "UNCHANGED sha256 41ab797002568e89fcc9a9eaa58be4f1cdfce20b6406abd0fdbf2ad11f7f8949 (contract preserved)",
+    "kernel_test_untouched": "kernel 19e51e8d, test 02a44b79 -- Stage 1 wrote no implementation, as required",
+    "compile_evidence_credibility": "UPHELD. §13.6 records >=48 successful get_kernel_source() calls AND a negative result (refine.py single-loop variant failed with 'Undefined variable: z_ub' then 'Undefined variable: ztp' -> hardened into constraint N6/E-S1: alloc and use must share the same lexical `if` scope; refine3.py v3 form with the tail hoisted into `if TAIL>0:` + `if sid == S_TAIL:` succeeded). Reporting a failure is the hallmark of genuine execution.",
+    "orchestrator_ruling_on_flagged_item": {
+      "item": "§0.2 flagged for orchestrator/user confirmation: dispatch boundary TIGHTENED from the user's literal 'b_num >= 20 -> current path' to 'b_num > 10 -> current path' (S_cap = CUBE_CORE_NUM // b_num; S_cap < 2 -> current path)",
+      "ruling": "APPROVED",
+      "reasoning": "Theorem P2 (§5.8.3) proves that for b_num in [11,19], S=2 pushes grid = 2*b_num into [22,38] > 20 -> 2 waves, and '2 waves x half the blocks' performs EXACTLY the same total Sort work as '1 wave x all blocks' while adding one launch -> strictly slower. This is the same mechanism the user's own constraint-3 rationale cited for case15, just with the boundary at 10 instead of 20. The tightening is STRICTLY MORE CONSERVATIVE: it does not weaken the promise that b_num>=20 takes the byte-identical current path, it extends that promise to b_num in [11,19]. Approved as within orchestrator gate authority; disclosed to the user because it reduces the受益 case count from the 14 the orchestrator had estimated to 6.",
+      "consequence": "only 6/18 cases dispatch to the split path: {3,4,7,8,12,17}. The other 12 are byte-identical -> exactly 1.000x, zero regression by construction.",
+      "nailed_by": "L0 case C2 (B=22, b_num=11 -> current path) and C1 (B=20, b_num=10 -> split path); C3 (B=40, b_num=20) retained as the user's literal boundary check. The analyst correctly noted the orchestrator's suggested B=38/39/40/41 probes would have NO discriminating power under the tightened criterion."
+    },
+    "design_verdicts_on_orchestrator_preanalysis": {
+      "§3.1 naive split-merge not bitwise": "UPHELD. Additionally the analyst caught that Stage-3 round-1's [#3] note ('online-softmax cross-split merge is associative: m=max(m_c); s=Σ s_c·exp(m_c−m)') is mathematically true but NOT bitwise true in fp32 -> that round-1 'feasible' verdict is overturned under constraint 2 (recorded in DESIGN §10.4 item 1).",
+      "§3.2 4-pass decomposition": "PARTIALLY UPHELD. All four passes were independently verified bitwise-correct. BUT the orchestrator's claim that 4-pass 'completely bypasses the no-cross-core-reduction obstacle' was CORRECTED: it does not bypass it, it CONVERTS it into launch cost (Pass2/Pass4 are row-serial, so co-locating them with Pass1/Pass3 would need grid sync, which §2.5 proves Developer mode does not provide -> they must be separate kernels -> +2 launches). Answer to 'where do Pass2/Pass4 go' = OPTION D: make them unnecessary by not splitting the softmax scan at all. Quantified: A(4-pass) ~= 69us + 4L -> theoretical ~6x; D(rev3) ~= 135us + 2L -> ~3.1x. A is theoretically FASTER but D was chosen because D's m/s bitwise is CONSTRUCTIVE (code verbatim, zero floating-point argument) whereas A's rests on two exact-replay proofs; because a_launch is unmeasured and A bets 4 of them; and because D is a strict subset of A so it can be incrementally upgraded later while retreating from A to D would be a rewrite. A is recorded as an available post-landing increment.",
+      "§3.3 top-256 merge bitwise safe": "UPHELD mathematically (lemma L1 with proof). topk hardware determinism under equal values / -inf / merge-tree-shape change is flagged as U1, the SINGLE HIGHEST RISK, with a pre-budgeted fallback (concatenate S run_v_s into [S*K_MAX] and do one topk -> unique tree shape; UB ~120KB still < 196352, already budgeted) and an explicit [DESIGN_ERROR] exit if that also fails.",
+      "§3.4 K2g split": "FULLY UPHELD, plus lemma L2/L3 proofs. The analyst added a dependency the orchestrator missed: K2g's bitwise TransitIVELY depends on K1's tau being bitwise identical, so a U1 failure would break tau_out, valid, w_out AND tok_out simultaneously -- not just tau_out.",
+      "§2 quantified motivation": "UPHELD with two corrections: (i) K1 share ranges corrected to measured mask 80.1-94.7% / fused 51.8-76.5% (orchestrator said 91.5-96.5% / 46-79%; the orchestrator's mask lower bound was too high because case13 is only 80.1%, and the fused lower bound too low because the measured min is 51.78%); (ii) the wave-law absolute values vary ~5% between msprof runs (451.3/911.6 vs 419.47/835.72 vs 425.50/856.28) but ALL ratios stay in 2.00-2.02 -> conclusion robust.",
+      "§4/§5/§6 red lines, UB, safety net": "ALL VERIFIED, including reading common.h in BOTH the repo (src/tl_templates/ascend/common.h:1715-1758) and the wheel (.../site-packages/tilelang/src/tl_templates/ascend/common.h:1663-1707). Minor correction: the repeatTimes formula is at ascend_tile.py:647, not :646 as the orchestrator wrote. The K2g UB formula 36*BV+BV/8+484 was cross-validated (=148452, exact match) against the analyst's own measurement of K2gA=148420 (32 B difference from workspace scalar alignment)."
+    },
+    "expected_gain_MODEL_NOT_MEASURED": {
+      "fused_geomean": "1.15x-1.29x",
+      "mask_geomean": "1.11x-1.20x",
+      "max_single_case": "fused 3.5x-4.2x (case 7)",
+      "non_split_cases": "exactly 1.000x (12 of 18, byte-identical code -> zero regression by construction)",
+      "note": "LOWER than round-1's +30~50% geomean estimate because only 6/18 cases benefit under the tightened criterion. Sensitivity analysis over a_launch in [0,8] us proves zero regression across the whole range."
+    },
+    "unverified_items_declared": [
+      "U1 topk hardware determinism (HIGHEST, V-S1)",
+      "U2 a_launch never measured (V-S3, sensitivity-analysed)",
+      "U3 F(K_MAX=128) not separable from existing data (V-S8)",
+      "U4 real wave count for grid=b_num*S (V-S7)",
+      "U5 TopK arena reuse race (V-S5)",
+      "U6 torch.empty masking a missed write (F1+V-S5)"
+    ],
+    "reproducibility_gap": "the 4 probe scripts (r4_splitv_ub_probe.py, refine.py, refine3.py, perf_model.py) live in /tmp/opencode which is EPHEMERAL. They still exist now. Stage 2 must copy them into examples/R4/perf_tuning/rev3_probes/ before they are lost."
+  },
+  "stage2_rev3": {
+    "completed_at": "2026-10-11T06:41:58Z",
+    "mode": "first_impl",
+    "attempt_index": 1,
+    "result": "[PRECISION_PASS]",
+    "kernel_sha256_before": "19e51e8d8ee126b920cf48c915d863a9be3a349e2c68cf728d35d482b48bcc57",
+    "kernel_sha256_after": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+    "kernel_lines": "620 -> 1240",
+    "test_sha256_before": "02a44b79624e477c570c3c632fcdcef01dcf60041de3372a177aa947d53efb50",
+    "test_sha256_after": "cea988cbd117f23bb0bf50dbfe0c043dcb46cf4c0489d656b8073cc115265cb7",
+    "test_lines": "1481 -> 2410 (+862 / -3)",
+    "submission_copy_synced": true,
+    "architecture": "7 @tilelang.jit kernels = 3 frozen (r4_topk_stats L91-364, r4_mask_sample L367-412, r4_gumbel_sample L415-555) + 4 new (r4_topk_stats_splitA L648 grid=b_num*S, r4_topk_stats_splitB L737 grid=b_num, r4_gumbel_sample_splitA L964 grid=b_num*S, r4_gumbel_sample_splitB L1098 grid=b_num). Launch order K1A->K1B->K2gA->K2gB (mask: K1A->K1B->K2m). Host adds detect_cube_core_num() (runtime-probed 40//2=20, NOT hardcoded) + _r4_split_plan() implementing DESIGN §5.8.2 six steps incl. step-4 back-substitution shrink and the triple benefit guard.",
+    "U1_highest_risk_RESOLVED": "topk hardware determinism under a changed merge-tree shape CONFIRMED SAFE by measurement, via the §10.3 ladder: E1 (S=1,NBS=4 white-box degenerate) 10/10 -> A3 (S=4,NBS=1, -inf initial value squeezed exactly once) 10/10 -> D1 (B=4,V=152064,S=10,grid_A=20, load [4x9,2], S_TAIL=9) 10/10. D1's w_out is 4x152064 = 608256 elements ALL bitwise equal (torch.equal on view(int32)). The §14.6 fallback (single topk over [S*K_MAX]) was NOT needed; K1B keeps the designed `for s in T.serial(S)` per-split merge.",
+    "orchestrator_verification": {
+      "verified_at": "2026-10-11T06:41:58Z",
+      "structural": "kernel a764e117..., test cea988cb..., proto.yaml UNCHANGED 41ab7970 (mtime Oct 7), cases.yaml UNTOUCHED (mtime Oct 9), submission copy `cmp` IDENTICAL to the main kernel, backups history_version/*_impl_s2r3_attempt1_base.py present with the exact required sha256",
+      "frozen_kernels": "ORCHESTRATOR independently re-extracted all 3 frozen function regions by AST (decorator line -> end_lineno) from BOTH the backup and the current file: r4_topk_stats L91-364 / r4_mask_sample L367-412 / r4_gumbel_sample L415-555 -> ALL 3 BYTE-IDENTICAL, line numbers did not drift (all new code inserted after L555). The round-2 #4 removal of the UB->UB hop did NOT resurrect.",
+      "gates_all_rerun_by_orchestrator": {
+        "static": "exit 0, 38 STATIC_PASS/0 FAIL",
+        "all": "exit 0, 143 PRECISION_PASS/0 FAIL, 56 BOUNDARY_PASS/6 WARN, 38 STATIC_PASS/0 FAIL",
+        "stability": "exit 0, 21 PASS/0 FAIL, 8 ADV all dropped=0, 4 split-path configs present",
+        "stress": "exit 0, 12/12 PASS all selfdiff=0 goldenfail=0 invariant=0",
+        "coverage": "exit 0, 25 PASS/0 MISS/0 N/A"
+      },
+      "no_regression_proof": "set-diff of case names between the round-2 gate_all.log and the new one: BOUNDARY_PASS 38->52 LOST=0; PRECISION_PASS 66->119 LOST=0. Every pre-existing case still passes; all growth is additive.",
+      "boundary_warn_attribution_UPHELD": "the 6 BOUNDARY_WARN come from 3 NEWLY-ADDED V-S4 case names (bnd_split0_all_neginf, bnd_split0to4_all_neginf, bnd_splitmid_all_neginf) x 2 tasks. Orchestrator confirmed these 3 names are ABSENT from the pre-rev3 log -> the 0->6 WARN change is caused purely by new probes, not by a regression. Each WARN carries tier2_bitwise=5/5 plus a paired [BOUNDARY_PASS] rev3-invariants entry asserting dual_path_bitwise=5/5 AND guard_degrade on BOTH paths AND s_out_is_nan on BOTH paths. Since the orchestrator independently proved r4_topk_stats is byte-identical, the 'pre-existing defect' attribution is STRUCTURALLY guaranteed, not merely asserted.",
+      "conclusion": "Stage 2 gate PASS. L0/L1 all green (143/0), coverage 25/0/0. Per protocol the 6 L2/Boundary WARNs are recorded and do NOT block."
+    },
+    "newly_discovered_PREEXISTING_defect": {
+      "id": "rev2-pre-existing, discovered by rev3's new V-S4 probes, NOT a rev3 regression",
+      "symptom": "when the FIRST whole BV-block of a row is entirely -inf: m_run=-inf and m_blk=-inf -> tmp = m_run - m_old = -inf - (-inf) = NaN -> s_run *= exp(NaN) is permanently poisoned -> q2=NaN -> prefix=NaN -> tau_p freezes at run_v[0], okp=0 -> valid=0. m_out/tau_out stay finite; only s_out is NaN.",
+      "trigger_reachability": "REACHABLE IN PRODUCTION: any row whose first BV (=4096, or 2048) logits are all -inf, e.g. heavy prefix masking in LLM decoding. Not an exotic synthetic-only input.",
+      "safety": "DEGRADES SAFELY -- valid=0 fires D-GUARD, so the host falls back to torch. It never silently returns a wrong token or wrong probabilities.",
+      "why_not_fixed": "fixing it would simultaneously violate user hard-constraint 3 (the 3 kernels must stay byte-identical) and hard-constraint 2 (K1B's softmax must be verbatim identical to the current kernel -- that verbatim identity IS the constructive basis of the m/s bitwise proof). The developer correctly declined to fix it inside rev3 and escalated instead.",
+      "orchestrator_ruling": "OUT OF SCOPE for this cycle. Recorded in pending_work as a separate item requiring explicit user authorisation, because the fix changes m/s bit patterns and would require redefining the Tier-2 bitwise criterion's applicability.",
+      "design_doc_correction": "DESIGN §9.3 / §14.3(iii) predicted 'cross-split merge under -inf is safe'. MEASURED: the merge IS safe, but the design did not anticipate that the NaN originates in the ONLINE-SOFTMAX RESCALING, not in the merge. Since that code is copied verbatim, both paths behave identically."
+    },
+    "design_4_5_correction": "Stage 1 probed only 3 K1B shapes. The developer's 24-shape full sweep found K1B's true worst case is case6 (TAIL=2048) = 104100 B, because K1B retains the tail buffers zt/et/mt=[1,TAIL]x3 (24576 B). On case17 the developer measured 89444 (NEED_MIN_P=False) / 89508 (True), matching the design value -> the FORMULA is correct, only the worst-case-shape label was not global. 104100 is still << 196352, and case6 is rejected by the guard so it never takes the split path.",
+    "block_num_gate": "updated per DESIGN §15.3.1 in perf_tuning/round2_item4/k1_split.py (the only R4-side implementation). Expected values are now DERIVED FROM _r4_split_plan imported from the delivered kernel (single source of truth). The old code silently discarded split-path steps via `if len(seq)!=2: bad+=1; continue` (48/144 steps = 1/3 of the data) while still reporting normal. New gate additionally asserts per-step Block Num sums equal the plan and that each split-parallel kernel's Block Num <= CUBE_CORE_NUM (runtime verification of Theorem P2). Dry run 18 cases x 2 tasks: mask/fused 6/18 split each; case7 fused = [20,2,20,2]; case17 mask = [16,8,8]; P2 all OK with the tightest point being case7's split-parallel Block Num = 20 == CUBE_CORE_NUM (exactly one full wave). NOTE: bench/hap_thw_model/gates_report.py does NOT contain a Block Num check (grep empty), confirming the Stage-1 information gap; the harness-side gate is read-only and owned by another agent, so it was NOT modified -- the deviation is documented in two READMEs instead.",
+    "ruff": "test_r4_fused_sampling.py and k1_split.py: All checks passed. r4_fused_sampling.py: exactly 1 PRE-EXISTING F841 (unused AT1 at :442, inside the FROZEN r4_gumbel_sample, a round-1 [#2] leftover) which cannot be touched under hard-constraint 3. Zero new ruff errors.",
+    "artifacts": [
+      "perf_tuning/rev3_probes/ (4 Stage-1 probes rescued from the ephemeral /tmp/opencode)",
+      "perf_tuning/rev3_probes/stage2/ (static_gate.py+log+json, u1_attack.py+u1_d1.log, vs4_rootcause.py, verify_frozen.py, precheck_l1.py, submission_smoke.py, baseline_all.log = the PRE-change baseline actually re-run on a pristine copy in an isolated dir, plus all post-change gate logs)",
+      "debug_log.md appended 531 -> 806 lines"
+    ],
+    "not_measured_this_stage": [
+      "cann-bench 36/36 end-to-end mismatch_count (DESIGN §11.4 step 11 belongs to Stage 3)",
+      "ANY performance number -- a_launch (U2/V-S3) is still unmeasured and the guard still uses the conservative default 8.0us, NOT relaxed",
+      "case8 (K_MAX=128) benefit (U3/V-S8): correctness PROVEN (A4/L1 Tier-1+Tier-2, UB 45056/40036) but benefit untested; fallback if Stage 3 measures >3% regression is to add `and K_MAX == 256` to the guard",
+      "msprof runtime Block Num readings (U4/V-S7): static side proven, and the assertion is now built into the updated k1_split.py so Stage 3 verifies it automatically",
+      "U5 arena race: strong indirect evidence only (poison x200 reps x4 split configs all selfdiff=0); no isolated arena experiment"
+    ]
+  },
+  "stage3_round3": {
+    "closed_at": "2026-10-11T08:22:23Z",
+    "charter": "VERIFICATION round -- measure rev3 split-V for the first time and close the 5 items Stage 2 left unmeasured. No new optimisation was sought and none was applied (kernel sha256 unchanged).",
+    "result": "[PERF_DONE]",
+    "kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117 (UNCHANGED before==after)",
+    "ab_design": "same-session 3 arms: base1(19e51e8d) -> cand(a764e117) -> base2(19e51e8d, identical code = pure drift control). 6 evals, all EXIT_CODE=0. msprof only, no Python/torch timing.",
+    "measured_drift": "fused -0.324%, mask -0.036%; single-case extremes +1.099%/-2.436% (consistent with round 2's 0.3-1.7%)",
+    "SCORED_device_time": {
+      "geomean_36case": "1.2309x (+23.09%)",
+      "fused_all18": "1.2796x",
+      "mask_all18": "1.1840x",
+      "split6_fused": "2.0624x",
+      "split6_mask": "1.6435x",
+      "non_split12_fused": "1.0079x",
+      "non_split12_mask": "1.0050x (= drift; 0 of 24 outside +/-3%)",
+      "case7_fused": "728.42 -> 179.06 us = 4.068x (orchestrator recompute from raw CSV: 728.72 -> 179.77 = 4.054x)",
+      "case7_mask": "461.14 -> 172.86 us = 2.668x",
+      "worst_single_case_regression": "fused +0.107% / mask +0.433%; cases regressing >3% = 0 of 36",
+      "cann_bench_score": "fused 59.2116 -> 60.7629 (+2.620%); mask 58.4226 -> 59.2498 (+1.416%)",
+      "model_verdict": "DESIGN §12.4 bands VALIDATED: fused 1.2796 inside [1.151,1.292] (upper half); mask 1.1840 inside [1.107,1.196] (upper half); case7 fused 4.068 inside [3.52,4.15]. Both geomeans sitting in the upper half is consistent with true a_launch ~= 0 rather than the assumed 3.0us.",
+      "model_constant_FALSIFIED": "§12.2's F(256)=21.63us/row is NOT b_num-independent. case4 measured K1B=18.94us which is LESS than F alone, while case3 (differing only in b_num 4 vs 2) is 32.94us. The same 14us gap exists in the BASE arm (K1 65.62 vs 51.28) -> pre-existing, not a rev3 artefact. Effect: per-case absolute predictions unreliable for small-n_blk split cases (case4 off +34.6%), though the geomean bands held. t(4096,256)=8.902us/block CONFIRMED (10.61/10.18/9.68 per block on cases 7/12/17).",
+      "orchestrator_independent_recompute": "DONE from the 6 raw eval JSONs. Reproduced EXACTLY: fused 1.2796x, mask 1.1840x, 36-case 1.2309x, split6 2.0624x/1.6435x, non-split12 1.0079x/1.0050x, worst regression +0.107%/+0.433%, 0 cases >3%. Also recomputed per-step scored/span directly from the raw kernel_details.csv (median over each case's 8 steps) and reproduced the SPAN table."
+    },
+    "cann_bench_correctness_ORCHESTRATOR_VERIFIED": "36/36 accuracy.passed=True on the candidate (fused_cand 20261011_150635 + mask_cand _150836), and 180/180 output tensors (m_out,s_out,tau_out,valid,w_out,tok_out across 36 cases) have mismatch_count==0 with WORST max_abs_diff = 0.0 -> i.e. BITWISE identical to golden at the harness level, independently corroborating the Tier-2 bitwise claim. Threshold 2^-13. All 4 base arms also 18/18.",
+    "gates_report": "GATE 1-4 ALL PASS exit 0 (GATE1 softmax 20/20 + arg_max 20/20; GATE2 36/36 all vector-bound; GATE3 ordering; GATE4 intensity+achieved-fraction). t_hw NOT re-derived per §15.3.2 -- the only change is +S merges = +0.15% on case7, far inside GATE1 tolerance, and GATE1 reproduced the published values exactly, confirming that decision.",
+    "precision_gates_rerun": "5/5 exit 0 with counts IDENTICAL to the orchestrator's own Stage-2 verification: static 38/0, all 143 PRECISION_PASS/0 FAIL + 56 BOUNDARY_PASS/6 WARN + 38 STATIC, stability 21/0 (STAB_split=4 ADV_split=4, 8 ADV dropped=0), stress 12/12 all-zero, coverage 25/0/0. grep -cE '_FAIL]' == 0 in all four logs; sha256 stable before/after gates.",
+    "closed_items": {
+      "U2_V-S3_a_launch": "CLOSED. E1 model-free: K2gB (UB=132B, folds <=10 partials/row) measures 1.540(min)/2.840(median)/3.100(max) us -> a_launch < 1.540us, conservative planning value <=3.100us = 38.8% of the shipped 8.0us default. E2 LS fit intercept -0.050us (~0), max resid 0.128us. E3 (§12.4 residual) honestly REJECTED: 24 residuals span +0.206..+14.702us with 8 negative, same F mis-attribution. Measured [0,3.1]us lies entirely inside §12.4's [0,8]us zero-regression band, empirically confirmed by 0 of 36 regressing >3%. ==> THE GUARD IS 5.2x OVER-CONSERVATIVE.",
+      "U3_V-S8_case8": "CLOSED, KEEP. fused 91.22/91.26 -> 43.04us = 2.119x (-52.82%); mask 59.94/59.76 -> 37.88us = 1.582x (-36.80%); mismatch=0; the two base passes agree to 0.04% so this is far outside drift. preauthorised_retreat_used=FALSE -- `and K_MAX==256` was NOT added, kernel sha256 unchanged. §12.4 warning 3 (R-F128 'prediction is optimistic') is FALSIFIED: mask matches (+0.8%), fused exceeds (+13.3%); case8 is the 2nd-best fused split case after case7. R-F128 can be downgraded.",
+      "U4_V-S7_block_num": "CLOSED. All 6 CSVs: steps_attributed=144, anomaly_rows=0, P2 PASS, Block Num PASS -> 864/864 steps clean. case7 fused = [20,2,20,2] read FROM msprof, matching Stage 2's dry-run element-for-element; the tightest point is exactly 20 == CUBE_CORE_NUM (one full wave). Theorem P2 holds at runtime with zero violations. Full table: case3 [16,4,16,4]/[16,4,4]; case4 [8,2,8,2]/[8,2,2]; case7 [20,2,20,2]/[20,2,2]; case8 [16,2,16,2]/[16,2,2]; case12 [16,8,16,8]/[16,8,8]; case17 [16,8,16,8]/[16,8,8].",
+      "step11_cann_bench": "CLOSED, see cann_bench_correctness_ORCHESTRATOR_VERIFIED",
+      "GATE_1_4": "CLOSED, all PASS"
+    },
+    "jit_compile_cost": "23 new distinct specializations for the 4 rev3 split kernels (24 invocations; K2gB(16,2) shared by cases 12/17); 117.16s total cold against a fresh empty cache dir, mean 5.09s, min 4.49/max 6.00; per kernel K1A 30.05s, K1B 34.23s, K2gA 30.32s, K2gB 22.56s. Warm 0.02-0.13s. SINGLE-SOURCED and EXCLUDED from all performance figures. Eval wall clock base1 123s / cand 124s / base2 125s -> cand not slower wall-clock, both arms warm.",
+    "roofline_attainment": "same t_hw both arms. fused all-18 2.1961% -> 2.8101%, split-6 1.3612% -> 2.8073%; mask all-18 1.9493% -> 2.3080%, split-6 1.0803% -> 1.7754%. Headline: fused case7 0.672% -> 2.733%. MANDATORY CAVEAT: rev3 reads logits TWICE while published t_hw charges once (unique-bytes convention). Computed not hand-waved: fused 0/6 split cases affected (2*t_read < t_vector everywhere; case7 2x1.2672=2.5344 < 4.8946) -> fused figures UNBIASED. mask 3/6 affected (cases 7,12,17) because mask intensity is only ~2.57 ops/byte, already below the 3.125 ridge point with vec/read margin 1.062x, so charging the reload flips them to READ-bound: case7 t_hw 1.3464->2.5345 (1.882x), attain 0.779%->1.466%; case12 1.1676->2.1847, 1.579%->2.955%; case17 5.3964->10.1587, 1.679%->3.162%. Any published mask split-case attainment MUST carry this note.",
+    "guard_relaxation_RECOMMENDED_NOT_IMPLEMENTED": {
+      "mechanism": "_SPLIT_A_LAUNCH_US is read only inside the cost guard AFTER S/NBS/S_TAIL are derived -> it flips a boolean, never a geometry.",
+      "scan": "self-checked to reproduce the delivered _r4_split_plan 18/18 exactly. 8.0 -> 6 cases; 4.0 -> 6; 3.20 -> +case11; <=2.74 -> +case6,+case11 then saturates at 8. The other 10 are STRUCTURALLY blocked (S_cap=0 for cases 9/15/16/18; S_cap=1 case14; n_blk_total=1 cases 1/2/10; n_blk_full<2 cases 5/13) -> unreachable at any a_launch.",
+      "measured_benefit_not_modelled": "in-process monkey-patch with the delivered sha256 verified unchanged: case6 fused 61.380->42.500us = 1.4442x (Block Num [12,4,12,4], bitwise 5/5 EQUAL); case6 mask 38.980->29.780 = 1.3089x ([12,4,4], 5/5); case11 fused 46.920->37.600 = 1.2479x ([8,4,8,4], 5/5); case11 mask 31.520->27.320 = 1.1537x ([8,4,4], 5/5).",
+      "projected": "fused 1.2796 -> 1.3222x, mask 1.1840 -> 1.2114x, 36-case 1.2309 -> 1.2656x (+2.82%)",
+      "risk": "low -- both geometries are ALREADY compiled and statically asserted clean in the Stage-2 gate (cb6 K1A UB 106496/196352, cb11 90112/196352, padCount_ALL0=True, all32B=True, dynamic=[], FAILURES: 0)",
+      "blocked_on": "Orchestrator approval + a same-commit update of 4 stale expect_use_split test-table fields (84 shape-bearing entries scanned) + full gate/A-B re-run + runtime split coverage for those shapes"
+    },
+    "artifacts": [
+      "perf_tuning/baseline_round3.json",
+      "perf_tuning/optimization_log_round3.md",
+      "perf_tuning/final_report_round3.md",
+      "perf_tuning/perf_log.md (§round3-VERIFY)",
+      "perf_tuning/round3_splitv_perf/ (67 files: 6 eval logs, ab_3pass_comparison.{json,txt}, span_vs_scored.{json,txt}, a_launch_analysis.{json,txt}, followups_analysis.{json,txt}, analyze_span.py, analyze_a_launch.py, cmp_round3.py, build_baseline_round3.py, csv_manifest.txt, env_r4.sh, 5 gate logs + gate_exits.txt + gate_sha256_before/after.txt, gates_report_round3.log, probe_guard_relax.py)"
+    ],
+    "CRITICAL_SPAN_FINDING": {
+      "severity": "HIGH -- unresolved, changes the value judgement on rev3",
+      "finding": "rev3's device-time win does NOT carry to eager-mode wall clock. SPAN geomean = 0.7443x (fused) / 0.8005x (mask), and 0.3831x / 0.4387x on the 6 split cases. case7 fused: SCORED 728.42 -> 179.06us (4.068x BETTER) but SPAN 732.00 -> 1360.25us (1.86x WORSE).",
+      "orchestrator_independent_verification": {
+        "verdict": "STRUCTURALLY CONFIRMED, and it is NOT a profiler artefact",
+        "launch_counts_from_raw_csv": "base1_fused 288 main_kernel rows / 144 steps = 2 per step; cand_fused 384 / 144 = 48 steps x 4 + 96 steps x 2 -> exactly matches 6 split cases (4 launches: K1A,K1B,K2gA,K2gB) + 12 non-split (2 launches). mask cand = 3 launches on split cases (K1A,K1B,K2m).",
+        "cache_clean_excluded": "the harness's _Z19CannBenchCacheClean kernel (144 rows, one per step) runs FIRST in each step, BEFORE the main_kernels -- it does NOT sit between launches, so the orchestrator's main_kernel-only span computation is not polluted by it.",
+        "mechanism_proven_from_per_step_timeline": "step 0 (case1, K1 SHORT 24.48us) -> gap between the two main_kernels = 458.75us. step 48 (case7, K1 LONG 425.06us) -> gap = 3.00us. So when a kernel runs long the host queues the next launch asynchronously and the gap collapses to ~3us; when kernels are short the ~350-460us host submission latency is fully exposed.",
+        "pre_existing_proof": "the BASE arm already pays this: gap_b ~309-428us on all 13 fused cases whose first kernel is shorter than the overhead, vs gap_b 2.8-17.2us on cases 7/15/16/17/18 where K1 alone runs 390-860us. rev3 did not create the overhead, it UNMASKED it by turning 1-2 long kernels into 3-4 short ones.",
+        "no_kernel_got_slower": "case7 fused K1 side 3.046x faster, K2g side 7.690x faster. This is host-side software overhead, not a device regression. Score, roofline attainment and core utilisation (4/40 -> 40/40 AIV) are all device-side and all improve."
+      },
+      "not_root_cause": "the ~360-460us per-launch host gap is behaviourally characterised but NOT attributed (Python wrapper vs tensor allocation vs ACL launch vs msprof instrumentation). ~370us/launch is 1-2 orders of magnitude above a typical ACL launch (~10-30us), so attribution matters before drawing deployment conclusions.",
+      "scale_of_the_opportunity": "INDEPENDENT OF rev3 this is the single largest remaining lever: case13 fused has SCORED 23.84us but SPAN 416.75us -> 94% of wall clock is host overhead. Reducing it would benefit ALL 18 cases in BOTH arms, far more than any further kernel optimisation.",
+      "mitigation_proposed_UNVERIFIED": "ACL graph capture (the rev3 dispatch is pure host int arithmetic precisely to stay capturable, DESIGN §5.6). NO capture measurement was taken. This measurement also gates the DESIGN §16.2 option-A decision: a_launch<1.54us REMOVES the main argument against option A (4-pass, theoretical ~6x vs D's ~3.1x, and A's ~69us+4L would be ~75us), while ~360us/launch eager-mode host cost is a NEW argument against adding 2 more launches. THE TWO POINT IN OPPOSITE DIRECTIONS AND CANNOT BE ADJUDICATED WITHOUT THE CAPTURE MEASUREMENT."
+    },
+    "orchestrator_rulings": {
+      "ruled_at": "2026-10-11T08:25:02Z",
+      "rev3_disposition": "KEEP. User decision 2026-10-11. Rationale accepted: device time is the cann-bench scoring contract (score fused 59.2116->60.7629, mask 58.4226->59.2498), core utilisation goes 4/40 -> 40/40 AIV, roofline attainment case7 0.672%->2.733%, and 180/180 output tensors are bitwise identical (max_abs_diff=0.0). The eager-mode SPAN regression is recorded as a KNOWN DEFECT and must be prominently disclosed, not buried.",
+      "next_items_approved": [
+        "(B) root-cause the ~350-460us/launch host overhead",
+        "(A) relax the split guard (measured +2.82% on the 36-case geomean)"
+      ],
+      "ordering_rationale": "ORCHESTRATOR reordered to B -> A (user listed A first). B's outcome changes A's judgement: if the ~370us is harness-side or msprof instrumentation, the SPAN concern evaporates and A is unambiguous; if it is our own host wrapper, then A moves cases 6 and 11 from 2 launches to 4 and their SPAN degrades further, which may need a配套 mitigation. B is read-only and cheap, so it goes first.",
+      "span_regression_status": "ACCEPTED AS A KNOWN DEFECT of rev3, disclosed. Not a reason to roll back per the user's ruling. Mitigation path = ACL graph capture (unmeasured) or reducing the host overhead (item B)."
+    },
+    "itemA_guard_relaxation": {
+      "closed_at": "2026-10-13T02:35:19Z",
+      "result": "[ITEM_A_DONE] ADOPTED",
+      "change": "_SPLIT_A_LAUNCH_US 8.0 (Stage-2 conservative placeholder, never measured) -> 1.540 (E1 model-free measured lower bound = min of K2gB's msprof Duration over the 6 split fused cases). _SPLIT_SAFETY=1.5 untouched. Kernel diff = EXACTLY 1 hunk, +41/-1, the only non-comment line being the constant itself.",
+      "kernel_sha256_before": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+      "kernel_sha256_after": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+      "test_sha256_after": "dc69ad6fa452dacd548ede486085802520bde8aea7e1fe3311f3d08562732094",
+      "value_choice_rationale": "1.540 chosen over 3.100 (E1 max -- but > case6's 3.013 threshold so case6 would NOT flip, defeating the purpose), 2.840 (E1 median -- includes folding work so not a pure launch), 2.74 (a scan grid point with no independent measurement meaning), and 0.0/-0.050 (the LS intercept; §3 itself calls that fit a thin extrapolation, and 0 would delete launch accounting from the guard). 1.540 is a DIRECTLY MEASURED quantity and, because K2gB still does non-zero folding work, the true launch floor is strictly BELOW it -> it remains a conservative upper bound, so pred_cost stays over-estimated and the guard still errs toward not splitting. Threshold analysis: case11 flips below 3.987, case6 below 3.013, and the admitted set saturates at 8 for any a <= 3.01 -> 1.540 is not a knife-edge value.",
+      "ORCHESTRATOR_STRUCTURAL_VERIFICATION": {
+        "verified_at": "2026-10-13T02:35:19Z",
+        "dispatch_recomputed": "orchestrator imported the delivered module and ran _r4_split_plan for all 18 contract shapes at BOTH guard values. Flipped to split = EXACTLY [6, 11]. Admitted split set at a=1.540 = {3,4,6,7,8,11,12,17} (8 cases). The other 10 are structurally unreachable: cases 9/15/16/18 S_cap=0, case14 S_cap=1, cases 1/2/10 n_blk_total=1, cases 5/13 n_blk_full<2.",
+        "case13_arbitration_SETTLED_STRUCTURALLY": "the single-sample A/B flagged case13 mask at +4.24% and the subagent's own cmp_itemA.py therefore printed criterion2=FAIL / DO NOT ADOPT (that raw record was preserved unaltered, good practice). The subagent arbitrated it statistically (pooled 5 base + 4 cand harness samples -> median 14.70 vs 14.88 = +1.224%, distributions overlap; interleaved null probes show a 5.18% pure-noise envelope). THE ORCHESTRATOR VERIFIED IT STRUCTURALLY INSTEAD, WHICH IS STRONGER: _r4_split_plan(6,2304,128,2048) returns (False,2,1,1) at a=8.0 AND at a=1.540 -> case13 takes the CURRENT path in both arms -> its generated code is byte-identical -> any measured delta IS noise by construction, no statistics required. arbitrate_case13.json independently records the same structural fact.",
+        "noise_floor_context": "the same-code drift control (base2 vs base1) itself moved up to 2.385% on individual cases, i.e. the 3% threshold sits at or below the harness's per-case noise floor for the smallest cases (case13 = 14.7us). This is why the orchestrator set the adoption criterion at the per-case level for the 2 changed cases rather than on the diluted 36-case geomean.",
+        "diff_and_frozen": "kernel diff = 1 hunk, only non-comment change is the constant. The 3 frozen kernels re-extracted by AST from backup vs delivered: r4_topk_stats L91-364, r4_mask_sample L367-412, r4_gumbel_sample L415-555 -> ALL IDENTICAL, sha256 prefixes 542544451a9e96ba / 322bd6c1dabc058d / a8de623ceb8d4bd0, matching the orchestrator's own Stage-2 verification exactly.",
+        "gates_all_rerun_by_orchestrator_on_delivered_state": {
+          "static": "exit 0, 48 STATIC_PASS/0 FAIL (up from 38; the two new geometries cb6_S3_NBS1_STAIL2 K1A 106496 / K1B 104100 and cb11_S2_NBS1_aligned K2gA 148420 / K2gB 132 are now INSIDE the delivered gate)",
+          "all": "exit 0, 151 PRECISION_PASS/0 FAIL (up from 143), 56 BOUNDARY_PASS/6 WARN (the SAME 6 pre-existing V-S4 -inf probes, no new ones), 48 STATIC_PASS, 205 BITWISE lines, grep -cE '_FAIL]' == 0",
+          "stability": "exit 0, 25 PASS/0 FAIL (up from 21), 8 ADV all dropped=0, 4 split-path configs",
+          "stress": "exit 0, 16/16 PASS (up from 12) all selfdiff=0 goldenfail=0 invariant=0",
+          "coverage": "exit 0, 25 PASS/0 MISS/0 N/A (unchanged)"
+        },
+        "conclusion": "Item A VERIFIED and ADOPTED. All 6 adoption criteria met."
+      },
+      "measured_gains_per_case": {
+        "case6_fused": "78.000 -> 58.500us = 1.3333x (-25.00%), drift +0.00%",
+        "case6_mask": "55.160 -> 44.560us = 1.2379x (-19.22%), drift +0.54%",
+        "case11_fused": "62.740 -> 54.160us = 1.1584x (-13.68%), drift +0.35%",
+        "case11_mask": "47.160 -> 43.360us = 1.0876x (-8.06%), drift +0.17%",
+        "cross_checks": "independent interleaved probe 1.4366/1.3167/1.2350/1.1272x and the round-3 monkey-patch probe 1.4442/1.3089/1.2479/1.1537x agree in direction and magnitude",
+        "runtime_block_num_confirms_split": "cb6 fused [4,4]->[12,4,12,4], cb11 fused [4,4]->[8,4,8,4]; all 6 CSVs Block Num == plan PASS, P2 PASS, anomaly_rows=0; base arm split=6/current=12 -> cand arm split=8/current=10"
+      },
+      "geomean": {
+        "cand_over_base1_same_session": {
+          "combined": 1.017,
+          "fused": 1.0227,
+          "mask": 1.0113
+        },
+        "composed_vs_pre_rev3": {
+          "combined": 1.2518,
+          "fused": 1.3086,
+          "mask": 1.1974,
+          "note": "COMPOSED from the measured cand/base1 ratio times round-3's measured anchor; the pre-rev3 arm was NOT re-run in item A, so this is a composition, not a same-session measurement"
+        },
+        "cann_bench_score": {
+          "fused": "60.7416 -> 60.8588",
+          "mask": "59.2318 -> 59.2894"
+        }
+      },
+      "CUMULATIVE_vs_raw_torch_ORCHESTRATOR_RECOMPUTED": {
+        "fused": {
+          "pre_stage3_bbe47fa4": 6.72,
+          "round1_ac8eba47": 10.35,
+          "final_c59a83bc": 13.51,
+          "cumulative_factor": 2.01,
+          "cumulative_pct": 101.0,
+          "min": 6.21,
+          "median": 14.13,
+          "max": 18.09
+        },
+        "mask": {
+          "pre_stage3_bbe47fa4": 11.01,
+          "round1_ac8eba47": 15.69,
+          "final_c59a83bc": 18.696,
+          "cumulative_factor": 1.698,
+          "cumulative_pct": 69.8,
+          "min": 6.34,
+          "median": 20.01,
+          "max": 54.37
+        },
+        "source": "computed by the orchestrator from cann_performance_eval_20261012_194528.json (fused cand) and _194726.json (mask cand) over bench/metadata_staging/baseline_raw_910b2_18cases.json"
+      },
+      "accuracy": "cann-bench 36/36 accuracy.passed, 180/180 output tensors mismatch_count=0, worst max_abs_diff=0.0; additionally re-checked on 9 pooled mask arms (each 18/18, 90/90, mismatch 0)",
+      "test_file_changes": "+2 REV3_L1_CASES (Tier-1 tolerance + Tier-2 dual-path bitwise, expect_split=True, blocking=True so a guard regression fails loudly); +4 STAB_CASES (20 reps bitwise + 200 reps UB poison); +2 _REV3_STATIC_SHAPES (cb6/cb11 moved from an out-of-band Stage-2 probe INTO the delivered gate, 38->48); 4 stale expect_use_split tags updated (l1_tailmid_V, l1b_tailmid_V, stab_B7_V4409_bv2048_gumbel, stab_B5_V10240_gumbel) with names and all shape/param fields byte-identical and only the tag list growing; 3 now-false comments corrected in place. AST-level proof of zero weakening: 52 functions before and after with 0 deletions, the only changed body (test_r4_rev3_l1) is executable-identical after stripping its docstring, 9 tables with 0 entries dropped / 0 non-tag field changes / 0 tag reductions, check_precision's body byte-identical, REV3_FROZEN_SHA256 / REV3_UB_LIMIT / STAB_REPS / COVERAGE_NA unchanged.",
+      "SPAN_consequence_disclosed": "case6/11 launch count 2->4 (fused) / 2->3 (mask). SCORED improves (1.3333/1.1584/1.2379/1.0876x) but SPAN lengthens under EVERY deployment assumption: case6 fused 0.3772x (bare H=200.51) / 0.3537x (guards 433.91) / 0.3510x (+msprof 499.64) / 0.9012x (ACL graph); case11 fused 0.3626/0.3469/0.3451/0.8075; case6 mask 0.5072/0.5034/0.5029/0.9450; case11 mask 0.5026/0.5012/0.5010/0.8671. NOTE this is WORSE than the split-6 picture: case6/11 have the SMALLEST device gain of all split cases (19.50/8.58us measured) while the graph-mode device-timeline residual for +2 launches (~31.2us) EXCEEDS the 19.50us saving -> 0.90x/0.81x even under graph. The two 'graph' figures use different metrics and are both correct: 2.8-6.6us is HOST CPU per-launch under replay, 15.588us is the DEVICE-TIMELINE residual needed by the SPAN recursion (attribution_report.md L268 distinguishes them). Not a rejection reason per the user's ruling, but case6/11 are the two split cases MOST sensitive to launch count.",
+      "jit": "17 new distinct specializations (K1A x4 / K1B x5 / K2gA x4 / K2gB x4), 87.15s total cold, mean 5.13s/spec, warm 0.0s. LARGER than §3.1's wording implied: that section's 'no new specialization geometries' is correct for the 18 CONTRACT cases (18/18 geometries re-verified unchanged), but the contract side still adds 8 compile jobs and the 4 flipped test-table entries add 12 more, 17 after dedup. Excluded from all timing windows.",
+      "artifacts": [
+        "perf_tuning/round3_itemA_guard/ (138 files: cmp_itemA.{py,json,log}, cmp_itemA_single_sample_1run.log (the preserved original FAIL record), arbitrate_case13.{py,json,log}, csv_manifest_itemA.txt, 12+ eval logs, cold_compile_itemA.{json,log}, backup_sha256.txt, ab_*.sh)",
+        "perf_tuning/optimization_log_round3.md §13",
+        "perf_tuning/perf_log.md entry 9",
+        "perf_tuning/baseline_iter3.json"
+      ],
+      "unverified": [
+        "criterion 2 rests on arbitration plus the orchestrator's structural proof, not on a clean single-sample pass; the original FAIL record is deliberately preserved",
+        "the fused task got no repeated sampling (the flagged pair was on the mask side); case13 fused has 1 harness sample (+0.86%) plus a null probe (-2.02%)",
+        "the pre-rev3 anchor was not re-measured, so 1.2518x is a COMPOSED value",
+        "all SPAN figures are model estimates (the cand arm's split span has no direct anchor; +/-7.6% from V2; the graph residual 15.588us/launch came from only 4 samples and was extrapolated)",
+        "stab_B5_V10240_gumbel lost its current-path control role (coverage counts unaffected, but the suite no longer has a 32B-aligned-tail current-path stability control); restoring it needs another table entry and thus authorisation",
+        "two non-contract geometries are now exercised at runtime: (BV=2048,K_MAX=256)@S=3 and (5,10240,...)@S=3. Both pass 20 bitwise reps + 200 poison reps so they are VERIFIED, but their pred_saving is an estimate, not a calibrated value (the contract calibrations are (4096,256) and (2048,128))",
+        "a_launch remains an upper bound, not an isolated measurement (no probe measured a bare ACL launch alone); the direction is conservative so it is safe",
+        "gates_report.py GATE 1-4 and the §7.1 roofline table were NOT re-run after item A: case6/11 changed from a vector-bound single kernel to split-kernel attribution, so that table no longer describes the delivered dispatch",
+        "1 pre-existing ruff F841 at r4_fused_sampling.py:442 sits INSIDE a frozen kernel and was deliberately left per prohibition 2"
+      ]
+    }
+  },
+  "host_overhead_investigation": {
+    "closed_at": "2026-10-12T10:48:01Z",
+    "result": "[HOST_OVERHEAD_ROOT_CAUSED]",
+    "read_only": true,
+    "kernel_sha256_unchanged": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+    "one_line_root_cause": "the ~370-500us/launch host cost is NEITHER R4-specific NOR our wrapper: it is dominated by (a) the cann-bench harness per-call guard stack (233.40us/launch) and (b) framework-level tilelang dispatch (single largest primitive Analyzer() = 122.603us median, n=500), with msprof instrumentation adding a further 65.73us/launch.",
+    "attribution_per_launch_us": {
+      "C1_msprof_instrumentation": {
+        "us": 65.73,
+        "pct_of_L5": "13.2%",
+        "source": "probe3 L5-L3; cross-checked by probe1 _c1_isolation (+58.85)"
+      },
+      "C2_harness_guards": {
+        "us": 233.4,
+        "pct_of_L5": "46.7%",
+        "source": "probe3 L3-L0; probe7 faithful harness reproduction"
+      },
+      "C4_tilelang_framework_dispatch": {
+        "us": "~135-158",
+        "pct_of_L5": "27-32%",
+        "source": "probe2b model_prep; Analyzer()=122.603us (n=500, min 121.092 max 150.513 stdev 3.504); analyzer_plus_simplify=142.128; simplify_only=19.525; tvm_ffi IntImm 10.935 / convert 13.320 / const 12.090; torch.npu.current_stream() 12.11; GC-disabled Analyzer still 120.352 -> not GC jitter"
+      },
+      "C5_acl_launch_residual": {
+        "us": "~17-38",
+        "pct_of_L5": "3.4-7.6%",
+        "source": "probe2b measured_prep - model_prep; model_residual_max_us=38.461. NOT separable from FFI arg marshalling (no probe isolated lib.call)"
+      },
+      "C3_our_host_wrapper": {
+        "us": "~2-4",
+        "pct_of_L5": "<2%",
+        "source": "probe5 C_pct 0.97/1.60/0.98/1.97% -> wrapper slimming is WORTHLESS"
+      },
+      "additivity_VERIFIED_BY_ORCHESTRATOR": "C4+C5 = L0 = 200.5us; L0+C2+C1 = 499.6us = L5. Orchestrator recomputed from probe3's raw ladder: L0 mean 200.83, C2 per-case [258.2,207.2,260.6,210.2] mean 234.07, C1 per-case [76.2,58.7,68.3,57.8] mean 65.27, sum 500.17 vs reported 499.638 -> OK."
+    },
+    "NOT_R4_specific_DECISIVE_EVIDENCE": "probe2 controls: torch_native_add_npu = 17.905us median (20.903 back-to-back); tilelang_minimal_NO_out_idx_0alloc (an EMPTY tilelang kernel with zero R4 logic) = 164.298us median (160.579 back-to-back); tilelang_minimal_out_idx_1alloc = 179.168us (180.494). R4's wrapper at L0 = 200.5us is only ~20-40us above a MINIMAL tilelang kernel. => >=90% of the bare launch cost is paid by ANY tilelang kernel; it is framework dispatch (Analyzer-dominated), not rev3 and not R4.",
+    "rev3_did_not_make_host_heavier": "probe3 base_vs_cand: case3 base_2launch per_launch_us = 195.118 (per_launch_incl_jit 197.888, jit_lookup_sum 5.54) ~= the L0 198.1 of the cand arm. => rev3 only raised the launch COUNT from 2 to 4; the per-launch cost is unchanged.",
+    "CORRECTED_SPAN": {
+      "model": "span: start_i = max(end_{i-1}, i*H); span_event = span + H. Device durations from the round-3 msprof CSVs (authoritative). corrected_span.json is a MODEL ESTIMATE, not a direct measurement; validated V1 median abs err 0.058% (anchor = round-3 msprof spans, base arm) and V2 7.583% (anchor = probe3 NPU-event spans).",
+      "fused": {
+        "scored": 1.28027,
+        "span_harness_perCaseCsvH": 0.75799,
+        "span_bare_H200.5": 0.83513,
+        "span_GRAPH_H15.588": 1.12421,
+        "split6_harness": 0.40544,
+        "split6_bare": 0.58159,
+        "split6_GRAPH": 1.40886
+      },
+      "mask": {
+        "scored": 1.18452,
+        "span_harness_perCaseCsvH": 0.80009,
+        "span_bare_H200.5": 0.86548,
+        "span_GRAPH_H15.588": 1.08422,
+        "split6_harness": 0.4454,
+        "split6_bare": 0.64807,
+        "split6_GRAPH": 1.2676
+      },
+      "fixed_H_variants": "the report ALSO gives fixed-H rows (499.638 -> fused 0.74434 / split6 0.41214; 433.9 -> 0.75091 / 0.423). The fixed-H 499.638 row reproduces round-3's published 0.7443 to 0.005% and mask 0.79803 vs 0.8005 (0.3%) -> self-consistency confirmed. The orchestrator initially mistook the 0.75799-vs-0.74434 gap for an inconsistency; it is per-case-CSV-H vs fixed-H, and the report labels both rows explicitly (attribution_report.md L161/L164).",
+      "VERDICT": "under ANY eager assumption (including a bare wrapper call at H=200.5us) rev3's split path IS a wall-clock regression, because 2 extra launches x 200-500us exceed the ~65-80us of device time saved. Under ACL GRAPH it flips to a WIN (all-18 1.08-1.12x, split-6 1.27-1.41x). The contractual SCORED metric (sum of device Durations, gaps excluded) is host-independent and stays 1.28x / 1.18x. split-6 carries a +/-7.6% (V2) uncertainty and should be read as 'about 0.4-0.5, definitely <1'."
+    },
+    "ACL_GRAPH_CAPTURE": {
+      "available": true,
+      "api_evidence": "torch_npu/npu/__init__.py:111-113; npu/graphs.py:327,342,361,372,464,518,532; repo precedent examples/aclgraph/rms_rope_aclgraph.py:270-275; api_surface NPUGraph/graph/graph_pool_handle/make_graphed_callables all true",
+      "bitwise_correct": "probe4 bitwise_equal_to_eager=true with per_output_bitwise=[true]*5; probe6 realistic pattern (static input buffers + D2D copy-in + replay) verified across 5 DISTINCT input value sets x 5 outputs x 4 cases, all [true]*5",
+      "per_launch_reduction": "200-500us -> 2.8-6.6us (30-70x). eager_vs_captured: case1 L0 202.919->5.551 (ratio 0.0274), L5 537.365->6.44 (0.0120); case3 L0 198.104->2.815 (0.0142), L5 464.046->3.305 (0.0071). Marginal host cost of an extra launch under capture ~0.09 to -0.51us.",
+      "end_to_end": "probe6 speedup_L0 3.46-6.87x; serial_speedup_L0 2.60-3.82x; probe5 aclgraph_saving_us 402-788us; aclgraph_pct_of_eager 1.42-2.71%",
+      "costs_and_limits": "copy-in D2D 80-89us/step; a captured graph BAKES IN device addresses so cann-bench's input_pool.py rotation REQUIRES the copy-in pattern; one-time capture 3.5-5.5ms; dynamic shapes need one capture per shape; ONLY 4 of 18 cases measured, and G=15.588us/launch was extrapolated to all 18"
+    },
+    "OPTION_A_VERDICT": "DO NOT pursue DESIGN §16.2 option A (4-pass); keep D (rev3) as delivered. The graph data removes the 'extra launches are expensive' objection (under capture +2 launches cost ~6-13us, not ~400-800us), but A is still rejected because: (i) A's ~6x device advantage is a NEVER-MEASURED model estimate and round-3 §4 already falsified that model's absolute per-case predictions (F not b_num-separable, case4 off +34.6%); (ii) A's m/s bitwise rests on TWO exact-replay proofs (Pass2 reconstruction + Pass4 replay) whereas D's is CONSTRUCTIVE, and bitwise is user hard-constraint 2; (iii) the graph deployment that would make A cheap is itself only 4/18-validated and is not the current contractual target (cann-bench scores device duration, where D already gives 1.28x). Prerequisites to revisit A: pure-device msprof A/B of 4-pass K1 vs K1A+K1B, a Pass2/Pass4 bitwise prototype, and full 18-case graph validation.",
+    "mitigation_priority": "M1 ACL graph capture + copy-in (the ONLY root-cause elimination: 30-70x, bitwise-proven, no kernel change) >> M2 framework-level lazy Analyzer + cached stream (-95.9%, but a tilelang FRAMEWORK change, outside this operator's scope) > M3 _r4_split_plan result caching / M4 workspace pre-allocation reuse (both attack C3, <2%, low priority) > M6 wrapper slimming (~0, not worth it). M5 merging K1A+K1B to cut launches = INFEASIBLE (needs grid sync; DESIGN §2.5 verified Developer mode provides no grid barrier/semaphore, and a hand-rolled atomic spin risks inter-wave deadlock).",
+    "artifacts": [
+      "perf_tuning/round3_host_overhead/attribution_report.md (381 lines, 9 sections, every number tagged with source file + field path)",
+      "7 probes with json+py+logs",
+      "corrected_span.json + analyze_corrected_span.py",
+      "reconcile_with_round3_csv.json",
+      "sha256_before.txt == sha256_after.txt"
+    ],
+    "unverified": [
+      "corrected_span is a MODEL estimate, not a direct measurement; V1 anchors only the BASE arm's span, so the cand split-6 figures carry +/-7.6% (V2)",
+      "C5 is a subtraction residual, not separable from FFI arg marshalling",
+      "C2's 233us is not sub-decomposed per guard layer (harness code, not owned by us)",
+      "ACL graph measured on only 4/18 cases; G=15.588us/launch extrapolated to all 18 (device-bound cases 15/16/18 and guard-marginal 6/11 untested)",
+      "probe_guard_relax.py omits the harness's CannBenchCacheClean so absolute us may be slightly optimistic (ratios unaffected)",
+      "NO mitigation was implemented -- M1-M6 are quantified recommendations only"
+    ]
+  },
+  "flow_completed_at": "2026-10-13T02:47:51Z"
+}

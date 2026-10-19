@@ -1,0 +1,109 @@
+{
+ "_meta": {
+  "before_file": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/history_version/r4_fused_sampling_impl_s3r3_itemA_attempt0.py",
+  "after_file": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/r4_fused_sampling.py",
+  "sha_before": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+  "sha_after": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+  "sha_before_matches_orchestrator": true,
+  "proto_sha256": "41ab797002568e89fcc9a9eaa58be4f1cdfce20b6406abd0fdbf2ad11f7f8949",
+  "proto_matches_contract": true,
+  "submission_sha256": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+  "submission_cmp_identical": true,
+  "test_sha_before": "cea988cbd117f23bb0bf50dbfe0c043dcb46cf4c0489d656b8073cc115265cb7",
+  "test_sha_after": "dc69ad6fa452dacd548ede486085802520bde8aea7e1fe3311f3d08562732094",
+  "test_sha_before_matches": true
+ },
+ "frozen_segments_before": {
+  "r4_topk_stats": {
+   "start": 91,
+   "end": 364,
+   "n_lines": 274,
+   "sha256": "d39090631598f07d1007917b310216b2f650a4ab4c3e7dd6b60b3e63a3a94831"
+  },
+  "r4_mask_sample": {
+   "start": 367,
+   "end": 412,
+   "n_lines": 46,
+   "sha256": "f787d1ad05a9fc26913b98de34f3a48ee67f730530ad6add8761082ef187a3d1"
+  },
+  "r4_gumbel_sample": {
+   "start": 415,
+   "end": 555,
+   "n_lines": 141,
+   "sha256": "ca90de8d0f6f4f69f366f380009f43915aa3c9f5b90430d683be239916683889"
+  }
+ },
+ "frozen_segments_after": {
+  "r4_topk_stats": {
+   "start": 91,
+   "end": 364,
+   "n_lines": 274,
+   "sha256": "d39090631598f07d1007917b310216b2f650a4ab4c3e7dd6b60b3e63a3a94831"
+  },
+  "r4_mask_sample": {
+   "start": 367,
+   "end": 412,
+   "n_lines": 46,
+   "sha256": "f787d1ad05a9fc26913b98de34f3a48ee67f730530ad6add8761082ef187a3d1"
+  },
+  "r4_gumbel_sample": {
+   "start": 415,
+   "end": 555,
+   "n_lines": 141,
+   "sha256": "ca90de8d0f6f4f69f366f380009f43915aa3c9f5b90430d683be239916683889"
+  }
+ },
+ "frozen_identical_and_equal_to_rev2_baseline": true,
+ "jit_kernels_before": [
+  "r4_topk_stats",
+  "r4_mask_sample",
+  "r4_gumbel_sample",
+  "r4_topk_stats_splitA",
+  "r4_topk_stats_splitB",
+  "r4_gumbel_sample_splitA",
+  "r4_gumbel_sample_splitB"
+ ],
+ "jit_kernels_after": [
+  "r4_topk_stats",
+  "r4_mask_sample",
+  "r4_gumbel_sample",
+  "r4_topk_stats_splitA",
+  "r4_topk_stats_splitB",
+  "r4_gumbel_sample_splitA",
+  "r4_gumbel_sample_splitB"
+ ],
+ "kernel_diff": {
+  "hunks": 1,
+  "added": 41,
+  "removed": 1,
+  "code_added": [
+   "_SPLIT_A_LAUNCH_US = 1.540"
+  ],
+  "code_removed": [
+   "_SPLIT_A_LAUNCH_US = 8.0  # one kernel launch, CONSERVATIVE default (U2/V-S3: not yet measured)"
+  ],
+  "only_constant_changed": true
+ },
+ "test_diff": {
+  "added": 139,
+  "removed": 26,
+  "removed_non_comment": [
+   "STAB_CASES / ADV_CASES gained split-path configs (V-S5 / V-S6) because every legacy config",
+   "has n_blk_full <= 2 and is vetoed by D-SPLIT-GUARD, i.e. the legacy",
+   "stability + tail-adversary gates covered ZERO lines of the split",
+   "path (section 16.8). Both suites now FAIL LOUDLY if that regress.",
+   "13 shapes, every one CPU-pre-verified with golden_r4 to yield valid_ref all-1 (section",
+   "9.2.1) AND to satisfy use_split == True, so this layer really executes K1A/K1B/K2gA/K2gB.",
+   "Coverage added on top of the legacy L1: k=1 and k==K_MAX on the split route (rank-0 and the",
+   "D-TIE saturated-list fast path), both contract specializations, odd B with a live row guard",
+   "in K1A, the theorem-P3 shrink shape, three value ranges, a non-aligned tail with S_TAIL=5,",
+   "and a (BV,K_MAX) pairing outside the two calibrated cost points.",
+   "(\"l1_tailmid_V\", 8, 10240, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, [\"D-SHAPE-TAIL-MID\"]),",
+   "(\"l1b_tailmid_V\", 8, 10240, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, \"arange\", [\"D-PARAM-FUSE_GUMBEL\", \"D-SHAPE-TAIL-MID\"]),",
+   "[\"D-PARAM-BV\", \"D-PARAM-FUSE_GUMBEL\"]),",
+   "[\"D-SHAPE-TAIL-MID\", \"D-PARAM-FUSE_GUMBEL\"]),",
+   "\"D-PATH-SPLIT\": 12,          # use_split == True (A1-A4, B1-B5, C1, D1, E1, F1 + split STAB/ADV)"
+  ]
+ },
+ "criterion5_pass": true
+}

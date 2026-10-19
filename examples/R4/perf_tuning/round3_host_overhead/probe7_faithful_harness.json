@@ -1,0 +1,533 @@
+{
+ "_meta": {
+  "description": "faithful reproduction of the cann-bench batched step loop (incl. prof.step()), self-validated against the kernel_details.csv it produces",
+  "measurement": "perf_counter_ns for host time; CSV-implied H from device timestamps",
+  "iters": 5,
+  "env": {
+   "tilelang": "0.1.4+d75300ed0a88b0f4b2eef8a62b43f1930fdae44b",
+   "tilelang_file": "/home/developer/.local/lib/python3.12/site-packages/tilelang/__init__.py",
+   "torch": "2.7.1+cpu",
+   "torch_npu": "2.7.1.post4",
+   "python": "3.12.9",
+   "device": "Ascend910_9362",
+   "cwd": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead",
+   "PYTHONPATH": "/home/developer/.local/lib/python3.12/site-packages/tilelang/3rdparty/tvm/python:/home/developer/Ascend/cann-9.2.0/python/site-packages:/home/developer/Ascend/cann-9.2.0/opp/built-in/op_impl/ai_core/tbe:",
+   "ACL_OP_INIT_MODE": "1",
+   "LD_LIBRARY_PATH_has_sqlite3": true,
+   "timestamp": "2026-10-11T18:04:17+0800",
+   "delivered_kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117"
+  }
+ },
+ "ladder_faithful": {
+  "1": {
+   "0": {
+    "case": 1,
+    "level": 0,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 415.167,
+     "med_us": 417.118,
+     "mean_us": 421.711,
+     "max_us": 437.348,
+     "p90_us": 423.447,
+     "stdev_us": 9.358
+    },
+    "per_launch_us": 208.559,
+    "csv": null
+   },
+   "1": {
+    "case": 1,
+    "level": 1,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 749.293,
+     "med_us": 758.574,
+     "mean_us": 764.88,
+     "max_us": 779.904,
+     "p90_us": 778.344,
+     "stdev_us": 13.539
+    },
+    "per_launch_us": 379.287,
+    "csv": null
+   },
+   "2": {
+    "case": 1,
+    "level": 2,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 937.397,
+     "med_us": 944.957,
+     "mean_us": 986.832,
+     "max_us": 1142.81,
+     "p90_us": 965.058,
+     "stdev_us": 87.807
+    },
+    "per_launch_us": 472.478,
+    "csv": null
+   },
+   "3": {
+    "case": 1,
+    "level": 3,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 943.797,
+     "med_us": 960.897,
+     "mean_us": 961.775,
+     "max_us": 985.428,
+     "p90_us": 969.947,
+     "stdev_us": 16.721
+    },
+    "per_launch_us": 480.449,
+    "csv": null
+   },
+   "5": {
+    "case": 1,
+    "level": 5,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1087.2,
+     "med_us": 1100.25,
+     "mean_us": 1104.218,
+     "max_us": 1117.88,
+     "p90_us": 1116.23,
+     "stdev_us": 12.828
+    },
+    "per_launch_us": 550.125,
+    "csv": {
+     "path": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead/probe7_prof_xu28gw3o/c1_L5/124c18542182426382010d673204c8fc_2709587_20261011180419336_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+     "n_H": 5,
+     "H_median_us": 412.38,
+     "H_min_us": 404.28,
+     "H_max_us": 429.93,
+     "gap_median_us": 388.5,
+     "span_median_us": 422.5,
+     "scored_median_us": 33.52,
+     "n_steps": 5
+    }
+   }
+  },
+  "3": {
+   "0": {
+    "case": 3,
+    "level": 0,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 775.584,
+     "med_us": 786.654,
+     "mean_us": 792.156,
+     "max_us": 811.035,
+     "p90_us": 810.215,
+     "stdev_us": 17.38
+    },
+    "per_launch_us": 196.663,
+    "csv": null
+   },
+   "1": {
+    "case": 3,
+    "level": 1,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1323.774,
+     "med_us": 1327.654,
+     "mean_us": 1336.74,
+     "max_us": 1359.254,
+     "p90_us": 1346.734,
+     "stdev_us": 15.547
+    },
+    "per_launch_us": 331.913,
+    "csv": null
+   },
+   "2": {
+    "case": 3,
+    "level": 2,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1620.899,
+     "med_us": 1649.009,
+     "mean_us": 1645.379,
+     "max_us": 1657.64,
+     "p90_us": 1652.239,
+     "stdev_us": 14.255
+    },
+    "per_launch_us": 412.252,
+    "csv": null
+   },
+   "3": {
+    "case": 3,
+    "level": 3,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1658.83,
+     "med_us": 1664.77,
+     "mean_us": 1669.198,
+     "max_us": 1682.09,
+     "p90_us": 1675.68,
+     "stdev_us": 9.438
+    },
+    "per_launch_us": 416.192,
+    "csv": null
+   },
+   "5": {
+    "case": 3,
+    "level": 5,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1931.035,
+     "med_us": 1958.965,
+     "mean_us": 1957.215,
+     "max_us": 1993.076,
+     "p90_us": 1970.996,
+     "stdev_us": 26.457
+    },
+    "per_launch_us": 489.741,
+    "csv": {
+     "path": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead/probe7_prof_xu28gw3o/c3_L5/124c18542182426382010d673204c8fc_2709587_20261011180424392_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+     "n_H": 15,
+     "H_median_us": 490.82,
+     "H_min_us": 369.21,
+     "H_max_us": 691.47,
+     "gap_median_us": 458.0,
+     "span_median_us": 1530.25,
+     "scored_median_us": 57.84,
+     "n_steps": 5
+    }
+   }
+  },
+  "13": {
+   "0": {
+    "case": 13,
+    "level": 0,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 409.018,
+     "med_us": 418.168,
+     "mean_us": 420.068,
+     "max_us": 433.738,
+     "p90_us": 426.878,
+     "stdev_us": 10.194
+    },
+    "per_launch_us": 209.084,
+    "csv": null
+   },
+   "1": {
+    "case": 13,
+    "level": 1,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 738.284,
+     "med_us": 755.704,
+     "mean_us": 757.656,
+     "max_us": 778.754,
+     "p90_us": 773.744,
+     "stdev_us": 18.267
+    },
+    "per_launch_us": 377.852,
+    "csv": null
+   },
+   "2": {
+    "case": 13,
+    "level": 2,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 927.046,
+     "med_us": 932.457,
+     "mean_us": 937.899,
+     "max_us": 957.627,
+     "p90_us": 942.067,
+     "stdev_us": 12.367
+    },
+    "per_launch_us": 466.228,
+    "csv": null
+   },
+   "3": {
+    "case": 13,
+    "level": 3,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 947.076,
+     "med_us": 953.147,
+     "mean_us": 958.731,
+     "max_us": 979.058,
+     "p90_us": 962.187,
+     "stdev_us": 12.599
+    },
+    "per_launch_us": 476.574,
+    "csv": null
+   },
+   "5": {
+    "case": 13,
+    "level": 5,
+    "n_launch": 2,
+    "use_split": false,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1089.869,
+     "med_us": 1110.37,
+     "mean_us": 1107.806,
+     "max_us": 1119.651,
+     "p90_us": 1114.35,
+     "stdev_us": 11.408
+    },
+    "per_launch_us": 555.185,
+    "csv": {
+     "path": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead/probe7_prof_xu28gw3o/c13_L5/124c18542182426382010d673204c8fc_2709587_20261011180429375_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+     "n_H": 5,
+     "H_median_us": 417.22,
+     "H_min_us": 408.24,
+     "H_max_us": 427.97,
+     "gap_median_us": 399.0,
+     "span_median_us": 428.25,
+     "scored_median_us": 29.38,
+     "n_steps": 5
+    }
+   }
+  },
+  "7": {
+   "0": {
+    "case": 7,
+    "level": 0,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 778.834,
+     "med_us": 784.614,
+     "mean_us": 793.84,
+     "max_us": 816.694,
+     "p90_us": 806.104,
+     "stdev_us": 16.595
+    },
+    "per_launch_us": 196.154,
+    "csv": null
+   },
+   "1": {
+    "case": 7,
+    "level": 1,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1319.523,
+     "med_us": 1335.374,
+     "mean_us": 1334.876,
+     "max_us": 1358.774,
+     "p90_us": 1337.974,
+     "stdev_us": 15.525
+    },
+    "per_launch_us": 333.844,
+    "csv": null
+   },
+   "2": {
+    "case": 7,
+    "level": 2,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1625.009,
+     "med_us": 1633.369,
+     "mean_us": 1636.511,
+     "max_us": 1649.47,
+     "p90_us": 1644.629,
+     "stdev_us": 10.215
+    },
+    "per_launch_us": 408.342,
+    "csv": null
+   },
+   "3": {
+    "case": 7,
+    "level": 3,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1665.379,
+     "med_us": 1682.35,
+     "mean_us": 1680.938,
+     "max_us": 1695.011,
+     "p90_us": 1689.13,
+     "stdev_us": 11.991
+    },
+    "per_launch_us": 420.587,
+    "csv": null
+   },
+   "5": {
+    "case": 7,
+    "level": 5,
+    "n_launch": 4,
+    "use_split": true,
+    "fn_host": {
+     "n": 5,
+     "min_us": 1938.315,
+     "med_us": 1967.786,
+     "mean_us": 1965.933,
+     "max_us": 1983.415,
+     "p90_us": 1980.025,
+     "stdev_us": 18.056
+    },
+    "per_launch_us": 491.947,
+    "csv": {
+     "path": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead/probe7_prof_xu28gw3o/c7_L5/124c18542182426382010d673204c8fc_2709587_20261011180434576_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+     "n_H": 15,
+     "H_median_us": 480.12,
+     "H_min_us": 370.77,
+     "H_max_us": 680.63,
+     "gap_median_us": 382.5,
+     "span_median_us": 1532.5,
+     "scored_median_us": 178.98,
+     "n_steps": 5
+    }
+   }
+  }
+ },
+ "ladder_table": {
+  "1": {
+   "L0": 208.559,
+   "L1": 379.287,
+   "L2": 472.478,
+   "L3": 480.449,
+   "L5": 550.125,
+   "n_launch": 2
+  },
+  "3": {
+   "L0": 196.663,
+   "L1": 331.913,
+   "L2": 412.252,
+   "L3": 416.192,
+   "L5": 489.741,
+   "n_launch": 4
+  },
+  "13": {
+   "L0": 209.084,
+   "L1": 377.852,
+   "L2": 466.228,
+   "L3": 476.574,
+   "L5": 555.185,
+   "n_launch": 2
+  },
+  "7": {
+   "L0": 196.154,
+   "L1": 333.844,
+   "L2": 408.342,
+   "L3": 420.587,
+   "L5": 491.947,
+   "n_launch": 4
+  }
+ },
+ "self_validation_vs_round3": {
+  "1": {
+   "round3": {
+    "H_cand_us": 381.24,
+    "gap_cand_us": 357.0,
+    "span_us": 391.5,
+    "scored_us": 34.38
+   },
+   "probe7_L5": {
+    "H_us": 412.38,
+    "gap_us": 388.5,
+    "span_us": 422.5,
+    "scored_us": 33.52,
+    "n_H": 5
+   },
+   "ratios": {
+    "H": 1.0817,
+    "gap": 1.0882,
+    "span": 1.0792,
+    "scored": 0.975
+   }
+  },
+  "3": {
+   "round3": {
+    "H_cand_us": 430.33,
+    "gap_cand_us": 397.25,
+    "span_us": 1387.25,
+    "scored_us": 57.52
+   },
+   "probe7_L5": {
+    "H_us": 490.82,
+    "gap_us": 458.0,
+    "span_us": 1530.25,
+    "scored_us": 57.84,
+    "n_H": 15
+   },
+   "ratios": {
+    "H": 1.1406,
+    "gap": 1.1529,
+    "span": 1.1031,
+    "scored": 1.0056
+   }
+  },
+  "13": {
+   "round3": {
+    "H_cand_us": 383.71,
+    "gap_cand_us": 371.75,
+    "span_us": 394.75,
+    "scored_us": 23.06
+   },
+   "probe7_L5": {
+    "H_us": 417.22,
+    "gap_us": 399.0,
+    "span_us": 428.25,
+    "scored_us": 29.38,
+    "n_H": 5
+   },
+   "ratios": {
+    "H": 1.0873,
+    "gap": 1.0733,
+    "span": 1.0849,
+    "scored": 1.2741
+   }
+  },
+  "7": {
+   "round3": {
+    "H_cand_us": 431.85,
+    "gap_cand_us": 334.75,
+    "span_us": 1360.25,
+    "scored_us": 179.06
+   },
+   "probe7_L5": {
+    "H_us": 480.12,
+    "gap_us": 382.5,
+    "span_us": 1532.5,
+    "scored_us": 178.98,
+    "n_H": 15
+   },
+   "ratios": {
+    "H": 1.1118,
+    "gap": 1.1426,
+    "span": 1.1266,
+    "scored": 0.9996
+   }
+  }
+ },
+ "fidelity_ratio_median_H": 1.0995,
+ "fidelity_ratio_median_scored": 1.0026
+}

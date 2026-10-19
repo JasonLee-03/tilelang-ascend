@@ -1,0 +1,33 @@
+/opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/utils/_path_manager.py:66: UserWarning: Permission mismatch: The owner of /opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so does not match.
+  warnings.warn(f"Permission mismatch: The owner of {path} does not match.")
+===== base1 =====  task=fused  HAS_SPLIT_API=False  cube_core_num=20
+steps_attributed=144 anomaly_rows=0 cases=18 split=0 current=18
+case    path   S  NBS #ln     BlockNum(actual)        BlockNum(exp)    ok | per-kernel Duration(us) |     total      gaps
+   1 CURRENT   1    1   2               [1, 1]               [1, 1]  True | K1=24.580  K2g=10.680 |    35.300   384.500
+   2 CURRENT   1    1   2               [1, 1]               [1, 1]  True | K1=32.040  K2g=10.140 |    42.120   377.250
+   3 CURRENT   1    1   2               [4, 4]               [4, 4]  True | K1=65.620  K2g=34.780 |   100.300   338.250
+   4 CURRENT   1    1   2               [2, 2]               [2, 2]  True | K1=51.280  K2g=34.240 |    85.500   353.750
+   5 CURRENT   1    1   2               [4, 4]               [4, 4]  True | K1=35.760  K2g=19.340 |    55.100   367.750
+   6 CURRENT   1    1   2               [4, 4]               [4, 4]  True | K1=50.500  K2g=27.440 |    77.980   353.250
+   7 CURRENT   1    1   2               [2, 2]               [2, 2]  True | K1=425.040  K2g=303.580 |   728.420     3.000
+   8 CURRENT   1    1   2               [2, 2]               [2, 2]  True | K1=53.980  K2g=37.280 |    91.220   350.750
+   9 CURRENT   1    1   2             [32, 32]             [32, 32]  True | K1=65.380  K2g=20.620 |    85.980   338.500
+  10 CURRENT   1    1   2               [2, 2]               [2, 2]  True | K1=32.620  K2g=10.060 |    42.500   373.250
+  11 CURRENT   1    1   2               [4, 4]               [4, 4]  True | K1=44.000  K2g=19.040 |    62.960   357.750
+  12 CURRENT   1    1   2               [8, 8]               [8, 8]  True | K1=94.860  K2g=66.220 |   160.980   309.500
+  13 CURRENT   1    1   2               [3, 3]               [3, 3]  True | K1=12.180  K2g=11.460 |    23.620   392.250
+  14 CURRENT   1    1   2             [16, 16]             [16, 16]  True | K1=26.320  K2g=11.120 |    37.440   376.250
+  15 CURRENT   1    1   2             [32, 32]             [32, 32]  True | K1=859.280  K2g=611.520 |  1470.620     2.750
+  16 CURRENT   1    1   2             [64, 64]             [64, 64]  True | K1=433.500  K2g=262.020 |   695.620     2.750
+  17 CURRENT   1    1   2               [8, 8]               [8, 8]  True | K1=429.760  K2g=306.720 |   736.420     3.000
+  18 CURRENT   1    1   2             [32, 32]             [32, 32]  True | K1=391.860  K2g=258.760 |   650.660    11.500
+
+GATE theorem-P2 (split-parallel Block Num <= cube_core_num=20): PASS
+GATE Block Num sequence == _r4_split_plan-derived expectation: PASS
+
+--- per-kernel-name Duration statistics over repeat steps (us) ---
+kernel     n       min    median       max
+    K1    90    12.140    52.800   860.120
+   K2g    90     9.880    30.840   614.760
+
+wrote /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_splitv_perf/ksplit_base1_fused.json

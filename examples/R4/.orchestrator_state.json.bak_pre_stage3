@@ -1,0 +1,107 @@
+{
+  "operator_name": "R4",
+  "env_check_passed": true,
+  "current_stage": 3,
+  "terminal_state": "SUCCESS",
+  "stage_status": {"1": "completed", "2": "completed", "3": "skipped"},
+  "stage_retry_count": {"1": 0, "2": 1, "3": 0},
+  "stage2_failure_breakdown": {"runtime_fail": 0, "precision_fail": 1},
+  "design_revision_count": 1,
+  "last_failure_reason": null,
+  "resolved_failure": {
+    "reason": "precision_fail_intermittent_tau_out (discovered by cann-bench evaluation, NOT by the delivered test suite)",
+    "discovered_at": "2026-10-08T10:45:00Z",
+    "discovered_by": "cann-bench staged-eval, bench_lab/tilelang_ascend_bench/r4_fused_sampling case_id 5 (B=7, V=4409, TAIL=313)",
+    "symptom": "tau_out intermittently returned garbage large finite floats (2.7231e+19 .. 4.4785e+37) while logits value_range was only [-10,10]; invariant tau <= row_max violated. valid stayed 1 so D-GUARD/D-TIE did not fire and the bad threshold propagated: tok_out collapsed to 0. m_out/s_out always correct.",
+    "failure_rate_before_fix": "2 of 15 harness executions (~13%); one execution failed stage 3 after passing stage 2 on identical inputs and identical wheel",
+    "resolved_at": "2026-10-09T03:00:00Z",
+    "resolution": "Stage 2 precision_fix, cycle V01-b rev2, attempt 1/5 -> [PRECISION_PASS]; independently re-verified by orchestrator gate check -> VERIFIED",
+    "root_cause_ESTABLISHED": {
+      "mechanism": "NOT a race. Deterministic read of UNINITIALISED UB whose content is set by device history; the 'silent phase' is simply 'UB happens to hold benign values'. Therefore 'passed N times' carries NO evidential weight in either direction.",
+      "defect_A": "T.tile.topk with count not a multiple of 32: Sort32 consumes ceil(count/32)*32 elements and tl::ascend::Sort() repairs the remainder with a masked AscendC::Duplicate that DOES NOT TAKE EFFECT on dav_c220 (tilelang/src/tl_templates/ascend/common.h:1663-1707; pre-fix padCount = 320-313 = 7) -> 7 stale-UB slots sorted as real candidates",
+      "defect_B": "pre-existing and independent: UB->UB T.copy (copy_ub_to_ub / AscendC::DataCopy) with a non-32B-multiple count SILENTLY TRUNCATES to a multiple of 8 fp32, dropping tail indices (TAIL//8)*8..TAIL-1 (proven by sentinel sweep: 313->{312}, 261->{256..260}, 511->{504..510}, 257->{256})",
+      "disproved_hypotheses": [
+        "odd-B out-of-range row guard (B=2 with TAIL=313 also reproduces; case 2 B=1 has TAIL=0 so the tail branch never runs)",
+        "1-element scalar UB buffers in the tau_k/tau_p/tau T.tile.max merge chain (gather_mask/topk are innocent: 0 errors at M=313,K=256 under poisoning)",
+        "submission wrapper / task definition / harness invocation (4 kernel copies md5-identical; other 13 cases bit-exact; reproduced outside the harness)"
+      ],
+      "fix": "TAIL_PAD = ceil(TAIL/32)*32; stage the top-k source through ztp=[1,TAIL_PAD] loaded from GM with pad_value=-inf; hop exactly TAIL_PAD (a 32B multiple, cannot truncate); call topk(..., TAIL_PAD) so padCount == 0 and the broken masked branch is unreachable. Generalises to every TAIL by construction. UB 150084 -> 151364 B of 196352 (+1280 B), no BV reduction needed.",
+      "change_scope": "4 diff hunks, all inside K1 r4_topk_stats tail path + module docstring. r4_mask_sample / r4_gumbel_sample / host wrapper byte-identical (region sha256). r4_ref.py and proto.yaml untouched.",
+      "fixed_kernel_sha256": "bbe47fa4dd75b2c8aed614446a5ac2b3023045899f227bd2b10ece7eb22bdf9f",
+      "prefix_kernel_sha256": "2b3fcd3a553b34474511227cc1d64ea0eab938e4e0d3a3307af37aff3f959fde",
+      "verification_evidence": [
+        "codegen-level structural proof (independent of any run): pre-fix TopK(...,313) padCount=7 + 1252B UB->UB copy truncated to 312 elems; post-fix TopK(...,320) padCount=0 + 1280B copy",
+        "UB poisoning amplifier: pre-fix 8/8 arms FAIL with tau_out == fp32(1e30) (the poison literal); post-fix 8/8 arms PASS while still poisoned",
+        "differential: same test file, only kernel swapped -> pre-fix --level stability exit 1 (3/3 runs) and --level stress exit 1; post-fix exit 0",
+        "tail-adversary sentinel sweep byte-identical across 3 pre-fix runs; FIXED 24/24 configs bitwise-identical to golden, PREFIX 6/24 deviate",
+        "orchestrator gate: --level all exit 0 from BOTH a cold cache (291 s, 41 entries) and a warm cache (20 s) -> 74 PRECISION_PASS / 0 FAIL, 38 BOUNDARY_PASS / 0 WARN",
+        "coverage gate coverage_check.py --proto proto.yaml -> 25 PASS / 0 MISS / 0 N/A, exit 0",
+        "distribution gate unchanged: chi2=22.98/dof=39 p=0.9807, KL=7.82e-4, cov=1.000000, H_relerr=2.02e-3",
+        "no pre-existing test assertion weakened (diff of test file vs backup: only a docstring line and the argparse choices list changed)"
+      ],
+      "residual_risk": "--level all does NOT include the stress (UB-poison) layer; on a freshly-booted device with benign UB the pre-fix kernel could pass 'all' via the stale-UB half (the truncation half is still caught unconditionally by the tail-adversary). Recommend folding a poisoning pass into stability, or adding stress to all. See skill-journal rev2 e4.",
+      "perf_cost_of_fix": "not measurable. case 5 (TAIL=313, the only pre-existing non-32-aligned tail): fused 91.02 -> 91.48 / 90.78 us (+0.5% / -0.3%), mask 65.42 -> 64.86 / 64.96 us (-0.9% / -0.7%); both straddle the pre-fix value and are at or below the run-to-run noise floor (fused max spread 1.19%, mask 0.51%). Honest statement: 'indistinguishable from zero', not 'zero'. No case >5% slower; like-for-like 14-case score delta within +/-0.03."
+    }
+  },
+  "perf_tuning_requested": "no",
+  "perf_tuning_declined_reason": "user decision 2026-10-08: bottleneck located and quantified but tuning deferred; keep evaluation results as-is",
+  "perf_iteration": {"count": 0, "last_improvement": 0.0, "consecutive_no_improvement": 0},
+  "cann_bench_evaluation": {
+    "final_run_at": "2026-10-09T03:22:45Z",
+    "hardware": "910b2 (Ascend910_9362, 2 chips, cube_core_num=20, vector_core_num=40)",
+    "software": {"cann": "9.2.0", "torch": "2.7.1+cpu", "torch_npu": "2.7.1.post4", "tilelang": "0.1.4+d75300ed (installed wheel)", "python": "3.12.9"},
+    "kernel_under_test_sha256": "bbe47fa4dd75b2c8aed614446a5ac2b3023045899f227bd2b10ece7eb22bdf9f",
+    "tasks": ["bench_lab/tilelang_ascend_bench/r4_fused_sampling", "bench_lab/tilelang_ascend_bench/r4_mask_sample"],
+    "cases_per_task": 18,
+    "submission": "examples/R4/cann_bench_submission",
+    "reports": "examples/R4/bench/reports",
+    "final_reports": {
+      "R4FusedSampling": ["cann_final_eval_20261009_110101", "cann_final_eval_20261009_110214"],
+      "R4MaskSample": ["cann_final_eval_20261009_110320", "cann_final_eval_20261009_110425"]
+    },
+    "runs": "4 full three-stage runs, all rc=0; 36/36 correctness and 36/36 performance in every run; case 5 and case 17 passed in ALL runs",
+    "scores": {
+      "convention_A_capped_published_official": {"R4FusedSampling": 56.4658, "R4MaskSample": 56.0392, "breakdown": "comp 20.0 + func 30.0 + perf 6.4658 / 6.0392"},
+      "convention_B_uncapped_raw_measured": {"R4FusedSampling": 93.2391, "R4MaskSample": 95.3158, "breakdown": "comp 20.0 + func 30.0 + perf 43.2391 / 45.3158"}
+    },
+    "score_recomputation_delta": "per-case HAP max |delta| = 0.0 (36/36); operator score delta 0.0 (fused) and 1.776e-15 (mask, single-ulp)",
+    "geomean_speedup_vs_raw_torch_baseline": {"R4FusedSampling": 6.73, "R4MaskSample": 11.02, "arithmetic_mean": {"R4FusedSampling": 7.31, "R4MaskSample": 13.9}, "median": {"R4FusedSampling": 6.93, "R4MaskSample": 9.01}, "min": {"R4FusedSampling": "2.52x (case 7)", "R4MaskSample": "3.37x (case 1)"}, "max": {"R4FusedSampling": "13.36x (case 15)", "R4MaskSample": "51.46x (case 15)"}, "note": "18-case matrix, computed from cann_final_eval_20261009_11* reports (mean of the 2 runs per operator) over metadata_staging/baseline_raw_910b2_18cases.json; cross-validated by an independent geomean of the per-case speedups. The earlier 14-case matrix gave 5.88 / 8.25. CORRECTION: an earlier revision of this file and of the final report quoted 10.4 / 16.5 -- those figures had no source and were wrong."},
+    "production_shape_case15_B64_V152064": {
+      "fused": {"elapsed_us": 1974.74, "K1_us": 914.56, "K2_us": 1060.18, "t_hw_us": 78.31, "achieved_fraction": 0.0397, "raw_baseline_us": 26369.69, "speedup_vs_raw": 13.35, "HAP_raw": 0.9327},
+      "mask": {"elapsed_us": 985.44, "K1_us": 909.28, "K2_us": 76.24, "t_hw_us": 21.54, "achieved_fraction": 0.0219, "raw_baseline_us": 50735.95, "speedup_vs_raw": 51.49, "HAP_raw": 0.9813}
+    },
+    "repeatability": {"fused_max_spread_pct": 1.19, "fused_mean_spread_pct": 0.32, "mask_max_spread_pct": 0.51, "mask_mean_spread_pct": 0.18},
+    "anti_cheat": "0 aclrtMemcpy* rows in all 4 api_statistic.csv (pure TileLang direct-launch, 0 aclnn ops) -> the >5 threshold rule is structurally unreachable; cpu_fallback_detected never set; score_error_code None in all 12 JSONs",
+    "sanity_gates": "9/9 PASS (elapsed_us>0 for 72 values; kernel_details.csv present+non-empty 4/4; exactly 2 NPU kernels per call; elapsed_us>=t_hw_us 72/72; 0 aclrtMemcpy; repeatability; Block Num == ceildiv(B,2) 16/16; K1+K2 identity median(K1_i+K2_i)==elapsed_us 72/72; wall time 1769 s)",
+    "known_gaps_and_caveats": [
+      "cap binds on 36/36 entries (clamp factor 16.99x-336.81x, median 55.91x) -> convention-A scores are set by the t_hw model, not by comparison against the measured baseline; convention B must always be disclosed alongside",
+      "22/36 entries still sit on the model's 1.0us t_hw floor (all pre-existing cases 1-14); there HAP degenerates to 9/(T_cand+8), a launch-overhead proxy. All 8 new cases escape the floor (t_hw 5.40-78.31us)",
+      "HAP is NOT comparable across the two tasks: on identical case-15 shape t_hw is 78.31 (fused) vs 21.54 (mask), a 3.6x gap driven by vector op counts 45.25 vs 10.25 per element",
+      "V01-a (r4_mask_sample) is evaluated as the fused MASK CHAIN producing w_out only; the end-to-end V01-a sampling step needs host torch.multinomial, which violates SUB-BEH-001 and is therefore out of the evaluated contract (documented in desc.md, r4_ops.py and README.md)",
+      "recipe-(a) cases carry a residual fp32-tie exposure: two fp64 draws landing in one fp32 bucket make a row valid=0 (correct host-fallback semantics, not a kernel defect). Measured ~0.27%/row => ~15% per case for case 15. The harness default eval_seed=0 is clean for all cases in both tasks, verified twice in two independent processes",
+      "t_hw depends on the reverse-calibrated 910b2 constants (160/160 published values within <=2%, worst 0.4545%); l2 and l2cap are UNCALIBRATED placeholders proven inert inside the documented region l2>=hbm, but for the new mask cases 15-18 that bound is load-bearing (no 1us-floor protection)",
+      "harness bugs worked around, not fixed: html_generator.py:494 crashes on flat-layout suites (int('g')) killing the run before the perf stage -> PYTHONPATH sitecustomize shim gated on R4_HTML_SHIM=1; and LD_LIBRARY_PATH must be prefixed with /usr/local/sqlite3/lib or msprof_analysis fails and every elapsed_us silently becomes 0",
+      "0 new JIT specializations were compiled during the final campaign (cache already warm from upstream work) -> compile time is NOT included in any reported number"
+    ],
+    "perf_bottleneck_for_future_stage3": "grid = ceildiv(B, VEC_NUM=2), i.e. parallelism is bound to BATCH only and the vocab is scanned serially inside each block. Verified Block Num: case 7 (B=4) -> 2 of 20 core groups; case 15 (B=64) -> 32; case 16 (B=128) -> 64. Achieved fraction t_hw/elapsed is only 1-4%. split-V parallelisation (grid extended along V + cross-split reduction for m/s/tau, partial-argmax merge in K2) is the single highest-leverage optimisation, especially for small-B LLM decode."
+  },
+  "artifacts": {
+    "operator": ["examples/R4/r4_fused_sampling.py (FIXED, sha256 bbe47fa4...)", "examples/R4/r4_ref.py (unchanged)", "examples/R4/test_r4_fused_sampling.py (+stability/stress layers, 1160->1481 lines)", "examples/R4/proto.yaml (unchanged)"],
+    "backups": "examples/R4/history_version/*_impl_s2_v01b_rev2_attempt1.py (3 files)",
+    "cann_bench_tasks": [".agents/skills/cann-bench/bench_lab/tilelang_ascend_bench/r4_fused_sampling/", ".agents/skills/cann-bench/bench_lab/tilelang_ascend_bench/r4_mask_sample/"],
+    "cann_bench_metadata": ".agents/skills/cann-bench/bench_lab/tilelang_ascend_bench/metadata/910b2.json (+148 lines, 36 R4 entries, 0 deletions)",
+    "hap_constants": ".agents/skills/cann-bench/docs/hap_thw_model/hap_platform_constants.json (reverse-calibrated 910b2/950pr; 910c marked placeholder)",
+    "submission": "examples/R4/cann_bench_submission/",
+    "bench_tooling": ["examples/R4/bench/baseline_refs.py", "examples/R4/bench/validate_baseline.py", "examples/R4/bench/measure_baseline.py", "examples/R4/bench/hap_thw_model/", "examples/R4/bench/metadata_staging/", "examples/R4/bench/reports/", "examples/R4/bench/MERGE_REPORT.md", "examples/R4/bench/EXTEND_REPORT.md"],
+    "journals": [".agents/skill-journal/r4_fused_sampling-20261006-160832.md (V01-a, 11 entries)", ".agents/skill-journal/r4_fused_sampling-20261007-115721.md (V01-b rev1)", ".agents/skill-journal/r4_fused_sampling-20261008-185113.md (bench setup, 6 entries; e3 now marked superseded)", ".agents/skill-journal/r4_fused_sampling-20261009-113013.md (rev2 fix cycle, 6 entries)"]
+  },
+  "pending_work": [],
+  "recommendations_not_actioned": [
+    "fold a UB-poisoning pass into --level stability or add stress to --level all (residual detection gap, journal rev2 e4)",
+    "file the html_generator.py:494 flat-layout crash upstream to cann-bench (also affects gemm and flash_attention in the same suite)",
+    "report the two TileLang wheel defects upstream: Sort()'s masked Duplicate pad ineffective on dav_c220, and copy_ub_to_ub silently truncating non-32B-multiple counts",
+    "Stage 3 split-V parallelisation if the 1-4% roofline achieved fraction is ever deemed worth attacking (user deferred)",
+    "extend tests/ut/test_bench_lab_metadata_contract.py SUITES to cover bench_lab/tilelang_ascend_bench (currently only kernel_bench and omni-ops_bench are CI-guarded)"
+  ],
+  "last_updated": "2026-10-09T03:30:13Z"
+}

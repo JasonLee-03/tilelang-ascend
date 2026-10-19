@@ -1,0 +1,3456 @@
+{
+ "_meta": {
+  "description": "R4 Stage-3 ROUND-3 performance baseline. Round 3 is a VERIFICATION round: the rev3 split-V architecture was implemented and precision-verified in Stage 2 but had never been timed -- every number in DESIGN.md section 12.4 was a model estimate. This file records the FIRST measurements of rev3, taken in one session against the pre-rev3 baseline.",
+  "round": 3,
+  "data_source": "same-session A/B, cann-bench run_evaluation.sh -> msprof kernel_details.csv (warmup=3 repeat=5, median of per-step Duration sums). Pass order base1 -> cand -> base2, so base2-vs-base1 is an identical-code drift control. NO Python/torch timing anywhere; JIT compile cost is disclosed separately and is excluded from every figure below.",
+  "source_reports": {
+   "base1_fused": "cann_performance_eval_20261011_150336.json",
+   "base1_mask": "cann_performance_eval_20261011_150535.json",
+   "cand_fused": "cann_performance_eval_20261011_150737.json",
+   "cand_mask": "cann_performance_eval_20261011_150934.json",
+   "base2_fused": "cann_performance_eval_20261011_151140.json",
+   "base2_mask": "cann_performance_eval_20261011_151335.json",
+   "base1_fused_correctness": "cann_correctness_eval_20261011_150233.json",
+   "base1_mask_correctness": "cann_correctness_eval_20261011_150435.json",
+   "cand_fused_correctness": "cann_correctness_eval_20261011_150635.json",
+   "cand_mask_correctness": "cann_correctness_eval_20261011_150836.json",
+   "base2_fused_correctness": "cann_correctness_eval_20261011_151035.json",
+   "base2_mask_correctness": "cann_correctness_eval_20261011_151236.json"
+  },
+  "source_msprof_csv": [
+   "base1_fused  arm=base1 task=fused  csv_lines=433",
+   "    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_fused_sampling/2616692-1791702187548982857/124c18542182426382010d673204c8fc_2616692_20261011150307649_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+   "base1_mask  arm=base1 task=mask  csv_lines=433",
+   "    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_mask_sample/2619141-1791702307535917603/124c18542182426382010d673204c8fc_2619141_20261011150507621_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+   "cand_fused  arm=cand task=fused  csv_lines=529",
+   "    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_fused_sampling/2620899-1791702429714686482/124c18542182426382010d673204c8fc_2620899_20261011150709816_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+   "cand_mask  arm=cand task=mask  csv_lines=481",
+   "    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_mask_sample/2623417-1791702546737849487/124c18542182426382010d673204c8fc_2623417_20261011150906824_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+   "base2_fused  arm=base2 task=fused  csv_lines=433",
+   "    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_fused_sampling/2625986-1791702673462674172/124c18542182426382010d673204c8fc_2625986_20261011151113575_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+   "base2_mask  arm=base2 task=mask  csv_lines=433",
+   "    /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_mask_sample/2627859-1791702787872407622/124c18542182426382010d673204c8fc_2627859_20261011151307957_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv"
+  ],
+  "kernel_sha256": {
+   "base": "19e51e8d8ee126b920cf48c915d863a9be3a349e2c68cf728d35d482b48bcc57",
+   "cand": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+   "base_file": "history_version/r4_fused_sampling_impl_s2r3_attempt1_base.py",
+   "cand_file": "examples/R4/r4_fused_sampling.py"
+  },
+  "frozen_kernels_byte_identical_base_vs_cand": true,
+  "frozen_kernel_sha256": {
+   "r4_topk_stats": "d39090631598f07d1007917b...",
+   "r4_mask_sample": "f787d1ad05a9fc26913b98de...",
+   "r4_gumbel_sample": "ca90de8d0f6f4f69f366f380..."
+  },
+  "submission_copy_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+  "submission_copy_verbatim_in_sync": true,
+  "proto_yaml_sha256": "41ab797002568e89fcc9a9eaa58be4f1cdfce20b6406abd0fdbf2ad11f7f8949",
+  "proto_yaml_unchanged": true,
+  "test_file_sha256": "cea988cbd117f23bb0bf50dbfe0c043dcb46cf4c0489d656b8073cc115265cb7",
+  "hardware": "Ascend910_9362 (910b2), cube_core_num=20 (probed), vector_core_num=40 (probed)",
+  "software": "CANN 9.2.0 / torch_npu 2.7.1.post4 / python 3.12.9 / tilelang 0.1.4+d75300ed",
+  "programming_mode": "Developer (pure Vector) + Ascend-specific T.tile.topk hybrid; pass_configs = R4_PASS_CONFIGS incl. tl.ascend_memory_planning",
+  "noise_threshold_pct": 3.0,
+  "test_command": "cd .agents/skills/cann-bench && ./scripts/run_evaluation.sh --bench-name cann --task-dir bench_lab/tilelang_ascend_bench --operator {R4FusedSampling|R4MaskSample} --source-dir examples/R4/cann_bench_submission --device-id 0 --processes-per-card 1 --timeout-per-process 1800 --reports-dir examples/R4/bench/reports -v",
+  "precision_gate_commands": [
+   "python test_r4_fused_sampling.py --level static",
+   "python test_r4_fused_sampling.py --level all",
+   "python test_r4_fused_sampling.py --level stability",
+   "python test_r4_fused_sampling.py --level stress",
+   "python ../../.agents/skills/tilelang-op-test-design/scripts/coverage_check.py test_r4_fused_sampling.py --proto proto.yaml"
+  ],
+  "precision_gate_exits_this_round": {
+   "gate_static": "0 wall=10s",
+   "gate_all": "0 wall=35s",
+   "gate_stability": "0 wall=18s",
+   "gate_stress": "0 wall=23s",
+   "gate_coverage": "0",
+   "sha256_stable_before_after_gates": "YES"
+  }
+ },
+ "dispatch": {
+  "cube_core_num": 20,
+  "vec_num": 2,
+  "split_cases": [
+   3,
+   4,
+   7,
+   8,
+   12,
+   17
+  ],
+  "n_split": 6,
+  "n_current": 12,
+  "note": "derived at runtime by the delivered host function _r4_split_plan(); S_cap = CUBE_CORE_NUM // b_num. Matches DESIGN.md section 13.4 exactly."
+ },
+ "headline": {
+  "geomean_speedup_36case": 1.230875891075447,
+  "geomean_speedup_fused_18": 1.2796003965191147,
+  "geomean_speedup_mask_18": 1.184006712839545,
+  "geomean_speedup_split6_fused": 2.062377428724772,
+  "geomean_speedup_split6_mask": 1.6434959764317787,
+  "geomean_speedup_nonsplit12_fused": 1.007923278319342,
+  "geomean_speedup_nonsplit12_mask": 1.0049557152740909,
+  "drift_control_pct_fused": -0.32380141392277517,
+  "drift_control_pct_mask": -0.036334935617665653,
+  "drift_control_pct_36": -0.18017165738319907,
+  "n_regress_gt_3pct": 0,
+  "worst_single_case_delta_pct": 0.433,
+  "best_single_case_delta_pct": -75.418,
+  "mismatch_count_total_36": 0,
+  "n_acc_fail_36": 0,
+  "score_fused_base1_cand": [
+   59.211626396316596,
+   60.76286887952885
+  ],
+  "score_mask_base1_cand": [
+   58.42260021682235,
+   59.24978580914473
+  ]
+ },
+ "non_split_12_verification": {
+  "requirement": "the 12 non-split cases run BYTE-IDENTICAL device code, so they must come out at exactly 1.000x inside the drift band; anything outside it would mean unexpected coupling and must be explained",
+  "fused": {
+   "geomean_speedup_nonsplit12": 1.007923278319342,
+   "geomean_speedup_nonsplit12_driftadj": 1.0056183980055335,
+   "nonsplit_geomean_cand_over_base1": 0.9921390065198676,
+   "nonsplit_geomean_cand_over_base2": 0.9967132143032728,
+   "nonsplit_geomean_control_base2_over_base1": 0.9954107081979418,
+   "nonsplit_worst_delta_pct": 0.1068,
+   "nonsplit_best_delta_pct": -2.6062,
+   "nonsplit_n_outside_noise": 0
+  },
+  "mask": {
+   "geomean_speedup_nonsplit12": 1.0049557152740909,
+   "geomean_speedup_nonsplit12_driftadj": 1.004859060142781,
+   "nonsplit_geomean_cand_over_base1": 0.995068722731987,
+   "nonsplit_geomean_cand_over_base2": 0.995269666283059,
+   "nonsplit_geomean_control_base2_over_base1": 0.9997981014011786,
+   "nonsplit_worst_delta_pct": 0.433,
+   "nonsplit_best_delta_pct": -1.828,
+   "nonsplit_n_outside_noise": 0
+  },
+  "structural_proof": {
+   "jit_cache_keys_shared": "prewarm_base_warm.json: the BASE arm found only 2 of 72 specializations cold, and both are K1 for cases 12/17 -- shapes the CAND arm never compiles as K1 because they take the split path. Every other entry hit the SAME cache directory as the candidate => identical loaded binaries.",
+   "launch_sequence_identical": "ksplit_base1/base2 vs ksplit_cand: all 12 non-split cases report 2 main_kernel launches with Block Num [b_num, b_num] in BOTH arms (anomaly_rows=0/144 steps)",
+   "conclusion": "no code-level coupling mechanism exists; the residual is measurement-level and is the same size as the identical-code control"
+  }
+ },
+ "model_verification_12_4": {
+  "note": "DESIGN.md section 12.4 predictions were model estimates only. This is the first measurement of them.",
+  "fused_geomean": {
+   "measured": 1.2796003965191147,
+   "band_a_launch_0_to_8us": [
+    1.151,
+    1.292
+   ],
+   "verdict": "INSIDE"
+  },
+  "mask_geomean": {
+   "measured": 1.184006712839545,
+   "band_a_launch_0_to_8us": [
+    1.107,
+    1.196
+   ],
+   "verdict": "INSIDE"
+  },
+  "fused_case7": {
+   "measured": 4.06802,
+   "band": [
+    3.52,
+    4.15
+   ],
+   "verdict": "INSIDE"
+  },
+  "mask_case7": {
+   "measured": 2.66771,
+   "band": [
+    2.43,
+    2.66
+   ],
+   "verdict": "ABOVE"
+  },
+  "split6_geomean_model_at_a_launch_3us": {
+   "mask": 1.554,
+   "fused": 1.855
+  },
+  "split6_geomean_measured": {
+   "mask": 1.6434959764317787,
+   "fused": 2.062377428724772
+  }
+ },
+ "a_launch": {
+  "guard_default_us": 8.0,
+  "E1_measured_floor_us": {
+   "min": 1.54,
+   "median": 2.84,
+   "max": 3.1,
+   "conclusion": "a_launch < 1.540 us; plan with <= 3.100 us"
+  },
+  "E2_least_squares": {
+   "a0_intercept_us": -0.05047619047618497,
+   "a1_per_b_num": 0.3264285714285708,
+   "a2_per_S": 0.23119047619047572,
+   "max_abs_resid_us": 0.12809523809523782
+  },
+  "E3_model_residual_verdict": "INCONSISTENT (8 of 24 residuals negative) -- section 12.2's F(256)=21.63 us/row was calibrated on the single-kernel K1 and does not transfer to K1B; reported as evidence, not used",
+  "conclusion_us": "< 1.540 (E1 min K2gB Duration; K2gB still does nonzero fold work); conservative planning value <= 3.100 us = 38.8% of the shipped default",
+  "guard_relaxation": {
+   "flip_scan": {
+    "8.0": [],
+    "4.0": [],
+    "3.2": [
+     11
+    ],
+    "2.74": [
+     6,
+     11
+    ],
+    "1.54": [
+     6,
+     11
+    ],
+    "1.0": [
+     6,
+     11
+    ],
+    "0.5": [
+     6,
+     11
+    ],
+    "0.0": [
+     6,
+     11
+    ]
+   },
+   "saturation": "the split set saturates at 8 cases for any a_launch <= 2.74 us; the other 10 non-split cases are blocked STRUCTURALLY (S<2 or n_blk_full<2), not by the cost guard",
+   "measured_benefit_if_relaxed": [
+    {
+     "case": 6,
+     "task": "fused",
+     "current_us": 61.38,
+     "split_us": 42.5,
+     "speedup_x": 1.44424,
+     "delta_pct": -30.7592,
+     "bitwise_identical": true,
+     "S": 3,
+     "block_num": [
+      12,
+      4,
+      12,
+      4
+     ]
+    },
+    {
+     "case": 6,
+     "task": "mask",
+     "current_us": 38.98,
+     "split_us": 29.78,
+     "speedup_x": 1.30893,
+     "delta_pct": -23.6018,
+     "bitwise_identical": true,
+     "S": 3,
+     "block_num": [
+      12,
+      4,
+      4
+     ]
+    },
+    {
+     "case": 11,
+     "task": "fused",
+     "current_us": 46.92,
+     "split_us": 37.6,
+     "speedup_x": 1.24787,
+     "delta_pct": -19.8636,
+     "bitwise_identical": true,
+     "S": 2,
+     "block_num": [
+      8,
+      4,
+      8,
+      4
+     ]
+    },
+    {
+     "case": 11,
+     "task": "mask",
+     "current_us": 31.52,
+     "split_us": 27.32,
+     "speedup_x": 1.15373,
+     "delta_pct": -13.3249,
+     "bitwise_identical": true,
+     "S": 2,
+     "block_num": [
+      8,
+      4,
+      4
+     ]
+    }
+   ],
+   "probe_kernel_file_unmodified": true,
+   "probe_caveat": "no CannBenchCacheClean kernel in this probe (the harness launches one per step), so absolute us may read slightly optimistic; both arms identical => ratio unaffected",
+   "test_table_blast_radius": {
+    "scanned_test_entries": 84,
+    "flipping_entries": [
+     {
+      "table": "L1_CASES",
+      "name": "l1_tailmid_V",
+      "B": 8,
+      "V": 10240,
+      "K_MAX": 256,
+      "BV": 4096,
+      "plan_shipped": [
+       false,
+       3,
+       1,
+       2
+      ],
+      "plan_relaxed": [
+       true,
+       3,
+       1,
+       2
+      ]
+     },
+     {
+      "table": "L1B_CASES",
+      "name": "l1b_tailmid_V",
+      "B": 8,
+      "V": 10240,
+      "K_MAX": 256,
+      "BV": 4096,
+      "plan_shipped": [
+       false,
+       3,
+       1,
+       2
+      ],
+      "plan_relaxed": [
+       true,
+       3,
+       1,
+       2
+      ]
+     },
+     {
+      "table": "STAB_CASES",
+      "name": "stab_B7_V4409_bv2048_gumbel",
+      "B": 7,
+      "V": 4409,
+      "K_MAX": 256,
+      "BV": 2048,
+      "plan_shipped": [
+       false,
+       3,
+       1,
+       2
+      ],
+      "plan_relaxed": [
+       true,
+       3,
+       1,
+       2
+      ]
+     },
+     {
+      "table": "STAB_CASES",
+      "name": "stab_B5_V10240_gumbel",
+      "B": 5,
+      "V": 10240,
+      "K_MAX": 256,
+      "BV": 4096,
+      "plan_shipped": [
+       false,
+       3,
+       1,
+       2
+      ],
+      "plan_relaxed": [
+       true,
+       3,
+       1,
+       2
+      ]
+     }
+    ],
+    "a_launch_shipped": 8.0,
+    "a_launch_relaxed": 1.54
+   },
+   "recommendation": "REPORTED, NOT IMPLEMENTED. Changing _SPLIT_A_LAUNCH_US needs Orchestrator approval AND a same-change update of 4 hardcoded expect_use_split fields in the test tables."
+  }
+ },
+ "case8_k128_bv2048": {
+  "question": "U3/V-S8: the K_MAX=128,BV=2048 specialization was correctness-proven in Stage 2 but its benefit was never measured",
+  "fused": {
+   "base1_us": 91.22,
+   "base2_us": 91.26,
+   "cand_us": 43.04,
+   "speedup_x": 2.11942,
+   "model_12_4_x": 1.87,
+   "model_err_pct": 13.34,
+   "delta_pct": -52.8174,
+   "mismatch_count": 0,
+   "acc_passed": true
+  },
+  "mask": {
+   "base1_us": 59.94,
+   "base2_us": 59.76,
+   "cand_us": 37.88,
+   "speedup_x": 1.58237,
+   "model_12_4_x": 1.57,
+   "model_err_pct": 0.79,
+   "delta_pct": -36.8035,
+   "mismatch_count": 0,
+   "acc_passed": true
+  },
+  "verdict": "KEEP. Both tasks gain far more than the 3% threshold, so the pre-authorised retreat (adding `and K_MAX == 256` to the guard) is NOT needed and was NOT used. DESIGN.md section 12.4 warning 3 predicted case8's 1.57x/1.87x was OPTIMISTIC because of R-F128; measurement shows the opposite -- mask matches the prediction and fused EXCEEDS it.",
+  "preauthorised_retreat_used": false
+ },
+ "block_num_runtime": {
+  "gate": "ksplit_fine.py asserts per step (i) row count == _r4_split_plan-derived launch count, (ii) Block Num sequence == expected, (iii) sum == expected sum, (iv) theorem P2: every split-PARALLEL kernel Block Num <= cube_core_num",
+  "results": {
+   "base1_fused": {
+    "anomaly_rows": 0,
+    "gate_pass": true,
+    "p2_violations": [],
+    "cube_core_num": 20,
+    "n_split_cases": 0
+   },
+   "base1_mask": {
+    "anomaly_rows": 0,
+    "gate_pass": true,
+    "p2_violations": [],
+    "cube_core_num": 20,
+    "n_split_cases": 0
+   },
+   "cand_fused": {
+    "anomaly_rows": 0,
+    "gate_pass": true,
+    "p2_violations": [],
+    "cube_core_num": 20,
+    "n_split_cases": 6
+   },
+   "cand_mask": {
+    "anomaly_rows": 0,
+    "gate_pass": true,
+    "p2_violations": [],
+    "cube_core_num": 20,
+    "n_split_cases": 6
+   },
+   "base2_fused": {
+    "anomaly_rows": 0,
+    "gate_pass": true,
+    "p2_violations": [],
+    "cube_core_num": 20,
+    "n_split_cases": 0
+   },
+   "base2_mask": {
+    "anomaly_rows": 0,
+    "gate_pass": true,
+    "p2_violations": [],
+    "cube_core_num": 20,
+    "n_split_cases": 0
+   }
+  },
+  "case7_fused_block_num": [
+   20,
+   2,
+   20,
+   2
+  ],
+  "case7_fused_expected": [
+   20,
+   2,
+   20,
+   2
+  ],
+  "case7_fused_matches_stage2_dryrun": true,
+  "theorem_p2_runtime": "PASS on all 6 CSVs; the tightest point is case7 K1A/K2gA with Block Num == 20 == cube_core_num (exactly one full wave)",
+  "full_table": {
+   "fused_case1": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 1,
+    "block_num": [
+     1,
+     1
+    ],
+    "expected": [
+     1,
+     1
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 24.24,
+     "K2g": 10.28
+    },
+    "total_us": 34.38
+   },
+   "fused_case2": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 1,
+    "block_num": [
+     1,
+     1
+    ],
+    "expected": [
+     1,
+     1
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 31.94,
+     "K2g": 10.14
+    },
+    "total_us": 41.98
+   },
+   "fused_case3": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "block_num": [
+     16,
+     4,
+     16,
+     4
+    ],
+    "expected": [
+     16,
+     4,
+     16,
+     4
+    ],
+    "n_launch": 4,
+    "per_kernel_us": {
+     "K1A": 11.3,
+     "K1B": 32.94,
+     "K2gA": 11.08,
+     "K2gB": 2.08
+    },
+    "total_us": 57.52
+   },
+   "fused_case4": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "block_num": [
+     8,
+     2,
+     8,
+     2
+    ],
+    "expected": [
+     8,
+     2,
+     8,
+     2
+    ],
+    "n_launch": 4,
+    "per_kernel_us": {
+     "K1A": 10.74,
+     "K1B": 18.94,
+     "K2gA": 10.48,
+     "K2gB": 1.54
+    },
+    "total_us": 41.8
+   },
+   "fused_case5": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 4,
+    "block_num": [
+     4,
+     4
+    ],
+    "expected": [
+     4,
+     4
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 35.34,
+     "K2g": 18.84
+    },
+    "total_us": 54.08
+   },
+   "fused_case6": {
+    "path": "CURRENT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "b_num": 4,
+    "block_num": [
+     4,
+     4
+    ],
+    "expected": [
+     4,
+     4
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 49.98,
+     "K2g": 27.22
+    },
+    "total_us": 77.16
+   },
+   "fused_case7": {
+    "path": "SPLIT",
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "b_num": 2,
+    "block_num": [
+     20,
+     2,
+     20,
+     2
+    ],
+    "expected": [
+     20,
+     2,
+     20,
+     2
+    ],
+    "n_launch": 4,
+    "per_kernel_us": {
+     "K1A": 42.44,
+     "K1B": 97.1,
+     "K2gA": 36.64,
+     "K2gB": 2.84
+    },
+    "total_us": 179.06
+   },
+   "fused_case8": {
+    "path": "SPLIT",
+    "S": 8,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "block_num": [
+     16,
+     2,
+     16,
+     2
+    ],
+    "expected": [
+     16,
+     2,
+     16,
+     2
+    ],
+    "n_launch": 4,
+    "per_kernel_us": {
+     "K1A": 6.46,
+     "K1B": 26.48,
+     "K2gA": 7.4,
+     "K2gB": 2.58
+    },
+    "total_us": 43.04
+   },
+   "fused_case9": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "block_num": [
+     32,
+     32
+    ],
+    "expected": [
+     32,
+     32
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 65.3,
+     "K2g": 20.44
+    },
+    "total_us": 85.66
+   },
+   "fused_case10": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "block_num": [
+     2,
+     2
+    ],
+    "expected": [
+     2,
+     2
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 32.26,
+     "K2g": 9.92
+    },
+    "total_us": 42.18
+   },
+   "fused_case11": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "block_num": [
+     4,
+     4
+    ],
+    "expected": [
+     4,
+     4
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 44.22,
+     "K2g": 18.76
+    },
+    "total_us": 62.92
+   },
+   "fused_case12": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 4,
+    "S_TAIL": -1,
+    "b_num": 8,
+    "block_num": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "expected": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "n_launch": 4,
+    "per_kernel_us": {
+     "K1A": 40.7,
+     "K1B": 27.96,
+     "K2gA": 36.26,
+     "K2gB": 2.98
+    },
+    "total_us": 108.18
+   },
+   "fused_case13": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 3,
+    "block_num": [
+     3,
+     3
+    ],
+    "expected": [
+     3,
+     3
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 11.88,
+     "K2g": 11.22
+    },
+    "total_us": 23.06
+   },
+   "fused_case14": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 16,
+    "block_num": [
+     16,
+     16
+    ],
+    "expected": [
+     16,
+     16
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 26.24,
+     "K2g": 11.12
+    },
+    "total_us": 37.48
+   },
+   "fused_case15": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 38,
+    "S_TAIL": 0,
+    "b_num": 32,
+    "block_num": [
+     32,
+     32
+    ],
+    "expected": [
+     32,
+     32
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 859.4,
+     "K2g": 611.98
+    },
+    "total_us": 1470.76
+   },
+   "fused_case16": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 8,
+    "S_TAIL": -1,
+    "b_num": 64,
+    "block_num": [
+     64,
+     64
+    ],
+    "expected": [
+     64,
+     64
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 433.88,
+     "K2g": 262.0
+    },
+    "total_us": 695.66
+   },
+   "fused_case17": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 19,
+    "S_TAIL": 1,
+    "b_num": 8,
+    "block_num": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "expected": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "n_launch": 4,
+    "per_kernel_us": {
+     "K1A": 183.84,
+     "K1B": 93.96,
+     "K2gA": 156.8,
+     "K2gB": 3.1
+    },
+    "total_us": 437.94
+   },
+   "fused_case18": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 16,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "block_num": [
+     32,
+     32
+    ],
+    "expected": [
+     32,
+     32
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 391.56,
+     "K2g": 258.54
+    },
+    "total_us": 650.0
+   },
+   "mask_case1": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 1,
+    "block_num": [
+     1,
+     1
+    ],
+    "expected": [
+     1,
+     1
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 24.2,
+     "K2m": 1.94
+    },
+    "total_us": 26.1
+   },
+   "mask_case2": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 1,
+    "block_num": [
+     1,
+     1
+    ],
+    "expected": [
+     1,
+     1
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 31.9,
+     "K2m": 2.02
+    },
+    "total_us": 33.98
+   },
+   "mask_case3": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "block_num": [
+     16,
+     4,
+     4
+    ],
+    "expected": [
+     16,
+     4,
+     4
+    ],
+    "n_launch": 3,
+    "per_kernel_us": {
+     "K1A": 11.58,
+     "K1B": 33.7,
+     "K2m": 5.52
+    },
+    "total_us": 50.92
+   },
+   "mask_case4": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "block_num": [
+     8,
+     2,
+     2
+    ],
+    "expected": [
+     8,
+     2,
+     2
+    ],
+    "n_launch": 3,
+    "per_kernel_us": {
+     "K1A": 10.68,
+     "K1B": 18.92,
+     "K2m": 4.7
+    },
+    "total_us": 34.2
+   },
+   "mask_case5": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 4,
+    "block_num": [
+     4,
+     4
+    ],
+    "expected": [
+     4,
+     4
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 35.3,
+     "K2m": 4.46
+    },
+    "total_us": 39.76
+   },
+   "mask_case6": {
+    "path": "CURRENT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "b_num": 4,
+    "block_num": [
+     4,
+     4
+    ],
+    "expected": [
+     4,
+     4
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 49.94,
+     "K2m": 4.84
+    },
+    "total_us": 54.78
+   },
+   "mask_case7": {
+    "path": "SPLIT",
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "b_num": 2,
+    "block_num": [
+     20,
+     2,
+     2
+    ],
+    "expected": [
+     20,
+     2,
+     2
+    ],
+    "n_launch": 3,
+    "per_kernel_us": {
+     "K1A": 39.38,
+     "K1B": 97.44,
+     "K2m": 36.06
+    },
+    "total_us": 172.86
+   },
+   "mask_case8": {
+    "path": "SPLIT",
+    "S": 8,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "block_num": [
+     16,
+     2,
+     2
+    ],
+    "expected": [
+     16,
+     2,
+     2
+    ],
+    "n_launch": 3,
+    "per_kernel_us": {
+     "K1A": 6.04,
+     "K1B": 26.12,
+     "K2m": 5.74
+    },
+    "total_us": 37.88
+   },
+   "mask_case9": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "block_num": [
+     32,
+     32
+    ],
+    "expected": [
+     32,
+     32
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 65.24,
+     "K2m": 4.38
+    },
+    "total_us": 69.58
+   },
+   "mask_case10": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "block_num": [
+     2,
+     2
+    ],
+    "expected": [
+     2,
+     2
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 32.2,
+     "K2m": 1.94
+    },
+    "total_us": 34.08
+   },
+   "mask_case11": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "block_num": [
+     4,
+     4
+    ],
+    "expected": [
+     4,
+     4
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 43.96,
+     "K2m": 3.0
+    },
+    "total_us": 46.96
+   },
+   "mask_case12": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 4,
+    "S_TAIL": -1,
+    "b_num": 8,
+    "block_num": [
+     16,
+     8,
+     8
+    ],
+    "expected": [
+     16,
+     8,
+     8
+    ],
+    "n_launch": 3,
+    "per_kernel_us": {
+     "K1A": 39.06,
+     "K1B": 24.88,
+     "K2m": 9.8
+    },
+    "total_us": 73.92
+   },
+   "mask_case13": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 3,
+    "block_num": [
+     3,
+     3
+    ],
+    "expected": [
+     3,
+     3
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 11.9,
+     "K2m": 2.72
+    },
+    "total_us": 14.64
+   },
+   "mask_case14": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 16,
+    "block_num": [
+     16,
+     16
+    ],
+    "expected": [
+     16,
+     16
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 26.3,
+     "K2m": 2.88
+    },
+    "total_us": 29.18
+   },
+   "mask_case15": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 38,
+    "S_TAIL": 0,
+    "b_num": 32,
+    "block_num": [
+     32,
+     32
+    ],
+    "expected": [
+     32,
+     32
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 858.24,
+     "K2m": 75.6
+    },
+    "total_us": 933.98
+   },
+   "mask_case16": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 8,
+    "S_TAIL": -1,
+    "b_num": 64,
+    "block_num": [
+     64,
+     64
+    ],
+    "expected": [
+     64,
+     64
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 433.3,
+     "K2m": 33.36
+    },
+    "total_us": 466.62
+   },
+   "mask_case17": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 19,
+    "S_TAIL": 1,
+    "b_num": 8,
+    "block_num": [
+     16,
+     8,
+     8
+    ],
+    "expected": [
+     16,
+     8,
+     8
+    ],
+    "n_launch": 3,
+    "per_kernel_us": {
+     "K1A": 181.48,
+     "K1B": 95.18,
+     "K2m": 44.32
+    },
+    "total_us": 321.32
+   },
+   "mask_case18": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 16,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "block_num": [
+     32,
+     32
+    ],
+    "expected": [
+     32,
+     32
+    ],
+    "n_launch": 2,
+    "per_kernel_us": {
+     "K1": 391.34,
+     "K2m": 32.84
+    },
+    "total_us": 423.96
+   }
+  }
+ },
+ "cann_bench_end_to_end": {
+  "n_cases": 36,
+  "mismatch_count_total": 0,
+  "n_acc_fail": 0,
+  "fused_passed": "18/18",
+  "mask_passed": "18/18",
+  "source": "the cand pass of the A/B IS the DESIGN.md section 11.4 step-11 end-to-end run: cann_performance_eval_20261011_150737 (fused) + _150934 (mask), plus their paired cann_correctness_eval_20261011_150635 / _150836"
+ },
+ "gates_report": {
+  "script": "bench/hap_thw_model/gates_report.py",
+  "exit_code": 0,
+  "GATE1_model_self_consistency": "PASS (softmax 20/20 + arg_max 20/20)",
+  "GATE2_bottleneck_attribution": "PASS (36/36 reported, all vector-bound)",
+  "GATE3_ordering_sanity": "PASS",
+  "GATE4_intensity_and_achieved_fraction": "PASS",
+  "t_hw_rederived": false,
+  "t_hw_rationale": "DESIGN.md section 15.3.2: not re-derived. The only ops/elem change is +S cross-split merges, worth +0.15% on case7 -- far inside GATE 1's tolerance. GATE 1 re-ran and reproduced the published values exactly."
+ },
+ "roofline_attainment": {
+  "convention": "attain% = 100 * t_hw_us / elapsed_us, same published t_hw for both arms",
+  "fused_geomean_pct": {
+   "base": 2.1961,
+   "cand": 2.8101,
+   "split6_base": 1.3612,
+   "split6_cand": 2.8073
+  },
+  "mask_geomean_pct": {
+   "base": 1.9493,
+   "cand": 2.308,
+   "split6_base": 1.0803,
+   "split6_cand": 1.7754
+  },
+  "two_pass_gm_read_caveat": {
+   "statement": "DESIGN.md section 15.3.2 requires this to be stated: the rev3 split path reads `logits` from GM TWICE (K1A for the Sort side, K1B for the softmax side) while the published t_hw charges it ONCE (hap_lib unique-bytes / no-reload-factor convention). Attainment of a SPLIT case is therefore not strictly like-for-like with a CURRENT case.",
+   "fused": "0/6 split cases affected: 2*t_read stays below t_vector everywhere, so the published floor is unchanged and every case remains vector-bound.",
+   "mask": "3/6 split cases affected (7, 12, 17): charging the reload makes 2*t_read exceed t_vector, t_hw rises x1.87-1.88 (case7 1.3464->2.5345, case12 1.1676->2.1847, case17 5.3964->10.1587 us) and the attribution flips to READ-bound. Attainment under that\u53e3\u5f84 would be case7 0.779->1.466%, case12 1.579->2.955%, case17 1.679->3.162%.",
+   "why_mask_differs": "the mask task's arithmetic intensity is only ~2.57 ops/byte, already BELOW the 910b2 ridge point of 3.125 (GATE 4), with a vec/read margin as thin as 1.062x; the fused task is ~11.3 ops/byte (3.6x the ridge) so a doubled read cannot flip it.",
+   "per_case": [
+    {
+     "task": "r4_fused_sampling",
+     "case": 3,
+     "path": "SPLIT",
+     "t_hw_us": 1.0589,
+     "t_read_us": 0.27313333333333334,
+     "t_vector_us": 1.0589013333333335,
+     "t_cube_us": 0.0,
+     "t_write_us": 4.1666666666666665e-05,
+     "base_us": 100.3,
+     "cand_us": 57.52,
+     "attain_base_pct": 1.0557,
+     "attain_cand_pct": 1.8409,
+     "attain_ratio": 1.74374,
+     "t_hw_2pass_us": 1.0589,
+     "attain_cand_2pass_pct": 1.8409,
+     "bound_under_2pass": "vector",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_fused_sampling",
+     "case": 4,
+     "path": "SPLIT",
+     "t_hw_us": 1.0,
+     "t_read_us": 0.13656666666666667,
+     "t_vector_us": 0.5294506666666667,
+     "t_cube_us": 0.0,
+     "t_write_us": 2.0833333333333333e-05,
+     "base_us": 85.5,
+     "cand_us": 41.8,
+     "attain_base_pct": 1.1696,
+     "attain_cand_pct": 2.3923,
+     "attain_ratio": 2.04545,
+     "t_hw_2pass_us": 1.0,
+     "attain_cand_2pass_pct": 2.3923,
+     "bound_under_2pass": "vector",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_fused_sampling",
+     "case": 7,
+     "path": "SPLIT",
+     "t_hw_us": 4.8946,
+     "t_read_us": 1.2672333333333332,
+     "t_vector_us": 4.894602666666667,
+     "t_cube_us": 0.0,
+     "t_write_us": 2.0833333333333333e-05,
+     "base_us": 728.42,
+     "cand_us": 179.06,
+     "attain_base_pct": 0.6719,
+     "attain_cand_pct": 2.7335,
+     "attain_ratio": 4.06802,
+     "t_hw_2pass_us": 4.8946,
+     "attain_cand_2pass_pct": 2.7335,
+     "bound_under_2pass": "vector",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_fused_sampling",
+     "case": 8,
+     "path": "SPLIT",
+     "t_hw_us": 1.0,
+     "t_read_us": 0.13656666666666667,
+     "t_vector_us": 0.5282773333333334,
+     "t_cube_us": 0.0,
+     "t_write_us": 2.0833333333333333e-05,
+     "base_us": 91.22,
+     "cand_us": 43.04,
+     "attain_base_pct": 1.0963,
+     "attain_cand_pct": 2.3234,
+     "attain_ratio": 2.11942,
+     "t_hw_2pass_us": 1.0,
+     "attain_cand_2pass_pct": 2.3234,
+     "bound_under_2pass": "vector",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_fused_sampling",
+     "case": 12,
+     "path": "SPLIT",
+     "t_hw_us": 4.226,
+     "t_read_us": 1.0923999999999998,
+     "t_vector_us": 4.225962666666667,
+     "t_cube_us": 0.0,
+     "t_write_us": 8.333333333333333e-05,
+     "base_us": 160.98,
+     "cand_us": 108.18,
+     "attain_base_pct": 2.6252,
+     "attain_cand_pct": 3.9065,
+     "attain_ratio": 1.48808,
+     "t_hw_2pass_us": 4.226,
+     "attain_cand_2pass_pct": 3.9065,
+     "bound_under_2pass": "vector",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_fused_sampling",
+     "case": 17,
+     "path": "SPLIT",
+     "t_hw_us": 19.6185,
+     "t_read_us": 5.079366666666667,
+     "t_vector_us": 19.618474666666664,
+     "t_cube_us": 0.0,
+     "t_write_us": 8.333333333333333e-05,
+     "base_us": 736.42,
+     "cand_us": 437.94,
+     "attain_base_pct": 2.664,
+     "attain_cand_pct": 4.4797,
+     "attain_ratio": 1.68155,
+     "t_hw_2pass_us": 19.6185,
+     "attain_cand_2pass_pct": 4.4797,
+     "bound_under_2pass": "vector",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_mask_sample",
+     "case": 3,
+     "path": "SPLIT",
+     "t_hw_us": 1.0,
+     "t_read_us": 0.2731166666666667,
+     "t_vector_us": 0.29429866666666665,
+     "t_cube_us": 0.0,
+     "t_write_us": 0.13656666666666667,
+     "base_us": 70.6,
+     "cand_us": 50.92,
+     "attain_base_pct": 1.4164,
+     "attain_cand_pct": 1.9639,
+     "attain_ratio": 1.38649,
+     "t_hw_2pass_us": 1.0,
+     "attain_cand_2pass_pct": 1.9639,
+     "bound_under_2pass": "READ",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_mask_sample",
+     "case": 4,
+     "path": "SPLIT",
+     "t_hw_us": 1.0,
+     "t_read_us": 0.13655833333333334,
+     "t_vector_us": 0.14714933333333333,
+     "t_cube_us": 0.0,
+     "t_write_us": 0.06828333333333333,
+     "base_us": 55.82,
+     "cand_us": 34.2,
+     "attain_base_pct": 1.7915,
+     "attain_cand_pct": 2.924,
+     "attain_ratio": 1.63216,
+     "t_hw_2pass_us": 1.0,
+     "attain_cand_2pass_pct": 2.924,
+     "bound_under_2pass": "READ",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_mask_sample",
+     "case": 7,
+     "path": "SPLIT",
+     "t_hw_us": 1.3464,
+     "t_read_us": 1.267225,
+     "t_vector_us": 1.3463893333333334,
+     "t_cube_us": 0.0,
+     "t_write_us": 0.6336166666666666,
+     "base_us": 461.14,
+     "cand_us": 172.86,
+     "attain_base_pct": 0.292,
+     "attain_cand_pct": 0.7789,
+     "attain_ratio": 2.66771,
+     "t_hw_2pass_us": 2.5345,
+     "attain_cand_2pass_pct": 1.4662,
+     "bound_under_2pass": "READ",
+     "two_pass_changes_floor": true
+    },
+    {
+     "task": "r4_mask_sample",
+     "case": 8,
+     "path": "SPLIT",
+     "t_hw_us": 1.0,
+     "t_read_us": 0.13655833333333334,
+     "t_vector_us": 0.14597066666666667,
+     "t_cube_us": 0.0,
+     "t_write_us": 0.06828333333333333,
+     "base_us": 59.94,
+     "cand_us": 37.88,
+     "attain_base_pct": 1.6683,
+     "attain_cand_pct": 2.6399,
+     "attain_ratio": 1.58237,
+     "t_hw_2pass_us": 1.0,
+     "attain_cand_2pass_pct": 2.6399,
+     "bound_under_2pass": "READ",
+     "two_pass_changes_floor": false
+    },
+    {
+     "task": "r4_mask_sample",
+     "case": 12,
+     "path": "SPLIT",
+     "t_hw_us": 1.1676,
+     "t_read_us": 1.0923666666666667,
+     "t_vector_us": 1.1675626666666667,
+     "t_cube_us": 0.0,
+     "t_write_us": 0.5461999999999999,
+     "base_us": 103.64,
+     "cand_us": 73.92,
+     "attain_base_pct": 1.1266,
+     "attain_cand_pct": 1.5795,
+     "attain_ratio": 1.40206,
+     "t_hw_2pass_us": 2.1847,
+     "attain_cand_2pass_pct": 2.9555,
+     "bound_under_2pass": "READ",
+     "two_pass_changes_floor": true
+    },
+    {
+     "task": "r4_mask_sample",
+     "case": 17,
+     "path": "SPLIT",
+     "t_hw_us": 5.3964,
+     "t_read_us": 5.0793333333333335,
+     "t_vector_us": 5.396408,
+     "t_cube_us": 0.0,
+     "t_write_us": 2.5396833333333335,
+     "base_us": 472.78,
+     "cand_us": 321.32,
+     "attain_base_pct": 1.1414,
+     "attain_cand_pct": 1.6794,
+     "attain_ratio": 1.47137,
+     "t_hw_2pass_us": 10.1587,
+     "attain_cand_2pass_pct": 3.1616,
+     "bound_under_2pass": "READ",
+     "two_pass_changes_floor": true
+    }
+   ]
+  }
+ },
+ "jit_compile_cost_DISCLOSED_SEPARATELY": {
+  "statement": "Hard constraint 7: JIT compile time is NOT part of any performance number above. Every figure comes from msprof device Duration. This block is the separate disclosure.",
+  "cand_arm": {
+   "specializations": 90,
+   "cold_compiles_gt_1s": 21,
+   "new_cache_entries": 21,
+   "total_wall_s": 111.44,
+   "note": "all 21 cold compiles are FROZEN kernels (K1/K2g/K2m) that the shared cache had never seen for those shapes; every one of the 4 NEW rev3 split kernels was already warm from Stage 2 (0.02-0.13 s)"
+  },
+  "base_arm": {
+   "specializations": 72,
+   "cold_compiles_gt_1s": 2,
+   "new_cache_entries": 2,
+   "total_wall_s": 15.89,
+   "note": "only 2 of 72 cold -- K1 for cases 12 and 17, the two shapes the CAND arm compiles as K1A/K1B instead. This is direct evidence that the frozen kernels share JIT cache keys across both arms."
+  },
+  "new_rev3_specializations": {
+   "distinct_specializations": 23,
+   "kernel_invocations": 24,
+   "total_cold_compile_s": 117.16,
+   "mean_cold_compile_s": 5.09,
+   "per_kernel_total_s": {
+    "K1A": 30.05,
+    "K1B": 34.23,
+    "K2gA": 30.32,
+    "K2gB": 22.56
+   },
+   "measured_against": "a FRESH empty TILELANG_CACHE_DIR (/tmp/opencode/r4_tl_cache_r3cold), so this is what a first-ever run on a cold machine pays for the rev3 split kernels",
+   "kernel_file_unmodified": true,
+   "detail": "probe_cold_split_compile.json"
+  },
+  "ab_eval_wall_clock_s": {
+   "base1": [
+    123,
+    119
+   ],
+   "cand": [
+    124,
+    116
+   ],
+   "base2": [
+    125,
+    116
+   ],
+   "note": "fused, mask. The candidate arm is NOT slower wall-clock than the baseline arm because both were cache-warm."
+  }
+ },
+ "per_case": {
+  "1": {
+   "case_id": 1,
+   "shape": {
+    "B": 2,
+    "V": 256,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 1,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     1,
+     1
+    ],
+    "block_num_expected": [
+     1,
+     1
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 24.24,
+     "K2g": 10.28
+    },
+    "base1_elapsed_us": 35.3,
+    "base2_elapsed_us": 34.44,
+    "cand_elapsed_us": 34.38,
+    "delta_cand_vs_base1_pct": -2.6062,
+    "delta_drift_control_pct": -2.4363,
+    "delta_drift_adjusted_pct": -1.4052,
+    "measured_speedup_x": 1.02676,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 2.68,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.8329,
+    "roofline_attain_cand_pct": 2.9087,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.9087,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 1,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     1,
+     1
+    ],
+    "block_num_expected": [
+     1,
+     1
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 24.2,
+     "K2m": 1.94
+    },
+    "base1_elapsed_us": 26.44,
+    "base2_elapsed_us": 26.6,
+    "cand_elapsed_us": 26.1,
+    "delta_cand_vs_base1_pct": -1.2859,
+    "delta_drift_control_pct": 0.6051,
+    "delta_drift_adjusted_pct": -1.5837,
+    "measured_speedup_x": 1.01303,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 1.3,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 3.7821,
+    "roofline_attain_cand_pct": 3.8314,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 3.8314,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "2": {
+   "case_id": 2,
+   "shape": {
+    "B": 1,
+    "V": 4096,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 1,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     1,
+     1
+    ],
+    "block_num_expected": [
+     1,
+     1
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 31.94,
+     "K2g": 10.14
+    },
+    "base1_elapsed_us": 42.12,
+    "base2_elapsed_us": 42.1,
+    "cand_elapsed_us": 41.98,
+    "delta_cand_vs_base1_pct": -0.3324,
+    "delta_drift_control_pct": -0.0475,
+    "delta_drift_adjusted_pct": -0.3087,
+    "measured_speedup_x": 1.00333,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.33,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.3742,
+    "roofline_attain_cand_pct": 2.3821,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.3821,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 1,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     1,
+     1
+    ],
+    "block_num_expected": [
+     1,
+     1
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 31.9,
+     "K2m": 2.02
+    },
+    "base1_elapsed_us": 33.96,
+    "base2_elapsed_us": 33.78,
+    "cand_elapsed_us": 33.98,
+    "delta_cand_vs_base1_pct": 0.0589,
+    "delta_drift_control_pct": -0.53,
+    "delta_drift_adjusted_pct": 0.3248,
+    "measured_speedup_x": 0.99941,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.06,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.9446,
+    "roofline_attain_cand_pct": 2.9429,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.9429,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "3": {
+   "case_id": 3,
+   "shape": {
+    "B": 8,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "n_launch": 4,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "block_num_runtime": [
+     16,
+     4,
+     16,
+     4
+    ],
+    "block_num_expected": [
+     16,
+     4,
+     16,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 11.3,
+     "K1B": 32.94,
+     "K2gA": 11.08,
+     "K2gB": 2.08
+    },
+    "base1_elapsed_us": 100.3,
+    "base2_elapsed_us": 99.86,
+    "cand_elapsed_us": 57.52,
+    "delta_cand_vs_base1_pct": -42.652,
+    "delta_drift_control_pct": -0.4387,
+    "delta_drift_adjusted_pct": -42.526,
+    "measured_speedup_x": 1.74374,
+    "model_speedup_x_12_4": 1.49,
+    "model_err_pct": 17.03,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0589,
+    "roofline_attain_base_pct": 1.0557,
+    "roofline_attain_cand_pct": 1.8409,
+    "t_hw_2pass_us": 1.0589,
+    "roofline_attain_cand_2pass_pct": 1.8409,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "n_launch": 3,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     16,
+     4,
+     4
+    ],
+    "block_num_expected": [
+     16,
+     4,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 11.58,
+     "K1B": 33.7,
+     "K2m": 5.52
+    },
+    "base1_elapsed_us": 70.6,
+    "base2_elapsed_us": 70.42,
+    "cand_elapsed_us": 50.92,
+    "delta_cand_vs_base1_pct": -27.8754,
+    "delta_drift_control_pct": -0.255,
+    "delta_drift_adjusted_pct": -27.7833,
+    "measured_speedup_x": 1.38649,
+    "model_speedup_x_12_4": 1.32,
+    "model_err_pct": 5.04,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.4164,
+    "roofline_attain_cand_pct": 1.9639,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 1.9639,
+    "bound_under_2pass": "READ",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "4": {
+   "case_id": 4,
+   "shape": {
+    "B": 4,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "n_launch": 4,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "block_num_runtime": [
+     8,
+     2,
+     8,
+     2
+    ],
+    "block_num_expected": [
+     8,
+     2,
+     8,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 10.74,
+     "K1B": 18.94,
+     "K2gA": 10.48,
+     "K2gB": 1.54
+    },
+    "base1_elapsed_us": 85.5,
+    "base2_elapsed_us": 85.48,
+    "cand_elapsed_us": 41.8,
+    "delta_cand_vs_base1_pct": -51.1111,
+    "delta_drift_control_pct": -0.0234,
+    "delta_drift_adjusted_pct": -51.1054,
+    "measured_speedup_x": 2.04545,
+    "model_speedup_x_12_4": 1.52,
+    "model_err_pct": 34.57,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.1696,
+    "roofline_attain_cand_pct": 2.3923,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.3923,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "SPLIT",
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "n_launch": 3,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     8,
+     2,
+     2
+    ],
+    "block_num_expected": [
+     8,
+     2,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 10.68,
+     "K1B": 18.92,
+     "K2m": 4.7
+    },
+    "base1_elapsed_us": 55.82,
+    "base2_elapsed_us": 55.86,
+    "cand_elapsed_us": 34.2,
+    "delta_cand_vs_base1_pct": -38.7316,
+    "delta_drift_control_pct": 0.0717,
+    "delta_drift_adjusted_pct": -38.7536,
+    "measured_speedup_x": 1.63216,
+    "model_speedup_x_12_4": 1.31,
+    "model_err_pct": 24.59,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.7915,
+    "roofline_attain_cand_pct": 2.924,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.924,
+    "bound_under_2pass": "READ",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "5": {
+   "case_id": 5,
+   "shape": {
+    "B": 7,
+    "V": 4409,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 4,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     4,
+     4
+    ],
+    "block_num_expected": [
+     4,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 35.34,
+     "K2g": 18.84
+    },
+    "base1_elapsed_us": 55.1,
+    "base2_elapsed_us": 54.76,
+    "cand_elapsed_us": 54.08,
+    "delta_cand_vs_base1_pct": -1.8512,
+    "delta_drift_control_pct": -0.6171,
+    "delta_drift_adjusted_pct": -1.5474,
+    "measured_speedup_x": 1.01886,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 1.89,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.8149,
+    "roofline_attain_cand_pct": 1.8491,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 1.8491,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 4,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     4,
+     4
+    ],
+    "block_num_expected": [
+     4,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 35.3,
+     "K2m": 4.46
+    },
+    "base1_elapsed_us": 40.24,
+    "base2_elapsed_us": 40.24,
+    "cand_elapsed_us": 39.76,
+    "delta_cand_vs_base1_pct": -1.1928,
+    "delta_drift_control_pct": 0.0,
+    "delta_drift_adjusted_pct": -1.1928,
+    "measured_speedup_x": 1.01207,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 1.21,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.4851,
+    "roofline_attain_cand_pct": 2.5151,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.5151,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "6": {
+   "case_id": 6,
+   "shape": {
+    "B": 8,
+    "V": 10240,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "b_num": 4,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     4,
+     4
+    ],
+    "block_num_expected": [
+     4,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 49.98,
+     "K2g": 27.22
+    },
+    "base1_elapsed_us": 77.98,
+    "base2_elapsed_us": 77.36,
+    "cand_elapsed_us": 77.16,
+    "delta_cand_vs_base1_pct": -1.0516,
+    "delta_drift_control_pct": -0.7951,
+    "delta_drift_adjusted_pct": -0.6566,
+    "measured_speedup_x": 1.01063,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 1.06,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.2824,
+    "roofline_attain_cand_pct": 1.296,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 1.296,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "b_num": 4,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     4,
+     4
+    ],
+    "block_num_expected": [
+     4,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 49.94,
+     "K2m": 4.84
+    },
+    "base1_elapsed_us": 55.8,
+    "base2_elapsed_us": 55.92,
+    "cand_elapsed_us": 54.78,
+    "delta_cand_vs_base1_pct": -1.828,
+    "delta_drift_control_pct": 0.2151,
+    "delta_drift_adjusted_pct": -1.9334,
+    "measured_speedup_x": 1.01862,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 1.86,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.7921,
+    "roofline_attain_cand_pct": 1.8255,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 1.8255,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "7": {
+   "case_id": 7,
+   "shape": {
+    "B": 4,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "SPLIT",
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "b_num": 2,
+    "n_launch": 4,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "block_num_runtime": [
+     20,
+     2,
+     20,
+     2
+    ],
+    "block_num_expected": [
+     20,
+     2,
+     20,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 42.44,
+     "K1B": 97.1,
+     "K2gA": 36.64,
+     "K2gB": 2.84
+    },
+    "base1_elapsed_us": 728.42,
+    "base2_elapsed_us": 728.0,
+    "cand_elapsed_us": 179.06,
+    "delta_cand_vs_base1_pct": -75.418,
+    "delta_drift_control_pct": -0.0577,
+    "delta_drift_adjusted_pct": -75.4109,
+    "measured_speedup_x": 4.06802,
+    "model_speedup_x_12_4": 3.89,
+    "model_err_pct": 4.58,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 4.8946,
+    "roofline_attain_base_pct": 0.6719,
+    "roofline_attain_cand_pct": 2.7335,
+    "t_hw_2pass_us": 4.8946,
+    "roofline_attain_cand_2pass_pct": 2.7335,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "SPLIT",
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "b_num": 2,
+    "n_launch": 3,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     20,
+     2,
+     2
+    ],
+    "block_num_expected": [
+     20,
+     2,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 39.38,
+     "K1B": 97.44,
+     "K2m": 36.06
+    },
+    "base1_elapsed_us": 461.14,
+    "base2_elapsed_us": 461.26,
+    "cand_elapsed_us": 172.86,
+    "delta_cand_vs_base1_pct": -62.5146,
+    "delta_drift_control_pct": 0.026,
+    "delta_drift_adjusted_pct": -62.5195,
+    "measured_speedup_x": 2.66771,
+    "model_speedup_x_12_4": 2.57,
+    "model_err_pct": 3.8,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.3464,
+    "roofline_attain_base_pct": 0.292,
+    "roofline_attain_cand_pct": 0.7789,
+    "t_hw_2pass_us": 2.5345,
+    "roofline_attain_cand_2pass_pct": 1.4662,
+    "bound_under_2pass": "READ",
+    "two_pass_changes_t_hw": true
+   }
+  },
+  "8": {
+   "case_id": 8,
+   "shape": {
+    "B": 4,
+    "V": 16384,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "SPLIT",
+    "S": 8,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "n_launch": 4,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "block_num_runtime": [
+     16,
+     2,
+     16,
+     2
+    ],
+    "block_num_expected": [
+     16,
+     2,
+     16,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 6.46,
+     "K1B": 26.48,
+     "K2gA": 7.4,
+     "K2gB": 2.58
+    },
+    "base1_elapsed_us": 91.22,
+    "base2_elapsed_us": 91.26,
+    "cand_elapsed_us": 43.04,
+    "delta_cand_vs_base1_pct": -52.8174,
+    "delta_drift_control_pct": 0.0439,
+    "delta_drift_adjusted_pct": -52.8277,
+    "measured_speedup_x": 2.11942,
+    "model_speedup_x_12_4": 1.87,
+    "model_err_pct": 13.34,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.0963,
+    "roofline_attain_cand_pct": 2.3234,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.3234,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "SPLIT",
+    "S": 8,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "n_launch": 3,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     16,
+     2,
+     2
+    ],
+    "block_num_expected": [
+     16,
+     2,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 6.04,
+     "K1B": 26.12,
+     "K2m": 5.74
+    },
+    "base1_elapsed_us": 59.94,
+    "base2_elapsed_us": 59.76,
+    "cand_elapsed_us": 37.88,
+    "delta_cand_vs_base1_pct": -36.8035,
+    "delta_drift_control_pct": -0.3003,
+    "delta_drift_adjusted_pct": -36.7084,
+    "measured_speedup_x": 1.58237,
+    "model_speedup_x_12_4": 1.57,
+    "model_err_pct": 0.79,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.6683,
+    "roofline_attain_cand_pct": 2.6399,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.6399,
+    "bound_under_2pass": "READ",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "9": {
+   "case_id": 9,
+   "shape": {
+    "B": 64,
+    "V": 4096,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     32,
+     32
+    ],
+    "block_num_expected": [
+     32,
+     32
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 65.3,
+     "K2g": 20.44
+    },
+    "base1_elapsed_us": 85.98,
+    "base2_elapsed_us": 85.98,
+    "cand_elapsed_us": 85.66,
+    "delta_cand_vs_base1_pct": -0.3722,
+    "delta_drift_control_pct": 0.0,
+    "delta_drift_adjusted_pct": -0.3722,
+    "measured_speedup_x": 1.00374,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.37,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 2.1467,
+    "roofline_attain_base_pct": 2.4967,
+    "roofline_attain_cand_pct": 2.5061,
+    "t_hw_2pass_us": 2.1467,
+    "roofline_attain_cand_2pass_pct": 2.5061,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     32,
+     32
+    ],
+    "block_num_expected": [
+     32,
+     32
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 65.24,
+     "K2m": 4.38
+    },
+    "base1_elapsed_us": 69.28,
+    "base2_elapsed_us": 69.66,
+    "cand_elapsed_us": 69.58,
+    "delta_cand_vs_base1_pct": 0.433,
+    "delta_drift_control_pct": 0.5485,
+    "delta_drift_adjusted_pct": 0.1583,
+    "measured_speedup_x": 0.99569,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.43,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.4434,
+    "roofline_attain_cand_pct": 1.4372,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 1.4372,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "10": {
+   "case_id": 10,
+   "shape": {
+    "B": 4,
+    "V": 4096,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": true,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     2,
+     2
+    ],
+    "block_num_expected": [
+     2,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 32.26,
+     "K2g": 9.92
+    },
+    "base1_elapsed_us": 42.5,
+    "base2_elapsed_us": 42.38,
+    "cand_elapsed_us": 42.18,
+    "delta_cand_vs_base1_pct": -0.7529,
+    "delta_drift_control_pct": -0.2824,
+    "delta_drift_adjusted_pct": -0.6126,
+    "measured_speedup_x": 1.00759,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.76,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.3529,
+    "roofline_attain_cand_pct": 2.3708,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.3708,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 2,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     2,
+     2
+    ],
+    "block_num_expected": [
+     2,
+     2
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 32.2,
+     "K2m": 1.94
+    },
+    "base1_elapsed_us": 34.28,
+    "base2_elapsed_us": 33.96,
+    "cand_elapsed_us": 34.08,
+    "delta_cand_vs_base1_pct": -0.5834,
+    "delta_drift_control_pct": -0.9335,
+    "delta_drift_adjusted_pct": -0.1172,
+    "measured_speedup_x": 1.00587,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.59,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.9172,
+    "roofline_attain_cand_pct": 2.9343,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.9343,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "11": {
+   "case_id": 11,
+   "shape": {
+    "B": 8,
+    "V": 8192,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": true,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     4,
+     4
+    ],
+    "block_num_expected": [
+     4,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 44.22,
+     "K2g": 18.76
+    },
+    "base1_elapsed_us": 62.96,
+    "base2_elapsed_us": 62.8,
+    "cand_elapsed_us": 62.92,
+    "delta_cand_vs_base1_pct": -0.0635,
+    "delta_drift_control_pct": -0.2541,
+    "delta_drift_adjusted_pct": 0.0636,
+    "measured_speedup_x": 1.00064,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.06,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 1.5883,
+    "roofline_attain_cand_pct": 1.5893,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 1.5893,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "b_num": 4,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     4,
+     4
+    ],
+    "block_num_expected": [
+     4,
+     4
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 43.96,
+     "K2m": 3.0
+    },
+    "base1_elapsed_us": 47.18,
+    "base2_elapsed_us": 47.12,
+    "cand_elapsed_us": 46.96,
+    "delta_cand_vs_base1_pct": -0.4663,
+    "delta_drift_control_pct": -0.1272,
+    "delta_drift_adjusted_pct": -0.403,
+    "measured_speedup_x": 1.00468,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.47,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.1195,
+    "roofline_attain_cand_pct": 2.1295,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.1295,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "12": {
+   "case_id": 12,
+   "shape": {
+    "B": 16,
+    "V": 32768,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 4,
+    "S_TAIL": -1,
+    "b_num": 8,
+    "n_launch": 4,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "block_num_runtime": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "block_num_expected": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 40.7,
+     "K1B": 27.96,
+     "K2gA": 36.26,
+     "K2gB": 2.98
+    },
+    "base1_elapsed_us": 160.98,
+    "base2_elapsed_us": 161.42,
+    "cand_elapsed_us": 108.18,
+    "delta_cand_vs_base1_pct": -32.7991,
+    "delta_drift_control_pct": 0.2733,
+    "delta_drift_adjusted_pct": -32.8908,
+    "measured_speedup_x": 1.48808,
+    "model_speedup_x_12_4": 1.44,
+    "model_err_pct": 3.34,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 4.226,
+    "roofline_attain_base_pct": 2.6252,
+    "roofline_attain_cand_pct": 3.9065,
+    "t_hw_2pass_us": 4.226,
+    "roofline_attain_cand_2pass_pct": 3.9065,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 4,
+    "S_TAIL": -1,
+    "b_num": 8,
+    "n_launch": 3,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     16,
+     8,
+     8
+    ],
+    "block_num_expected": [
+     16,
+     8,
+     8
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 39.06,
+     "K1B": 24.88,
+     "K2m": 9.8
+    },
+    "base1_elapsed_us": 103.64,
+    "base2_elapsed_us": 103.82,
+    "cand_elapsed_us": 73.92,
+    "delta_cand_vs_base1_pct": -28.6762,
+    "delta_drift_control_pct": 0.1737,
+    "delta_drift_adjusted_pct": -28.7381,
+    "measured_speedup_x": 1.40206,
+    "model_speedup_x_12_4": 1.31,
+    "model_err_pct": 7.03,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.1676,
+    "roofline_attain_base_pct": 1.1266,
+    "roofline_attain_cand_pct": 1.5795,
+    "t_hw_2pass_us": 2.1847,
+    "roofline_attain_cand_2pass_pct": 2.9555,
+    "bound_under_2pass": "READ",
+    "two_pass_changes_t_hw": true
+   }
+  },
+  "13": {
+   "case_id": 13,
+   "shape": {
+    "B": 6,
+    "V": 2304,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 3,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     3,
+     3
+    ],
+    "block_num_expected": [
+     3,
+     3
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 11.88,
+     "K2g": 11.22
+    },
+    "base1_elapsed_us": 23.62,
+    "base2_elapsed_us": 23.24,
+    "cand_elapsed_us": 23.06,
+    "delta_cand_vs_base1_pct": -2.3709,
+    "delta_drift_control_pct": -1.6088,
+    "delta_drift_adjusted_pct": -1.5792,
+    "measured_speedup_x": 1.02428,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 2.43,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 4.2337,
+    "roofline_attain_cand_pct": 4.3365,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 4.3365,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "b_num": 3,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     3,
+     3
+    ],
+    "block_num_expected": [
+     3,
+     3
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 11.9,
+     "K2m": 2.72
+    },
+    "base1_elapsed_us": 14.84,
+    "base2_elapsed_us": 14.66,
+    "cand_elapsed_us": 14.64,
+    "delta_cand_vs_base1_pct": -1.3477,
+    "delta_drift_control_pct": -1.2129,
+    "delta_drift_adjusted_pct": -0.7458,
+    "measured_speedup_x": 1.01366,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 1.37,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 6.7385,
+    "roofline_attain_cand_pct": 6.8306,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 6.8306,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "14": {
+   "case_id": 14,
+   "shape": {
+    "B": 32,
+    "V": 1024,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 16,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     16,
+     16
+    ],
+    "block_num_expected": [
+     16,
+     16
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 26.24,
+     "K2g": 11.12
+    },
+    "base1_elapsed_us": 37.44,
+    "base2_elapsed_us": 37.62,
+    "cand_elapsed_us": 37.48,
+    "delta_cand_vs_base1_pct": 0.1068,
+    "delta_drift_control_pct": 0.4808,
+    "delta_drift_adjusted_pct": -0.1332,
+    "measured_speedup_x": 0.99893,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.11,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 2.6709,
+    "roofline_attain_cand_pct": 2.6681,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 2.6681,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "b_num": 16,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     16,
+     16
+    ],
+    "block_num_expected": [
+     16,
+     16
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 26.3,
+     "K2m": 2.88
+    },
+    "base1_elapsed_us": 29.12,
+    "base2_elapsed_us": 29.44,
+    "cand_elapsed_us": 29.18,
+    "delta_cand_vs_base1_pct": 0.206,
+    "delta_drift_control_pct": 1.0989,
+    "delta_drift_adjusted_pct": -0.3415,
+    "measured_speedup_x": 0.99794,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.21,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 1.0,
+    "roofline_attain_base_pct": 3.4341,
+    "roofline_attain_cand_pct": 3.427,
+    "t_hw_2pass_us": 1.0,
+    "roofline_attain_cand_2pass_pct": 3.427,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "15": {
+   "case_id": 15,
+   "shape": {
+    "B": 64,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 38,
+    "S_TAIL": 0,
+    "b_num": 32,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     32,
+     32
+    ],
+    "block_num_expected": [
+     32,
+     32
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 859.4,
+     "K2g": 611.98
+    },
+    "base1_elapsed_us": 1470.62,
+    "base2_elapsed_us": 1472.28,
+    "cand_elapsed_us": 1470.76,
+    "delta_cand_vs_base1_pct": 0.0095,
+    "delta_drift_control_pct": 0.1129,
+    "delta_drift_adjusted_pct": -0.0469,
+    "measured_speedup_x": 0.9999,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.01,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 78.3136,
+    "roofline_attain_base_pct": 5.3252,
+    "roofline_attain_cand_pct": 5.3247,
+    "t_hw_2pass_us": 78.3136,
+    "roofline_attain_cand_2pass_pct": 5.3247,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 38,
+    "S_TAIL": 0,
+    "b_num": 32,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     32,
+     32
+    ],
+    "block_num_expected": [
+     32,
+     32
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 858.24,
+     "K2m": 75.6
+    },
+    "base1_elapsed_us": 933.1,
+    "base2_elapsed_us": 932.72,
+    "cand_elapsed_us": 933.98,
+    "delta_cand_vs_base1_pct": 0.0943,
+    "delta_drift_control_pct": -0.0407,
+    "delta_drift_adjusted_pct": 0.1147,
+    "measured_speedup_x": 0.99906,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.09,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 21.5422,
+    "roofline_attain_base_pct": 2.3087,
+    "roofline_attain_cand_pct": 2.3065,
+    "t_hw_2pass_us": 21.5422,
+    "roofline_attain_cand_2pass_pct": 2.3065,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "16": {
+   "case_id": 16,
+   "shape": {
+    "B": 128,
+    "V": 32768,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 8,
+    "S_TAIL": -1,
+    "b_num": 64,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     64,
+     64
+    ],
+    "block_num_expected": [
+     64,
+     64
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 433.88,
+     "K2g": 262.0
+    },
+    "base1_elapsed_us": 695.62,
+    "base2_elapsed_us": 695.36,
+    "cand_elapsed_us": 695.66,
+    "delta_cand_vs_base1_pct": 0.0058,
+    "delta_drift_control_pct": -0.0374,
+    "delta_drift_adjusted_pct": 0.0244,
+    "measured_speedup_x": 0.99994,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.01,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 33.8077,
+    "roofline_attain_base_pct": 4.8601,
+    "roofline_attain_cand_pct": 4.8598,
+    "t_hw_2pass_us": 33.8077,
+    "roofline_attain_cand_2pass_pct": 4.8598,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 8,
+    "S_TAIL": -1,
+    "b_num": 64,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     64,
+     64
+    ],
+    "block_num_expected": [
+     64,
+     64
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 433.3,
+     "K2m": 33.36
+    },
+    "base1_elapsed_us": 466.7,
+    "base2_elapsed_us": 467.06,
+    "cand_elapsed_us": 466.62,
+    "delta_cand_vs_base1_pct": -0.0171,
+    "delta_drift_control_pct": 0.0771,
+    "delta_drift_adjusted_pct": -0.0557,
+    "measured_speedup_x": 1.00017,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.02,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 9.3405,
+    "roofline_attain_base_pct": 2.0014,
+    "roofline_attain_cand_pct": 2.0017,
+    "t_hw_2pass_us": 9.3405,
+    "roofline_attain_cand_2pass_pct": 2.0017,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  },
+  "17": {
+   "case_id": 17,
+   "shape": {
+    "B": 16,
+    "V": 152377,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 19,
+    "S_TAIL": 1,
+    "b_num": 8,
+    "n_launch": 4,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "block_num_runtime": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "block_num_expected": [
+     16,
+     8,
+     16,
+     8
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 183.84,
+     "K1B": 93.96,
+     "K2gA": 156.8,
+     "K2gB": 3.1
+    },
+    "base1_elapsed_us": 736.42,
+    "base2_elapsed_us": 735.58,
+    "cand_elapsed_us": 437.94,
+    "delta_cand_vs_base1_pct": -40.5312,
+    "delta_drift_control_pct": -0.1141,
+    "delta_drift_adjusted_pct": -40.4973,
+    "measured_speedup_x": 1.68155,
+    "model_speedup_x_12_4": 1.72,
+    "model_err_pct": -2.24,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 19.6185,
+    "roofline_attain_base_pct": 2.664,
+    "roofline_attain_cand_pct": 4.4797,
+    "t_hw_2pass_us": 19.6185,
+    "roofline_attain_cand_2pass_pct": 4.4797,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 19,
+    "S_TAIL": 1,
+    "b_num": 8,
+    "n_launch": 3,
+    "kernel_names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     16,
+     8,
+     8
+    ],
+    "block_num_expected": [
+     16,
+     8,
+     8
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1A": 181.48,
+     "K1B": 95.18,
+     "K2m": 44.32
+    },
+    "base1_elapsed_us": 472.78,
+    "base2_elapsed_us": 472.18,
+    "cand_elapsed_us": 321.32,
+    "delta_cand_vs_base1_pct": -32.036,
+    "delta_drift_control_pct": -0.1269,
+    "delta_drift_adjusted_pct": -31.9929,
+    "measured_speedup_x": 1.47137,
+    "model_speedup_x_12_4": 1.54,
+    "model_err_pct": -4.46,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 5.3964,
+    "roofline_attain_base_pct": 1.1414,
+    "roofline_attain_cand_pct": 1.6794,
+    "t_hw_2pass_us": 10.1587,
+    "roofline_attain_cand_2pass_pct": 3.1616,
+    "bound_under_2pass": "READ",
+    "two_pass_changes_t_hw": true
+   }
+  },
+  "18": {
+   "case_id": 18,
+   "shape": {
+    "B": 64,
+    "V": 65536,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": true,
+    "logits_dtype": "float32"
+   },
+   "r4_fused_sampling": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 16,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2g"
+    ],
+    "block_num_runtime": [
+     32,
+     32
+    ],
+    "block_num_expected": [
+     32,
+     32
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 391.56,
+     "K2g": 258.54
+    },
+    "base1_elapsed_us": 650.66,
+    "base2_elapsed_us": 650.76,
+    "cand_elapsed_us": 650.0,
+    "delta_cand_vs_base1_pct": -0.1014,
+    "delta_drift_control_pct": 0.0154,
+    "delta_drift_adjusted_pct": -0.1091,
+    "measured_speedup_x": 1.00102,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": 0.1,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 33.7692,
+    "roofline_attain_base_pct": 5.19,
+    "roofline_attain_cand_pct": 5.1953,
+    "t_hw_2pass_us": 33.7692,
+    "roofline_attain_cand_2pass_pct": 5.1953,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   },
+   "r4_mask_sample": {
+    "path": "CURRENT",
+    "S": 1,
+    "NBS": 16,
+    "S_TAIL": -1,
+    "b_num": 32,
+    "n_launch": 2,
+    "kernel_names": [
+     "K1",
+     "K2m"
+    ],
+    "block_num_runtime": [
+     32,
+     32
+    ],
+    "block_num_expected": [
+     32,
+     32
+    ],
+    "block_num_ok": true,
+    "theorem_p2_ok": true,
+    "per_kernel_us": {
+     "K1": 391.34,
+     "K2m": 32.84
+    },
+    "base1_elapsed_us": 423.78,
+    "base2_elapsed_us": 424.12,
+    "cand_elapsed_us": 423.96,
+    "delta_cand_vs_base1_pct": 0.0425,
+    "delta_drift_control_pct": 0.0802,
+    "delta_drift_adjusted_pct": 0.0024,
+    "measured_speedup_x": 0.99958,
+    "model_speedup_x_12_4": 1.0,
+    "model_err_pct": -0.04,
+    "acc_passed": true,
+    "mismatch_count": 0,
+    "t_hw_us": 9.302,
+    "roofline_attain_base_pct": 2.195,
+    "roofline_attain_cand_pct": 2.1941,
+    "t_hw_2pass_us": 9.302,
+    "roofline_attain_cand_2pass_pct": 2.1941,
+    "bound_under_2pass": "vector",
+    "two_pass_changes_t_hw": false
+   }
+  }
+ }
+}

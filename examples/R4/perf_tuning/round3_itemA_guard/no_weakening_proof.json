@@ -1,0 +1,150 @@
+{
+ "_meta": {
+  "before": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/history_version/test_r4_fused_sampling_impl_s3r3_itemA_attempt0.py",
+  "after": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/test_r4_fused_sampling.py"
+ },
+ "functions": {
+  "before": 52,
+  "after": 52,
+  "changed": [
+   "test_r4_rev3_l1"
+  ],
+  "docstring_only": [
+   "test_r4_rev3_l1"
+  ],
+  "real_executable_change": [],
+  "removed": [],
+  "added": []
+ },
+ "tables": {
+  "L0_CASES": {
+   "before": 8,
+   "after": 8,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [],
+   "new_entries": []
+  },
+  "REV3_L0_CASES": {
+   "before": 15,
+   "after": 15,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [],
+   "new_entries": []
+  },
+  "REV3_L1_CASES": {
+   "before": 13,
+   "after": 15,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [],
+   "new_entries": [
+    "l1r3_split_cb6_B8_V10240",
+    "l1r3_split_cb11_B8_V8192"
+   ]
+  },
+  "REV3_BND_CASES": {
+   "before": 4,
+   "after": 4,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [],
+   "new_entries": []
+  },
+  "L0B_CASES": {
+   "before": 8,
+   "after": 8,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [],
+   "new_entries": []
+  },
+  "L1_CASES": {
+   "before": 18,
+   "after": 18,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [
+    [
+     "l1_tailmid_V",
+     [
+      "D-PATH-SPLIT",
+      "D-SPLIT-NBS1",
+      "D-SPLIT-TAILOWNER"
+     ]
+    ]
+   ],
+   "new_entries": []
+  },
+  "L1B_CASES": {
+   "before": 16,
+   "after": 16,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [
+    [
+     "l1b_tailmid_V",
+     [
+      "D-PATH-SPLIT",
+      "D-SPLIT-NBS1",
+      "D-SPLIT-TAILOWNER"
+     ]
+    ]
+   ],
+   "new_entries": []
+  },
+  "STAB_CASES": {
+   "before": 12,
+   "after": 16,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [
+    [
+     "stab_B7_V4409_bv2048_gumbel",
+     [
+      "D-PATH-SPLIT",
+      "D-SPLIT-NBS1",
+      "D-SPLIT-TAILOWNER"
+     ]
+    ],
+    [
+     "stab_B5_V10240_gumbel",
+     [
+      "D-PATH-SPLIT",
+      "D-SPLIT-NBS1",
+      "D-SPLIT-TAILOWNER"
+     ]
+    ]
+   ],
+   "new_entries": [
+    "stab_split_cb6_B8_V10240_gumbel",
+    "stab_split_cb6_B8_V10240_mask",
+    "stab_split_cb11_B8_V8192_gumbel",
+    "stab_split_cb11_B8_V8192_mask"
+   ]
+  },
+  "ADV_CASES": {
+   "before": 8,
+   "after": 8,
+   "dropped": [],
+   "non_tag_fields_changed": [],
+   "tags_shrunk": [],
+   "tags_grew": [],
+   "new_entries": []
+  }
+ },
+ "constants": {
+  "decreased_manifest": {},
+  "lost_tag_dims": {}
+ },
+ "criterion6_pass": true
+}

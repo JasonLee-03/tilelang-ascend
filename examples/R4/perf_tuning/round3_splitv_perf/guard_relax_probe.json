@@ -1,0 +1,225 @@
+{
+ "_meta": {
+  "description": "Empirical cost/benefit of relaxing _SPLIT_A_LAUNCH_US from the shipped 8.0 us to the measured floor 1.54 us, for the only two cases the cost guard can admit.",
+  "measurement": "torch_npu.profiler Level1 msprof kernel_details.csv, warmup=3 active=5, median of per-step SUMS of main_kernel Duration(us). No Python/torch timing.",
+  "caveat": "no CannBenchCacheClean kernel in this probe (the harness launches one per step), so absolute us may read slightly optimistic; both arms identical => ratio unaffected",
+  "a_launch_shipped_us": 8.0,
+  "a_launch_measured_us": 1.54,
+  "kernel_sha256_before": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+  "kernel_sha256_after": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+  "kernel_file_unmodified": true,
+  "module_constant_restored": true
+ },
+ "results": [
+  {
+   "case": 6,
+   "task": "fused",
+   "B": 8,
+   "V": 10240,
+   "K_MAX": 256,
+   "BV": 4096,
+   "need_min_p": false,
+   "A_shipped": {
+    "a_launch_us": 8.0,
+    "use_split": false,
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "total_us": 61.38,
+    "n_steps": 5,
+    "block_num": [
+     4,
+     4
+    ],
+    "min_step_us": 61.08,
+    "max_step_us": 61.52,
+    "n_launch": 2
+   },
+   "B_relaxed": {
+    "a_launch_us": 1.54,
+    "use_split": true,
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "total_us": 42.5,
+    "n_steps": 5,
+    "block_num": [
+     12,
+     4,
+     12,
+     4
+    ],
+    "min_step_us": 42.48,
+    "max_step_us": 42.68,
+    "n_launch": 4
+   },
+   "bitwise_A_vs_B": {
+    "m_out": true,
+    "s_out": true,
+    "tau_out": true,
+    "valid": true,
+    "tok_out": true
+   },
+   "bitwise_all_equal": true,
+   "speedup_x": 1.44424,
+   "delta_pct": -30.7592
+  },
+  {
+   "case": 6,
+   "task": "mask",
+   "B": 8,
+   "V": 10240,
+   "K_MAX": 256,
+   "BV": 4096,
+   "need_min_p": false,
+   "A_shipped": {
+    "a_launch_us": 8.0,
+    "use_split": false,
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "total_us": 38.98,
+    "n_steps": 5,
+    "block_num": [
+     4,
+     4
+    ],
+    "min_step_us": 38.86,
+    "max_step_us": 39.5,
+    "n_launch": 2
+   },
+   "B_relaxed": {
+    "a_launch_us": 1.54,
+    "use_split": true,
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "total_us": 29.78,
+    "n_steps": 5,
+    "block_num": [
+     12,
+     4,
+     4
+    ],
+    "min_step_us": 29.64,
+    "max_step_us": 29.92,
+    "n_launch": 3
+   },
+   "bitwise_A_vs_B": {
+    "m_out": true,
+    "s_out": true,
+    "tau_out": true,
+    "valid": true,
+    "w_out": true
+   },
+   "bitwise_all_equal": true,
+   "speedup_x": 1.30893,
+   "delta_pct": -23.6018
+  },
+  {
+   "case": 11,
+   "task": "fused",
+   "B": 8,
+   "V": 8192,
+   "K_MAX": 256,
+   "BV": 4096,
+   "need_min_p": false,
+   "A_shipped": {
+    "a_launch_us": 8.0,
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "total_us": 46.92,
+    "n_steps": 5,
+    "block_num": [
+     4,
+     4
+    ],
+    "min_step_us": 46.86,
+    "max_step_us": 47.26,
+    "n_launch": 2
+   },
+   "B_relaxed": {
+    "a_launch_us": 1.54,
+    "use_split": true,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "total_us": 37.6,
+    "n_steps": 5,
+    "block_num": [
+     8,
+     4,
+     8,
+     4
+    ],
+    "min_step_us": 37.4,
+    "max_step_us": 38.08,
+    "n_launch": 4
+   },
+   "bitwise_A_vs_B": {
+    "m_out": true,
+    "s_out": true,
+    "tau_out": true,
+    "valid": true,
+    "tok_out": true
+   },
+   "bitwise_all_equal": true,
+   "speedup_x": 1.24787,
+   "delta_pct": -19.8636
+  },
+  {
+   "case": 11,
+   "task": "mask",
+   "B": 8,
+   "V": 8192,
+   "K_MAX": 256,
+   "BV": 4096,
+   "need_min_p": false,
+   "A_shipped": {
+    "a_launch_us": 8.0,
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "total_us": 31.52,
+    "n_steps": 5,
+    "block_num": [
+     4,
+     4
+    ],
+    "min_step_us": 31.4,
+    "max_step_us": 31.68,
+    "n_launch": 2
+   },
+   "B_relaxed": {
+    "a_launch_us": 1.54,
+    "use_split": true,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "total_us": 27.32,
+    "n_steps": 5,
+    "block_num": [
+     8,
+     4,
+     4
+    ],
+    "min_step_us": 27.26,
+    "max_step_us": 27.62,
+    "n_launch": 3
+   },
+   "bitwise_A_vs_B": {
+    "m_out": true,
+    "s_out": true,
+    "tau_out": true,
+    "valid": true,
+    "w_out": true
+   },
+   "bitwise_all_equal": true,
+   "speedup_x": 1.15373,
+   "delta_pct": -13.3249
+  }
+ ]
+}

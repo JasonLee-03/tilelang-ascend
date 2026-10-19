@@ -1,0 +1,168 @@
+
+=== K1_case08_nosort.cc  (n_blk_full=8, 25 instruction lines in the loop) ===
+  online-softmax (UNAVOIDABLE):
+    Broadcast                          1
+    copy_gm_to_ub                      1
+    reduce_max                         1
+    reduce_max_elems                   2048
+    reduce_sum                         1
+    reduce_sum_elems                   2048
+    scalar_op                          6
+    vec_elemwise_fullwidth             2
+    -- per-op detail --
+    Add[1]                             1
+    Exp[1]                             1
+    Exp[2048]                          1
+    Max[1]                             2
+    Mul[1]                             1
+    Sub[1]                             1
+    Sub[2048]                          1
+  topk+merge (PRUNABLE):
+
+=== K1_case08_pruned.cc  (n_blk_full=8, 41 instruction lines in the loop) ===
+  online-softmax (UNAVOIDABLE):
+    Broadcast                          1
+    branch                             2
+    copy_gm_to_ub                      1
+    reduce_max                         1
+    reduce_max_elems                   2048
+    reduce_sum                         1
+    reduce_sum_elems                   2048
+    scalar_op                          6
+    vec_elemwise_fullwidth             2
+    -- per-op detail --
+    Add[1]                             1
+    Exp[1]                             1
+    Exp[2048]                          1
+    Max[1]                             2
+    Mul[1]                             1
+    Sub[1]                             1
+    Sub[2048]                          1
+  topk+merge (PRUNABLE):
+    GatherMask                         2
+    TopK::ArithProgression             2
+    TopK::DataCopy                     4
+    TopK::Duplicate_pad                0
+    TopK::MrgSort                      24
+    TopK::PipeBarrier                  2
+    TopK::Sort32                       2
+    TopK_total_Sort32_repeats          72
+    copy_ub_to_ub                      2
+      TopK(K=128, repeats=64, actual=2048) -> aligned=2048 padCount=0 Sort32reps=64 MrgSort=21 stages=[(64, 16), (16, 4), (4, 1)]
+      TopK(K=128, repeats=8, actual=256) -> aligned=256 padCount=0 Sort32reps=8 MrgSort=3 stages=[(8, 2), (2, 1)]
+
+=== K1_case08_real.cc  (n_blk_full=8, 35 instruction lines in the loop) ===
+  online-softmax (UNAVOIDABLE):
+    Broadcast                          1
+    copy_gm_to_ub                      1
+    reduce_max                         1
+    reduce_max_elems                   2048
+    reduce_sum                         1
+    reduce_sum_elems                   2048
+    scalar_op                          6
+    vec_elemwise_fullwidth             2
+    -- per-op detail --
+    Add[1]                             1
+    Exp[1]                             1
+    Exp[2048]                          1
+    Max[1]                             2
+    Mul[1]                             1
+    Sub[1]                             1
+    Sub[2048]                          1
+  topk+merge (PRUNABLE):
+    GatherMask                         2
+    TopK::ArithProgression             2
+    TopK::DataCopy                     4
+    TopK::Duplicate_pad                0
+    TopK::MrgSort                      24
+    TopK::PipeBarrier                  2
+    TopK::Sort32                       2
+    TopK_total_Sort32_repeats          72
+    copy_ub_to_ub                      2
+      TopK(K=128, repeats=64, actual=2048) -> aligned=2048 padCount=0 Sort32reps=64 MrgSort=21 stages=[(64, 16), (16, 4), (4, 1)]
+      TopK(K=128, repeats=8, actual=256) -> aligned=256 padCount=0 Sort32reps=8 MrgSort=3 stages=[(8, 2), (2, 1)]
+
+=== K1_case15_nosort.cc  (n_blk_full=37, 25 instruction lines in the loop) ===
+  online-softmax (UNAVOIDABLE):
+    Broadcast                          1
+    copy_gm_to_ub                      1
+    reduce_max                         1
+    reduce_max_elems                   4096
+    reduce_sum                         1
+    reduce_sum_elems                   4096
+    scalar_op                          6
+    vec_elemwise_fullwidth             2
+    -- per-op detail --
+    Add[1]                             1
+    Exp[1]                             1
+    Exp[4096]                          1
+    Max[1]                             2
+    Mul[1]                             1
+    Sub[1]                             1
+    Sub[4096]                          1
+  topk+merge (PRUNABLE):
+
+=== K1_case15_pruned.cc  (n_blk_full=37, 41 instruction lines in the loop) ===
+  online-softmax (UNAVOIDABLE):
+    Broadcast                          1
+    branch                             2
+    copy_gm_to_ub                      1
+    reduce_max                         1
+    reduce_max_elems                   4096
+    reduce_sum                         1
+    reduce_sum_elems                   4096
+    scalar_op                          6
+    vec_elemwise_fullwidth             2
+    -- per-op detail --
+    Add[1]                             1
+    Exp[1]                             1
+    Exp[4096]                          1
+    Max[1]                             2
+    Mul[1]                             1
+    Sub[1]                             1
+    Sub[4096]                          1
+  topk+merge (PRUNABLE):
+    GatherMask                         2
+    TopK::ArithProgression             2
+    TopK::DataCopy                     4
+    TopK::Duplicate_pad                0
+    TopK::MrgSort                      48
+    TopK::PipeBarrier                  2
+    TopK::Sort32                       2
+    TopK_total_Sort32_repeats          144
+    copy_ub_to_ub                      2
+      TopK(K=256, repeats=128, actual=4096) -> aligned=4096 padCount=0 Sort32reps=128 MrgSort=43 stages=[(128, 32), (32, 8), (8, 2), (2, 1)]
+      TopK(K=256, repeats=16, actual=512) -> aligned=512 padCount=0 Sort32reps=16 MrgSort=5 stages=[(16, 4), (4, 1)]
+
+=== K1_case15_real.cc  (n_blk_full=37, 35 instruction lines in the loop) ===
+  online-softmax (UNAVOIDABLE):
+    Broadcast                          1
+    copy_gm_to_ub                      1
+    reduce_max                         1
+    reduce_max_elems                   4096
+    reduce_sum                         1
+    reduce_sum_elems                   4096
+    scalar_op                          6
+    vec_elemwise_fullwidth             2
+    -- per-op detail --
+    Add[1]                             1
+    Exp[1]                             1
+    Exp[4096]                          1
+    Max[1]                             2
+    Mul[1]                             1
+    Sub[1]                             1
+    Sub[4096]                          1
+  topk+merge (PRUNABLE):
+    GatherMask                         2
+    TopK::ArithProgression             2
+    TopK::DataCopy                     4
+    TopK::Duplicate_pad                0
+    TopK::MrgSort                      48
+    TopK::PipeBarrier                  2
+    TopK::Sort32                       2
+    TopK_total_Sort32_repeats          144
+    copy_ub_to_ub                      2
+      TopK(K=256, repeats=128, actual=4096) -> aligned=4096 padCount=0 Sort32reps=128 MrgSort=43 stages=[(128, 32), (32, 8), (8, 2), (2, 1)]
+      TopK(K=256, repeats=16, actual=512) -> aligned=512 padCount=0 Sort32reps=16 MrgSort=5 stages=[(16, 4), (4, 1)]
+
+wrote emitted_cc/insn_census.json

@@ -1,0 +1,284 @@
+{
+ "_meta": {
+  "description": "R4 Stage-3 round-3 item-A iteration baseline record (per the perftuner stage contract: kernel time, shape, test command, precision status, programming mode). This is the BEFORE state of the single authorised edit, recorded in-session before any change was made, so the adopt/rollback decision has a measured reference rather than a remembered one.",
+  "iteration": "round3-itemA",
+  "iteration_index": 3,
+  "timestamp_recorded": "2026-10-12T19:15:57+08:00",
+  "timestamp_decided": "2026-10-12T20:25:00+08:00",
+  "round_nature": "single authorised kernel edit (one host-side float constant) + its 4 mandatory test-side配套 items",
+  "timing_口径": "cann-bench run_evaluation.sh -> msprof kernel_details.csv, warmup=3 repeat=5, median of per-step SUMS of main_kernel Duration(us). NO Python/torch timing is used for any device number. JIT compile time is excluded by construction and disclosed separately.",
+  "hardware": "Ascend910_9362 (910b2), cube_core_num=20 PROBED, vector_core_num=40 PROBED",
+  "software": "CANN 9.2.0 / torch_npu 2.7.1.post4 / python 3.12.9 / tilelang 0.1.4+d75300ed0a88b0f4b2eef8a62b43f1930fdae44b (installed wheel, NOT the repo source tree)",
+  "programming_mode": "Developer (pure Vector) + T.tile.topk hybrid; pass_configs=R4_PASS_CONFIGS incl. tl.ascend_memory_planning=True. Unchanged by this item.",
+  "env_recipe": "cwd=examples/R4 (never the repo root: the uncompiled tilelang/ source tree shadows the wheel -> ModuleNotFoundError: No module named 'tvm'); PYTHONPATH=/home/developer/Ascend/cann-9.2.0/python/site-packages:/home/developer/Ascend/cann-9.2.0/opp/built-in/op_impl/ai_core/tbe: ; ACL_OP_INIT_MODE=1 ; LD_LIBRARY_PATH prefixed with /usr/local/sqlite3/lib (else msprof_analysis silently zeroes elapsed_us); cann-bench needs R4_HTML_SHIM=1 + the sitecustomize shim on PYTHONPATH (html_generator.py:494 crashes int('g') on the flat-layout suite)"
+ },
+
+ "baseline_before": {
+  "kernel_file": "examples/R4/r4_fused_sampling.py",
+  "kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+  "kernel_lines": 1240,
+  "n_tilelang_jit_kernels": 7,
+  "test_file_sha256": "cea988cbd117f23bb0bf50dbfe0c043dcb46cf4c0489d656b8073cc115265cb7",
+  "test_file_lines": 2410,
+  "proto_yaml_sha256": "41ab797002568e89fcc9a9eaa58be4f1cdfce20b6406abd0fdbf2ad11f7f8949",
+  "backup_path": "examples/R4/history_version/r4_fused_sampling_impl_s3r3_itemA_attempt0.py",
+  "backup_sha256_verified_equal_to_delivered": true,
+  "test_backup_path": "examples/R4/history_version/test_r4_fused_sampling_impl_s3r3_itemA_attempt0.py",
+  "guard_constant": {"_SPLIT_A_LAUNCH_US": 8.0, "_SPLIT_SAFETY": 1.5,
+                     "provenance": "Stage-2 CONSERVATIVE placeholder, never measured (U2/V-S3)"},
+  "split_admitted_case_set": [3, 4, 7, 8, 12, 17],
+  "split_admitted_n": 6,
+  "precision_status": "pass",
+  "gates_re_run_in_session_before_editing": {
+   "note": "the baseline was NOT taken from a remembered report: all 5 gates were re-run on a764e117 in this session first, and reproduced the Orchestrator's counts exactly",
+   "static":    {"exit": 0, "STATIC_PASS": 38, "STATIC_FAIL": 0},
+   "all":       {"exit": 0, "PRECISION_PASS": 143, "PRECISION_FAIL": 0, "BOUNDARY_PASS": 56,
+                 "BOUNDARY_WARN": 6, "STATIC_PASS": 38, "BITWISE_PASS": 131, "BITWISE_FAIL": 0},
+   "stability": {"exit": 0, "PRECISION_PASS": 21, "PRECISION_FAIL": 0,
+                 "split_path_configs": "STAB=4/12 ADV=4/8", "adv_dropped0": 8},
+   "stress":    {"exit": 0, "PRECISION_PASS": 12, "PRECISION_FAIL": 0},
+   "coverage":  {"exit": 0, "PASS": 25, "MISS": 0, "NA": 0},
+   "boundary_warn_identity": "the 6 WARN are the 3 pre-existing V-S4 whole-split -inf probes x 2 tasks (bnd_split0_all_neginf, bnd_split0to4_all_neginf, bnd_splitmid_all_neginf); they are a documented pre-existing online-softmax NaN degrade of the delivered rev2 kernel, NOT a rev3 regression",
+   "artifacts": "perf_tuning/round3_itemA_guard/gate_pre_*"
+  },
+  "device_time_us_harness口径": {
+   "note": "base1 arm of the 3-arm same-session A/B; per-case elapsed_us for all 18 cases x 2 tasks",
+   "source_reports": {"fused": "cann_performance_eval_20261012_194111.json",
+                      "mask": "cann_performance_eval_20261012_194309.json"},
+   "score": {"fused": 60.741550313768535, "mask": 59.231772410627855},
+   "passed": {"fused": "18/18", "mask": "18/18"},
+   "cases_of_interest": {
+    "case6_fused_us": 78.000, "case6_mask_us": 55.160,
+    "case11_fused_us": 62.740, "case11_mask_us": 47.160,
+    "case6_shape": {"B": 8, "V": 10240, "K_MAX": 256, "BV": 4096, "plan": [false, 3, 1, 2],
+                    "block_num_fused": [4, 4], "n_launch": 2},
+    "case11_shape": {"B": 8, "V": 8192, "K_MAX": 256, "BV": 4096, "plan": [false, 2, 1, -1],
+                     "block_num_fused": [4, 4], "n_launch": 2}
+   }
+  },
+  "geomean_vs_prerev3_anchor_measured_in_round3": {"fused": 1.2796, "mask": 1.1840, "combined": 1.2309},
+  "test_commands": [
+   "cd examples/R4 && python test_r4_fused_sampling.py --level static",
+   "cd examples/R4 && python test_r4_fused_sampling.py --level all",
+   "cd examples/R4 && python test_r4_fused_sampling.py --level stability",
+   "cd examples/R4 && python test_r4_fused_sampling.py --level stress",
+   "cd examples/R4 && python ../../.agents/skills/tilelang-op-test-design/scripts/coverage_check.py test_r4_fused_sampling.py --proto proto.yaml",
+   "cd .agents/skills/cann-bench && ./scripts/run_evaluation.sh --bench-name cann --task-dir bench_lab/tilelang_ascend_bench --operator R4FusedSampling --source-dir examples/R4/cann_bench_submission --device-id 0 --processes-per-card 1 --timeout-per-process 1800 --reports-dir examples/R4/bench/reports -v",
+   "same for --operator R4MaskSample"
+  ]
+ },
+
+ "candidate_after": {
+  "kernel_sha256": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+  "kernel_lines": 1280,
+  "test_file_sha256": "dc69ad6fa452dacd548ede486085802520bde8aea7e1fe3311f3d08562732094",
+  "test_file_sha256_intermediate_during_AB": "2f837ab190548d427687acce371d91a250ba0fa5dc1dfedf8394b9151a011733",
+  "test_file_sha256_note": "the only difference between the intermediate and final test sha is a comment re-wrap of one 101-char line down to <=100 (project style). All three proofs and all 5 gates were RE-RUN on the final state (gate_final_*) rather than assumed.",
+  "test_file_lines": 2523,
+  "proto_yaml_sha256_unchanged": "41ab797002568e89fcc9a9eaa58be4f1cdfce20b6406abd0fdbf2ad11f7f8949",
+  "edit": {"hunks": 1, "lines_added": 41, "lines_removed": 1,
+           "non_comment_added": ["_SPLIT_A_LAUNCH_US = 1.540"],
+           "non_comment_removed": ["_SPLIT_A_LAUNCH_US = 8.0  # one kernel launch, CONSERVATIVE default (U2/V-S3: not yet measured)"],
+           "only_constant_changed": true},
+  "guard_constant": {"_SPLIT_A_LAUNCH_US": 1.540, "_SPLIT_SAFETY": 1.5,
+                     "provenance": "E1 model-free measured floor: min msprof Duration of K2gB (r4_gumbel_sample_splitB, UB=132B, folds <=10 partials/row) over the 6 split fused cases = 1.540us; K2gB does nonzero work so the true launch floor is STRICTLY BELOW this, making 1.540 a conservative UPPER bound (pred_cost stays over-estimated -> the guard keeps erring toward NOT splitting)",
+                     "corroboration": "E2 least-squares intercept a0 = -0.050us ~= 0 (thin fit, order-of-magnitude cross-check only)",
+                     "rejected_alternatives": {"3.100": "E1 max, but 3.100 > case 6's 3.013 threshold -> would not admit case 6, failing the task objective",
+                                               "2.840": "E1 median, still contains K2gB's fold work -> not a clean a_launch",
+                                               "2.74": "sweep grid point, no independent measurement meaning",
+                                               "0.0/-0.050": "E2 intercept; round 3 itself flags it as a thin-fit extrapolation, and 0 would delete launch accounting from the guard"}},
+  "split_admitted_case_set": [3, 4, 6, 7, 8, 11, 12, 17],
+  "split_admitted_n": 8,
+  "newly_admitted": [6, 11],
+  "lost": [],
+  "geometry_unchanged_for_all_18_cases": true,
+  "theorem_P2_holds_all_split_cases": true,
+  "precision_status": "pass",
+  "gates": {
+   "candidate_state": {
+    "static":    {"exit": 0, "STATIC_PASS": 48, "STATIC_FAIL": 0},
+    "all":       {"exit": 0, "PRECISION_PASS": 151, "PRECISION_FAIL": 0, "BOUNDARY_PASS": 56,
+                  "BOUNDARY_WARN": 6, "STATIC_PASS": 48, "BITWISE_PASS": 131, "BITWISE_FAIL": 0},
+    "stability": {"exit": 0, "PRECISION_PASS": 25, "PRECISION_FAIL": 0,
+                  "split_path_configs": "STAB=10/16 ADV=4/8", "adv_dropped0": 8},
+    "stress":    {"exit": 0, "PRECISION_PASS": 16, "PRECISION_FAIL": 0,
+                  "split_configs_poisoned": 10},
+    "coverage":  {"exit": 0, "PASS": 25, "MISS": 0, "NA": 0},
+    "artifacts": "perf_tuning/round3_itemA_guard/gate_cand_*"
+   },
+   "final_restored_state_after_9_kernel_swaps": {
+    "why_re_run": "the 3-arm A/B plus the 3-pair repeat swapped examples/R4/r4_fused_sampling.py nine times; the gates are the only thing that proves the FINAL state is green, not just the state that was measured earlier",
+    "static":    {"exit": 0, "STATIC_PASS": 48, "STATIC_FAIL": 0},
+    "all":       {"exit": 0, "PRECISION_PASS": 151, "PRECISION_FAIL": 0, "BOUNDARY_PASS": 56,
+                  "BOUNDARY_WARN": 6, "STATIC_PASS": 48, "BITWISE_PASS": 131, "BITWISE_FAIL": 0},
+    "stability": {"exit": 0, "PRECISION_PASS": 25, "PRECISION_FAIL": 0},
+    "stress":    {"exit": 0, "PRECISION_PASS": 16, "PRECISION_FAIL": 0},
+    "coverage":  {"exit": 0, "PASS": 25, "MISS": 0, "NA": 0},
+    "sha256_stable_before_after_gates": true,
+    "boundary_warn_set_identical_to_baseline": true,
+    "artifacts": "perf_tuning/round3_itemA_guard/gate_post_*"
+   },
+   "delivered_state_after_test_comment_rewrap": {
+    "why_re_run": "the test file was edited once more AFTER gate_post (a comment re-wrap of one 101-char line down to <=100, project style; test sha 2f837ab1 -> dc69ad6f). Comment-only, but re-verified rather than asserted: all three proofs (verify_no_weakening, verify_split_plan_itemA, verify_frozen_itemA) re-ran to PASS and all 5 gates were re-run.",
+    "static":    {"exit": 0, "STATIC_PASS": 48, "STATIC_FAIL": 0},
+    "all":       {"exit": 0, "PRECISION_PASS": 151, "PRECISION_FAIL": 0, "BOUNDARY_PASS": 56,
+                  "BOUNDARY_WARN": 6, "STATIC_PASS": 48, "BITWISE_PASS": 131, "BITWISE_FAIL": 0},
+    "stability": {"exit": 0, "PRECISION_PASS": 25, "PRECISION_FAIL": 0,
+                  "split_path_configs": "STAB=10/16 ADV=4/8", "adv_dropped0": 8},
+    "stress":    {"exit": 0, "PRECISION_PASS": 16, "PRECISION_FAIL": 0},
+    "coverage":  {"exit": 0, "PASS": 25, "MISS": 0, "NA": 0},
+    "sha256_stable_before_after_gates": true,
+    "boundary_warn_set_identical_to_baseline": true,
+    "artifacts": "perf_tuning/round3_itemA_guard/gate_final_*"
+   },
+   "format_compliance": {
+    "added_or_changed_lines_over_100_chars": 0,
+    "whole_file_over_100char_lines_test_file": {"before": 102, "after": 101,
+      "note": "went DOWN by one: the 128-char l1b_tailmid_V entry was re-wrapped"},
+    "whole_file_over_100char_lines_kernel": {"before": 39, "after": 39},
+    "ruff_findings": ["F841 r4_fused_sampling.py:442 AT1 unused -- PRE-EXISTING (also present in the a764e117 backup) and located INSIDE the frozen r4_gumbel_sample kernel (L415-555), so fixing it is forbidden by constraint 2; deliberately left alone"]
+   }
+  },
+  "cann_bench_accuracy": {"cases_passed": 36, "cases_total": 36, "output_tensors": 180,
+                          "output_tensors_with_mismatch": 0, "worst_mismatch_count": 0,
+                          "worst_max_abs_diff": 0.0,
+                          "re_verified_on_all_9_pooled_mask_arms": true},
+  "device_time_us_harness口径": {
+   "source_reports": {"fused": "cann_performance_eval_20261012_194528.json",
+                      "mask": "cann_performance_eval_20261012_194726.json"},
+   "score": {"fused": 60.85880835229328, "mask": 59.2894276544723},
+   "cases_of_interest": {
+    "case6_fused_us": 58.500, "case6_mask_us": 44.560,
+    "case11_fused_us": 54.160, "case11_mask_us": 43.360,
+    "case6_block_num_fused": [12, 4, 12, 4], "case6_block_num_mask": [12, 4, 4],
+    "case11_block_num_fused": [8, 4, 8, 4], "case11_mask_block_num": [8, 4, 4]
+   }
+  }
+ },
+
+ "adoption_criteria": {
+  "threshold_pct": 3.0,
+  "threshold_level": "per (task, case) -- the Orchestrator ruled that the 36-case geomean uplift is DILUTED (only 2 of 18 cases change) and that 3% is a noise threshold, so it is judged per case with a same-session drift control",
+  "1_case6_case11_both_tasks_over_3pct": {
+   "verdict": "PASS",
+   "harness_3arm": {"case6_fused": {"base_us": 78.0, "cand_us": 58.5, "speedup": 1.3333, "gain_pct": -25.0, "drift_pct": 0.0},
+                    "case6_mask":  {"base_us": 55.16, "cand_us": 44.56, "speedup": 1.2379, "gain_pct": -19.22, "drift_pct": 0.54},
+                    "case11_fused": {"base_us": 62.74, "cand_us": 54.16, "speedup": 1.1584, "gain_pct": -13.68, "drift_pct": 0.35},
+                    "case11_mask": {"base_us": 47.16, "cand_us": 43.36, "speedup": 1.0876, "gain_pct": -8.06, "drift_pct": 0.17}},
+   "independent_interleaved_probe": {"case6_fused": 1.4366, "case6_mask": 1.3167,
+                                     "case11_fused": 1.235, "case11_mask": 1.1272,
+                                     "per_round_spread_pp_max": 0.74},
+   "cross_check_vs_round3_probe": {"case6_fused": 1.4442, "case6_mask": 1.3089,
+                                   "case11_fused": 1.2479, "case11_mask": 1.1537,
+                                   "note": "different session, different script; harness reads lower because its per-step sum includes CannBenchCacheClean while the probes do not -- documented caveat, identical in both arms so ratios are unaffected"}
+  },
+  "2_no_other_pair_regresses_over_3pct": {
+   "verdict": "PASS (arbitrated)",
+   "single_sample_result": "FAIL -- exactly one pair flagged: case 13 mask 14.620 -> 15.240us (+4.24%, absolute +0.62us) while the byte-identical drift control read 14.720us (+0.68%). cmp_itemA.py therefore printed criterion2=FAIL and OVERALL=DO NOT ADOPT; that raw verdict is preserved UNEDITED as cmp_itemA_single_sample_1run.log rather than overwritten.",
+   "why_the_flag_cannot_be_causal": "case 13 = (B=6, V=2304, K_MAX=128, BV=2048); n_blk_full = 2304//2048 = 1 < 2, so _r4_split_plan returns (False, 2, 1, 1) at BOTH guard values and the cost guard is never reached. ksplit_fine_itemA.py independently confirmed the identical launch sequence (K1+K2m) and Block Num in all three arms.",
+   "arbitration_a_interleaved_null_probe": {
+    "script": "probe_null_case13.py, 5 rounds, kernel file never modified (sha256 c59a83bc before AND after)",
+    "null_envelope_pct": 5.18,
+    "case13_mask_delta_pct": -0.42,
+    "case1_mask_delta_pct": -5.03,
+    "finding": "the flagged +4.24% DOES NOT REPRODUCE (reads -0.42%), and an identical-dispatch shape one step smaller (case 1 mask, 11.14us) shows -5.03% of PURE NOISE -- larger in magnitude than the flagged value"
+   },
+   "arbitration_b_pooled_harness_samples": {
+    "script": "ab_repeat_mask_itemA.sh (3 extra alternating pairs, 6/6 exit 0) + arbitrate_case13.py",
+    "base_samples_us": [14.62, 14.72, 14.58, 14.78, 14.7],
+    "cand_samples_us": [15.24, 14.7, 14.96, 14.8],
+    "base_median_us": 14.7, "cand_median_us": 14.88,
+    "median_delta_pct": 1.22,
+    "base_within_arm_spread_pct": 1.36, "cand_within_arm_spread_pct": 3.63,
+    "distributions_overlap": true,
+    "pre_stated_rule": "scatter iff the arm distributions OVERLAP and the median delta is inside the pooled within-arm spread; disjoint-with-cand-entirely-above => real regression => roll back",
+    "finding": "MEASUREMENT SCATTER. The original +4.24% was the WORST cand sample against the BEST base sample -- an artefact of one sample per arm. The harness's own within-arm noise floor reaches 3.98% across the 18 mask cases, i.e. the 3% band is at or below the harness's per-case noise for the smallest cases.",
+    "worst_other_non_flagged_median_delta_pct": 0.54,
+    "other_unexplained_regressions": []
+   }
+  },
+  "3_five_gates_exit0_counts_not_lower_no_new_warn": {"verdict": "PASS",
+   "detail": "static 38->48, all 143->151 PASS/0 FAIL, stability 21->25, stress 12->16, coverage 25-0-0 unchanged; all exit 0 on BOTH the candidate and the final restored state; BOUNDARY_WARN stays exactly 6 and the WARN set is byte-identically the same 6 pre-existing V-S4 -inf probes (diff of the WARN sets pre/cand/post is empty)"},
+  "4_cann_bench_accuracy": {"verdict": "PASS", "detail": "36/36 accuracy.passed, 180/180 output tensors mismatch_count=0, worst max_abs_diff 0.0"},
+  "5_frozen_kernels_byte_identical": {"verdict": "PASS",
+   "detail": "r4_topk_stats L91-364 d3909063..., r4_mask_sample L367-412 f787d1ad..., r4_gumbel_sample L415-555 ca90de8d... -- identical line ranges AND sha256 before vs after, and equal to the rev2 baseline constants asserted by static gate assertion 2; 7 @tilelang.jit kernels, same set and order",
+   "proof": "perf_tuning/round3_itemA_guard/frozen_kernel_proof.json"},
+  "6_no_existing_assertion_weakened": {"verdict": "PASS",
+   "detail": "AST proof: 52 functions before and after, 0 removed, the only changed body (test_r4_rev3_l1) is docstring-only (executable body identical after stripping the docstring); across all 9 case tables 0 dropped entries, 0 non-tag field changes, 0 shrunk tag lists (4 entries' tags GREW, 6 entries added); check_precision body byte-identical; REV3_FROZEN_SHA256 / REV3_UB_LIMIT / STAB_REPS / COVERAGE_NA unchanged; no COVERAGE_MANIFEST value decreased and no key removed; no coverage dimension lost a tag, 10 grew",
+   "proof": "perf_tuning/round3_itemA_guard/no_weakening_proof.json"},
+  "overall": "ADOPT"
+ },
+
+ "geomeans": {
+  "cand_over_base1_same_session": {"combined_36": 1.017, "fused_18": 1.0227, "mask_18": 1.0113,
+                                   "the_4_flipping_measurements": 1.2009},
+  "composed_with_round3_measured_prerev3_anchor": {
+   "fused": 1.3086, "mask": 1.1974, "combined": 1.2518,
+   "uplift_vs_shipped_1_2309_pct": 1.7,
+   "CAVEAT": "COMPOSED, not a fresh measurement: the pre-rev3 arm (19e51e8d) was NOT re-run in this item. combined = round3's measured 1.2309 x this item's measured 1.0170.",
+   "why_below_the_2_82pct_projection": "round 3's projection applied the guard-relax PROBE ratios (whose per-step sums exclude CannBenchCacheClean); this figure is the harness口径 end to end, which reads lower for the flipping cases (1.3333/1.2379/1.1584/1.0876 vs the probe's 1.4442/1.3089/1.2479/1.1537)"
+  }
+ },
+
+ "span_consequence_DISCLOSURE": {
+  "status": "MODEL ESTIMATES (analyze_corrected_span.py model, V1 0.058% / V2 7.583% validated), disclosure only -- NOT an adoption criterion. The user ruled to keep rev3 with DEVICE TIME as the contract口径.",
+  "per_launch_host_cost_us": {"bare_eager": 200.5115, "harness_guards": 433.9085,
+                              "harness_guards_msprof": 499.638, "acl_graph_device_timeline_residual": 15.588},
+  "case6_fused": {"launches": "2 -> 4", "scored_x": 1.3333, "span_bare_eager_x": 0.3772,
+                  "span_harness_guards_x": 0.3537, "span_guards_msprof_x": 0.351, "span_acl_graph_x": 0.9012},
+  "case11_fused": {"launches": "2 -> 4", "scored_x": 1.1584, "span_bare_eager_x": 0.3626,
+                   "span_harness_guards_x": 0.3469, "span_guards_msprof_x": 0.3451, "span_acl_graph_x": 0.8075},
+  "case6_mask": {"launches": "2 -> 3", "scored_x": 1.2379, "span_bare_eager_x": 0.5072,
+                 "span_harness_guards_x": 0.5034, "span_guards_msprof_x": 0.5029, "span_acl_graph_x": 0.945},
+  "case11_mask": {"launches": "2 -> 3", "scored_x": 1.0876, "span_bare_eager_x": 0.5026,
+                  "span_harness_guards_x": 0.5012, "span_guards_msprof_x": 0.501, "span_acl_graph_x": 0.8671},
+  "IMPORTANT_caveat": "the SPAN gets LONGER under EVERY deployment assumption while the SCORED device-time sum gets shorter. Case 6/11 have the SMALLEST device saving of any split case (pred_saving 8.902us; measured 19.50/8.58us fused, 10.60/3.80us mask) while paying the same +2/+1 launch penalty, so even under ACL graph the 15.588us/launch device-timeline residual (~31.2us for +2) exceeds the saving -- hence 0.90x/0.81x rather than the >1 that round 3 reported for the already-split 6 (case 7 is 4.05x). These are the two split cases MOST exposed to launch-count cost.",
+  "two_graph_numbers_both_correct": "2.8-6.6us is the HOST CPU cost per launch under replay (probe4.cap_L0_per_launch, marginal ~0.09/-0.51us); 15.588us is the DEVICE-TIMELINE residual the span recursion needs. attribution_report.md L268 distinguishes them explicitly.",
+  "no_mitigation_implemented": "M1-M6 were all explicitly out of scope for this item, as instructed"
+ },
+
+ "jit_compile_cost_DISCLOSED_SEPARATELY": {
+  "note": "hard constraint 7: never inside a timing window. Both A/B arms were pre-warmed (prewarm_itemA.py) before their profiler windows opened, and the scored口径 is a sum of msprof device Durations, which excludes host compile time by construction.",
+  "new_specializations_required": 17,
+  "cold_total_s": 87.15, "cold_avg_s_per_spec": 5.13,
+  "warm_retiming_total_s": 0.0,
+  "breakdown": {"K1A": 4, "K1B": 5, "K2gA": 4, "K2gB": 4},
+  "larger_than_round3_implied": "round 3 said the relaxation 'admits no new JIT specialization geometry' -- TRUE for the 18 CONTRACT cases ((S,NBS,S_TAIL) unchanged for all 18, re-verified), but 8 new COMPILE JOBS still appear there (the split kernels are different functions with different arg tuples), and the 4 flipping TEST-TABLE entries add 12 more, 17 distinct in total",
+  "prewarm_evidence": {"base1": "90 specs, cold(>1s)=18", "cand": "96 specs, cold(>1s)=0",
+                       "base2": "90 specs, cold(>1s)=0",
+                       "why_cand_cold_was_0": "the 8 new contract specs were already cached by the static gate's newly added cb6/cb11 shapes"}
+ },
+
+ "delivery_state": {
+  "kernel": "examples/R4/r4_fused_sampling.py = c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534 (1280 lines, 7 @tilelang.jit)",
+  "test_file": "examples/R4/test_r4_fused_sampling.py = dc69ad6fa452dacd548ede486085802520bde8aea7e1fe3311f3d08562732094 (2523 lines)",
+  "submission_copy": "examples/R4/cann_bench_submission/cann_bench/_r4_kernels.py = c59a83bc..., cmp-IDENTICAL (rc=0)",
+  "wheel": "rebuilt rc=0; the _r4_kernels.py INSIDE the wheel was extracted and verified c59a83bc...",
+  "proto_yaml": "41ab7970... UNCHANGED (mtime still 2026-10-07)",
+  "bench_cases_yaml_csv": "UNCHANGED (.agents/skills/cann-bench/bench_lab/tilelang_ascend_bench/r4_*/cases.{yaml,csv} mtimes still 2026-10-09)",
+  "orchestrator_state": "NEVER read or written (.orchestrator_state.json mtime 2026-10-12T18:48 predates this session's first artifact at 18:52; the .bak_pre_stage3 file was likewise untouched)",
+  "rollback_baseline_retained_unused": ["history_version/r4_fused_sampling_impl_s3r3_itemA_attempt0.py",
+                                        "history_version/test_r4_fused_sampling_impl_s3r3_itemA_attempt0.py"]
+ },
+
+ "consecutive_no_improvement": 0,
+ "adopted": true,
+ "rollback_reason": null,
+ "design_error": false,
+ "design_error_reason": "root cause was an over-conservative host-side dispatch constant (Stage 2 set 8.0us without measuring), not a tiling-strategy or memory-hierarchy design defect; a single-constant fix released 1.09x-1.33x on 4 measurements, and neither _r4_split_plan's geometry derivation nor theorem P2 needed any change",
+
+ "unverified_items": [
+  "criterion 2 rests on an ARBITRATION, not a clean single-sample pass; the raw FAIL record is deliberately preserved (cmp_itemA_single_sample_1run.log)",
+  "the FUSED task was not re-sampled (the flagged pair was on the mask side); case 13 fused has 1 harness sample (+0.86%) plus the null probe (-2.02%)",
+  "the pre-rev3 anchor (19e51e8d) was NOT re-measured, so the 1.2518x combined geomean is composed rather than same-session",
+  "all SPAN figures are model estimates; the cand-arm split span has no direct anchor, so round 3's +/-7.6% uncertainty applies, and the 15.588us/launch graph residual is derived from only 4 samples and applied uniformly",
+  "stab_B5_V10240_gumbel LOST its current-path control role (it now routes to split); coverage counts are unaffected but the suite no longer has a 32B-aligned-tail CURRENT-path stability control. Restoring one would require adding an entry, i.e. a further test-table edit",
+  "two OFF-CONTRACT geometries are now exercised at runtime: (BV=2048, K_MAX=256) at S=3 via stab_B7_V4409_bv2048_gumbel (the contract's calibrated specializations are (4096,256) and (2048,128), so the guard falls back to t_sort default 8.902) and (5, 10240, ...) at S=3. Both pass 20 bit-identical reps + 200 UB-poisoned reps, so they are VERIFIED, but their pred_saving is an estimate rather than a calibrated value",
+  "a_launch remains BOUNDED, not isolated: no probe measured a bare ACL launch alone, so 1.540us is the min duration of a kernel that does real (if tiny) work. Conservative in the safe direction, but an upper bound",
+  "bench/hap_thw_model/gates_report.py GATE 1-4 and the roofline-attainment table were NOT re-run; cases 6/11 move from vector-bound single-kernel to split-kernel attribution, so round 3's section 7 tables no longer describe the delivered dispatch"
+ ],
+ "skills_consulted": [
+  "tilelang-perf-optimization (performance-data collection口径, bottleneck diagnosis, anti-pattern checklist; all device times taken from cann-bench -> msprof kernel_details.csv, host timing used ONLY for the separately disclosed cold-compile figure)",
+  "tilelang-api-best-practices / examples/ were NOT needed: this item adds no API call, it changes one host-side float constant"
+ ]
+}

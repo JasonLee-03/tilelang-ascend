@@ -1,0 +1,423 @@
+{
+ "_meta": {
+  "description": "SPAN consequence of routing case 6 / case 11 onto the split path (2 -> 4/3 launches)",
+  "model": "start_1=H; start_i=max(end_{i-1}, i*H); span_msprof=end_n-start_1; span_event=span+H; span_graph=sum(d_i)+n*residual  (verbatim from round3_host_overhead/analyze_corrected_span.py, V1 0.058% / V2 7.583% validated)",
+  "H_us": {
+   "bare_eager_us": 200.5115,
+   "harness_guards_us": 433.9085,
+   "harness_guards_msprof_us": 499.638
+  },
+  "graph_residual_us_per_launch": 15.588,
+  "device_durations_source": "item-A msprof kernel_details.csv via ksplit_fine_itemA.py",
+  "status": "MODEL ESTIMATES -- disclosure only, NOT an adoption criterion",
+  "missing": []
+ },
+ "cases": {
+  "fused_case6": {
+   "task": "fused",
+   "case": 6,
+   "base": {
+    "names": [
+     "K1",
+     "K2g"
+    ],
+    "durs": [
+     50.48,
+     27.42
+    ],
+    "total_us": 78.0,
+    "n_launch": 2,
+    "path": "CURRENT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "blocks": [
+     4,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "cand": {
+    "names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "durs": [
+     12.88,
+     30.38,
+     12.76,
+     2.66
+    ],
+    "total_us": 58.5,
+    "n_launch": 4,
+    "path": "SPLIT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "blocks": [
+     12,
+     4,
+     12,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "scored_x": 1.33333,
+   "scored_delta_pct": -25.0,
+   "spans": {
+    "bare_eager_us": {
+     "H_us": 200.5115,
+     "span_base_us": 227.932,
+     "span_cand_us": 604.195,
+     "span_x": 0.3772,
+     "span_delta_pct": 165.08,
+     "event_base_us": 428.443,
+     "event_cand_us": 804.706,
+     "event_x": 0.5324,
+     "host_bound_base": 1,
+     "host_bound_cand": 3
+    },
+    "harness_guards_us": {
+     "H_us": 433.9085,
+     "span_base_us": 461.328,
+     "span_cand_us": 1304.386,
+     "span_x": 0.3537,
+     "span_delta_pct": 182.75,
+     "event_base_us": 895.237,
+     "event_cand_us": 1738.294,
+     "event_x": 0.515,
+     "host_bound_base": 1,
+     "host_bound_cand": 3
+    },
+    "harness_guards_msprof_us": {
+     "H_us": 499.638,
+     "span_base_us": 527.058,
+     "span_cand_us": 1501.574,
+     "span_x": 0.351,
+     "span_delta_pct": 184.9,
+     "event_base_us": 1026.696,
+     "event_cand_us": 2001.212,
+     "event_x": 0.513,
+     "host_bound_base": 1,
+     "host_bound_cand": 3
+    },
+    "acl_graph": {
+     "residual_us_per_launch": 15.588,
+     "span_base_us": 109.076,
+     "span_cand_us": 121.032,
+     "span_x": 0.9012,
+     "span_delta_pct": 10.96
+    }
+   }
+  },
+  "fused_case11": {
+   "task": "fused",
+   "case": 11,
+   "base": {
+    "names": [
+     "K1",
+     "K2g"
+    ],
+    "durs": [
+     44.22,
+     18.58
+    ],
+    "total_us": 62.74,
+    "n_launch": 2,
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "blocks": [
+     4,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "cand": {
+    "names": [
+     "K1A",
+     "K1B",
+     "K2gA",
+     "K2gB"
+    ],
+    "durs": [
+     11.56,
+     28.3,
+     11.4,
+     2.76
+    ],
+    "total_us": 54.16,
+    "n_launch": 4,
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "blocks": [
+     8,
+     4,
+     8,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "scored_x": 1.15842,
+   "scored_delta_pct": -13.675,
+   "spans": {
+    "bare_eager_us": {
+     "H_us": 200.5115,
+     "span_base_us": 219.091,
+     "span_cand_us": 604.294,
+     "span_x": 0.3626,
+     "span_delta_pct": 175.82,
+     "event_base_us": 419.603,
+     "event_cand_us": 804.806,
+     "event_x": 0.5214,
+     "host_bound_base": 1,
+     "host_bound_cand": 3
+    },
+    "harness_guards_us": {
+     "H_us": 433.9085,
+     "span_base_us": 452.489,
+     "span_cand_us": 1304.486,
+     "span_x": 0.3469,
+     "span_delta_pct": 188.29,
+     "event_base_us": 886.397,
+     "event_cand_us": 1738.394,
+     "event_x": 0.5099,
+     "host_bound_base": 1,
+     "host_bound_cand": 3
+    },
+    "harness_guards_msprof_us": {
+     "H_us": 499.638,
+     "span_base_us": 518.218,
+     "span_cand_us": 1501.674,
+     "span_x": 0.3451,
+     "span_delta_pct": 189.78,
+     "event_base_us": 1017.856,
+     "event_cand_us": 2001.312,
+     "event_x": 0.5086,
+     "host_bound_base": 1,
+     "host_bound_cand": 3
+    },
+    "acl_graph": {
+     "residual_us_per_launch": 15.588,
+     "span_base_us": 93.976,
+     "span_cand_us": 116.372,
+     "span_x": 0.8075,
+     "span_delta_pct": 23.83
+    }
+   }
+  },
+  "mask_case6": {
+   "task": "mask",
+   "case": 6,
+   "base": {
+    "names": [
+     "K1",
+     "K2m"
+    ],
+    "durs": [
+     50.16,
+     5.0
+    ],
+    "total_us": 55.16,
+    "n_launch": 2,
+    "path": "CURRENT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "blocks": [
+     4,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "cand": {
+    "names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "durs": [
+     11.0,
+     29.46,
+     4.14
+    ],
+    "total_us": 44.56,
+    "n_launch": 3,
+    "path": "SPLIT",
+    "S": 3,
+    "NBS": 1,
+    "S_TAIL": 2,
+    "blocks": [
+     12,
+     4,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "scored_x": 1.23788,
+   "scored_delta_pct": -19.217,
+   "spans": {
+    "bare_eager_us": {
+     "H_us": 200.5115,
+     "span_base_us": 205.512,
+     "span_cand_us": 405.163,
+     "span_x": 0.5072,
+     "span_delta_pct": 97.15,
+     "event_base_us": 406.023,
+     "event_cand_us": 605.674,
+     "event_x": 0.6704,
+     "host_bound_base": 1,
+     "host_bound_cand": 2
+    },
+    "harness_guards_us": {
+     "H_us": 433.9085,
+     "span_base_us": 438.909,
+     "span_cand_us": 871.957,
+     "span_x": 0.5034,
+     "span_delta_pct": 98.66,
+     "event_base_us": 872.817,
+     "event_cand_us": 1305.866,
+     "event_x": 0.6684,
+     "host_bound_base": 1,
+     "host_bound_cand": 2
+    },
+    "harness_guards_msprof_us": {
+     "H_us": 499.638,
+     "span_base_us": 504.638,
+     "span_cand_us": 1003.416,
+     "span_x": 0.5029,
+     "span_delta_pct": 98.84,
+     "event_base_us": 1004.276,
+     "event_cand_us": 1503.054,
+     "event_x": 0.6682,
+     "host_bound_base": 1,
+     "host_bound_cand": 2
+    },
+    "acl_graph": {
+     "residual_us_per_launch": 15.588,
+     "span_base_us": 86.336,
+     "span_cand_us": 91.364,
+     "span_x": 0.945,
+     "span_delta_pct": 5.82
+    }
+   }
+  },
+  "mask_case11": {
+   "task": "mask",
+   "case": 11,
+   "base": {
+    "names": [
+     "K1",
+     "K2m"
+    ],
+    "durs": [
+     44.14,
+     3.02
+    ],
+    "total_us": 47.16,
+    "n_launch": 2,
+    "path": "CURRENT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "blocks": [
+     4,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "cand": {
+    "names": [
+     "K1A",
+     "K1B",
+     "K2m"
+    ],
+    "durs": [
+     11.26,
+     28.36,
+     3.96
+    ],
+    "total_us": 43.36,
+    "n_launch": 3,
+    "path": "SPLIT",
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "blocks": [
+     8,
+     4,
+     4
+    ],
+    "ok_blk": true,
+    "ok_sum": true,
+    "ok_p2": true
+   },
+   "scored_x": 1.08764,
+   "scored_delta_pct": -8.058,
+   "spans": {
+    "bare_eager_us": {
+     "H_us": 200.5115,
+     "span_base_us": 203.531,
+     "span_cand_us": 404.983,
+     "span_x": 0.5026,
+     "span_delta_pct": 98.98,
+     "event_base_us": 404.043,
+     "event_cand_us": 605.495,
+     "event_x": 0.6673,
+     "host_bound_base": 1,
+     "host_bound_cand": 2
+    },
+    "harness_guards_us": {
+     "H_us": 433.9085,
+     "span_base_us": 436.928,
+     "span_cand_us": 871.777,
+     "span_x": 0.5012,
+     "span_delta_pct": 99.52,
+     "event_base_us": 870.837,
+     "event_cand_us": 1305.686,
+     "event_x": 0.667,
+     "host_bound_base": 1,
+     "host_bound_cand": 2
+    },
+    "harness_guards_msprof_us": {
+     "H_us": 499.638,
+     "span_base_us": 502.658,
+     "span_cand_us": 1003.236,
+     "span_x": 0.501,
+     "span_delta_pct": 99.59,
+     "event_base_us": 1002.296,
+     "event_cand_us": 1502.874,
+     "event_x": 0.6669,
+     "host_bound_base": 1,
+     "host_bound_cand": 2
+    },
+    "acl_graph": {
+     "residual_us_per_launch": 15.588,
+     "span_base_us": 78.336,
+     "span_cand_us": 90.344,
+     "span_x": 0.8671,
+     "span_delta_pct": 15.33
+    }
+   }
+  }
+ }
+}

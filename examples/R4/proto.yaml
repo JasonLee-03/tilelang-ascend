@@ -1,0 +1,132 @@
+# R4 融合采样链 —— 算子接口规格（Stage 1 产出）
+#
+# 权威来源：examples/R4/DESIGN.md（V01-a）+ examples/R4/DESIGN_v01b.md（V01-b 增量）
+#   - dtype 全集  <- §9.3 精度标准表（float32 + int32，共 2 行；V01-a §9.3 与 V01-b §9.3 一致，无新增 dtype）
+#   - attrs       <- §4.1 编译期常量参数 + §1.3 逐行采样参数 + V01-b 的 FUSE_GUMBEL 开关
+#   - inputs/outs <- §4.1 / §4.2（V01-b 增 rand 输入、tok_out 输出）
+#   - formula     <- §1.3（定理 T1/T2）+ §3.4（D-GUARD / D-TIE / D-NORENORM）
+#                    + V01-b §1.3（定理 T3 Gumbel-max）+ §3.4（D-RAND / D-UMAP / D-CLAMP / D-ARGMAX）
+#                    + rev1（design_revision）：§0.0 RNG 由仿射 LCG 改为 counter-based avalanche hash（lowbias32）
+#
+# 用途：覆盖门禁 coverage_check.py --proto 的权威 dtype/attr 来源
+#   （checker 只读 operator.inputs[].dtype 与 operator.attrs[].name，
+#     据此派生 D-DTYPE-* / D-PARAM-* 应覆盖维度）
+#
+# 范围：V01-a + V01-b 超集
+#   V01-a：K1 r4_topk_stats + K2 r4_mask_sample（FUSE_GUMBEL=False → w_out，host 保留 torch.multinomial）
+#   V01-b：K2 r4_gumbel_sample（FUSE_GUMBEL=True → tok_out，kernel 内 Gumbel-max 融合采样，消除 multinomial）
+#   仅 fp32；单特化 S1'（K_MAX=256, BV=4096），代表性 V=152064
+#   bf16 / 确定性 seed 路径（float64 Gumbel）/ 完整多特化表 / logprob / ACLGraph / SGLang 集成 均为 out of scope
+
+operator:
+  name: r4_fused_sampling
+  category: Fusion
+  formula: |
+    # ---- K1 r4_topk_stats（V01-a，不变）----
+    m_i   = max_j z_ij
+    s_i   = sum_j exp(z_ij - m_i)
+    p_ij  = exp(z_ij - m_i) / s_i
+    tau_i = max( tau_k_i, tau_p_i, tau_mu_i )
+      tau_k_i  = sort_desc(z_i)[k_i - 1]                                      # top-k 阈值（分层归并求得）
+      tau_p_i  = sort_desc(z_i)[L_i],  L_i = max{ l : sum_{t<l} q_it <= p_i }  # top-p 严格前缀和（不含自身）
+      tau_mu_i = m_i + ln(mu_i)          (mu_i = 0 -> -inf)                    # 定理 T2：s 完全消去
+    valid_i = 1[ 1 <= k_i <= K_MAX ] * ok_p_i * tie_ok_i                       # D-GUARD / D-TIE 降级守卫
+      ok_p_i   = 1[p_i >= 1.0] or 1[exclusive_prefix_final > p_i]              # nucleus 在 K_MAX 内被确定
+      tie_ok_i = 1[tau_i > tau_k_i] or 1[n_gt + n_eq <= k_i]                   # top-k 绑定时无超额有限值平票
+    # ---- K2 r4_mask_sample（V01-a，FUSE_GUMBEL=False，不变）----
+    w_ij  = p_ij * 1[z_ij >= tau_i]                                            # 定理 T1：三重掩码折叠为单阈值
+                                                                               # D-NORENORM：不重归一化，交 host torch.multinomial
+    # ---- K2 r4_gumbel_sample（V01-b，FUSE_GUMBEL=True，新增）----
+    # 定理 T3（Gumbel-max 免归一化）：y_i = argmax_{j in S_i}[ z_ij + G_ij ]，S_i = { j : z_ij >= tau_i }
+    # rev1（design_revision）：RNG 由仿射 LCG（秩-1 相关，已否决）改为非线性 counter-based avalanche hash
+    x_ij     = (seed_i * PRIME_W + j) mod 2^32                                 # counter 混合 (seed_i, j)；PRIME_W=0x9E3779B1
+    state_ij = lowbias32(x_ij)                                                 # x^=x>>>16; x*=0x7FEB352D; x^=x>>>15; x*=0x846CA68B; x^=x>>>16（int32 环绕）
+                                                                               #   Ascend int32：>>>=rshift(算术)+and(掩码)；^=x+t-2*(x&t)（int32 Xor 不可用，仿真）
+    u_ij     = clamp( fp32(state_ij) * 2^-32 + 0.5,  2^-24, 1 - 2^-24 )        # D-UMAP（-> [0,1) 均匀）+ D-CLAMP（f32 安全）
+    G_ij     = -ln( -ln( u_ij ) )                                              # Gumbel(0,1)
+    cand_ij  = (z_ij >= tau_i) ? (z_ij + G_ij) : -inf                          # 被屏蔽元素以 -inf 自然排除
+    tok_out_i = argmax_j cand_ij                                              # = y_i（最小 index tie-break，D-TIE-ARGMAX）
+  attrs:
+    # ---- 编译期特化常量（@tilelang.jit 的 Python 形参）----
+    - name: K_MAX
+      type: Int
+      default: 256
+      required: true
+    - name: BV
+      type: Int
+      default: 4096
+      required: true
+    - name: NEED_MIN_P
+      type: Bool
+      default: false
+      required: true
+    # ---- V01-b 编译期路径开关（选 K2 w_out 路径 vs Gumbel tok_out 路径）----
+    - name: FUSE_GUMBEL
+      type: Bool
+      default: false
+      required: true
+    # ---- 逐行运行时采样参数（值域维度，来自 top_ks/top_ps/min_ps 张量）----
+    - name: top_k
+      type: Int
+      default: 40
+      required: true
+    - name: top_p
+      type: Float
+      default: 0.95
+      required: true
+    - name: min_p
+      type: Float
+      default: 0.0
+      required: true
+    # ---- host 侧标量开关 ----
+    - name: need_min_p_sampling
+      type: Bool
+      default: false
+      required: true
+    # 注（rev1）：hash 常量 PRIME_W=0x9E3779B1 / M1=0x7FEB352D / M2=0x846CA68B（lowbias32 标准乘子）是固定常量，
+    #     非用户可调 attr，作为 kernel 内 Python 常量硬编码（不进 JIT 特化键、不列为可变 attr）；同旧 LCG 的 A/C 定位。
+    #     每行 seed_i 是运行时张量元素（rand[B]），亦不进特化键。⟹ rev1 未改动任何 dtype/attr/shape（覆盖门禁不受影响）。
+  inputs:
+    - name: logits
+      dtype: [float32]
+    - name: top_ks
+      dtype: [int32]
+    - name: top_ps
+      dtype: [float32]
+    - name: min_ps
+      dtype: [float32]
+    # ---- V01-b 新增：每行 hash 种子（仅 FUSE_GUMBEL=True 使用）----
+    # shape = [B] int32（每行一个标量 seed_i，kernel 内联 lowbias32 avalanche 展开为 [B,V] Gumbel 噪声流）。
+    # ⚠️ 分歧点（DESIGN_v01b.md §3.4 D-RAND / §10.4）：任务/草稿提示为 rand[B,BV]，
+    #    本设计定为 rand[B]（Design C：内联 hash，唯一同时满足 §8.3 的 2 读访存收益 + bitwise 可复现的方案）。
+    #    dtype 仍为 int32（覆盖门禁 D-DTYPE-int32 不受 shape 影响）。rev1 未改动此接口。
+    - name: rand
+      dtype: [int32]
+  outputs:
+    - name: m_out
+      dtype: [float32]
+    - name: s_out
+      dtype: [float32]
+    - name: tau_out
+      dtype: [float32]
+    - name: valid
+      dtype: [int32]
+    - name: w_out          # V01-a（FUSE_GUMBEL=False）：屏蔽后概率，交 host torch.multinomial
+      dtype: [float32]
+    - name: tok_out        # V01-b（FUSE_GUMBEL=True）：采样 token id，消除 host multinomial
+      dtype: [int32]
+  schema: |
+    r4_fused_sampling(Tensor logits[B,V]:f32, Tensor top_ks[B]:i32,
+                      Tensor top_ps[B]:f32, Tensor min_ps[B]:f32,
+                      bool need_min_p_sampling,
+                      Tensor rand[B]:i32 = None,          # V01-b：每行 hash 种子 seed_i（仅 FUSE_GUMBEL=True）
+                      int K_MAX=256, int BV=4096, bool FUSE_GUMBEL=False)
+      -> (Tensor m_out[B]:f32, Tensor s_out[B]:f32, Tensor tau_out[B]:f32, Tensor valid[B]:i32,
+          Tensor w_out[B,V]:f32  |  Tensor tok_out[B]:i32)   # w_out（FUSE_GUMBEL=False）/ tok_out（True）二选一
+    # kernels:
+    #   r4_topk_stats(B, V, K_MAX, BV, NEED_MIN_P) -> (m_out, s_out, tau_out, valid)          # K1，V01-a 不变
+    #   r4_mask_sample(B, V, BV)                   -> (w_out)                                   # K2 V01-a（FUSE_GUMBEL=False）
+    #   r4_gumbel_sample(B, V, BV)                 -> (tok_out)  from (logits, tau_out, rand)   # K2 V01-b（FUSE_GUMBEL=True）
+    # host:
+    #   FUSE_GUMBEL=False: torch.multinomial(w_out, num_samples=1) -> token_id[B]  (V01-a 保留，out of kernel)
+    #   FUSE_GUMBEL=True : tok_out 即最终 token id（消除 multinomial；valid==0 的行 host 回退 torch）

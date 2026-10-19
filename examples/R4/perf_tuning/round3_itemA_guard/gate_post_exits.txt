@@ -1,0 +1,7 @@
+gate_static=0 wall=11s
+gate_all=0 wall=36s
+gate_stability=0 wall=18s
+gate_stress=0 wall=30s
+gate_coverage=0
+sha256_stable_before_after_gates=YES
+GATES_DONE label=post 2026-10-12T20:22:50+08:00

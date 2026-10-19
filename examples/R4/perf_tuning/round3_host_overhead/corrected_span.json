@@ -1,0 +1,1120 @@
+{
+ "_meta": {
+  "description": "corrected SPAN speedups under 3 deployment assumptions",
+  "model": "span = device-timeline recursion start_i = max(end_{i-1}, i*H); span_event = span + H",
+  "H_bare_us": 200.5115,
+  "H_guards_us": 433.9085,
+  "H_guards_msprof_us": 499.638,
+  "device_durations_source": "round-3 msprof kernel_details.csv (authoritative)",
+  "validated": {
+   "V1_median_abs_err_pct": 0.058,
+   "V2_median_abs_err_pct": 7.583,
+   "V1_pass": true,
+   "V2_pass": true
+  },
+  "note": "these spans are MODEL ESTIMATES, not measurements; the measured anchors are round-3's msprof spans (V1) and probe3's NPU-event spans (V2)",
+  "graph_residual_overhead_per_launch_us": 15.588,
+  "graph_residual_overhead_samples": [
+   {
+    "case": 3,
+    "chain": "chain2",
+    "n_launch": 2,
+    "scored_us": 100.4,
+    "captured_serial_us": 135.453,
+    "total_overhead_us": 35.053,
+    "per_launch_us": 17.526
+   },
+   {
+    "case": 3,
+    "chain": "chain4",
+    "n_launch": 4,
+    "scored_us": 57.4,
+    "captured_serial_us": 109.882,
+    "total_overhead_us": 52.482,
+    "per_launch_us": 13.121
+   },
+   {
+    "case": 7,
+    "chain": "chain2",
+    "n_launch": 2,
+    "scored_us": 728.62,
+    "captured_serial_us": 762.834,
+    "total_overhead_us": 34.214,
+    "per_launch_us": 17.107
+   },
+   {
+    "case": 7,
+    "chain": "chain4",
+    "n_launch": 4,
+    "scored_us": 179.02,
+    "captured_serial_us": 235.294,
+    "total_overhead_us": 56.274,
+    "per_launch_us": 14.069
+   }
+  ]
+ },
+ "fused": {
+  "per_case": [
+   {
+    "case": 1,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 35.26,
+    "scored_cand_us": 34.52,
+    "durs_base": [
+     24.58,
+     10.68
+    ],
+    "durs_cand": [
+     24.24,
+     10.28
+    ],
+    "H_base_csv_us": 409.1,
+    "H_cand_csv_us": 381.24,
+    "span_harness_model_us": 419.78,
+    "span_harness_measured_us": 419.75,
+    "span_base_model_us": 391.52,
+    "span_bare_base_us": 211.19,
+    "span_bare_cand_us": 210.79,
+    "span_graph_base_us": 66.44,
+    "span_graph_cand_us": 65.7,
+    "x_harness": 1.0722,
+    "x_bare": 1.0019,
+    "x_graph": 1.0113,
+    "x_scored": 1.0214
+   },
+   {
+    "case": 2,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 42.18,
+    "scored_cand_us": 42.08,
+    "durs_base": [
+     32.04,
+     10.14
+    ],
+    "durs_cand": [
+     31.94,
+     10.14
+    ],
+    "H_base_csv_us": 409.13,
+    "H_cand_csv_us": 386.71,
+    "span_harness_model_us": 419.27,
+    "span_harness_measured_us": 419.5,
+    "span_base_model_us": 396.85,
+    "span_bare_base_us": 210.65,
+    "span_bare_cand_us": 210.65,
+    "span_graph_base_us": 73.36,
+    "span_graph_cand_us": 73.26,
+    "x_harness": 1.0565,
+    "x_bare": 1.0,
+    "x_graph": 1.0014,
+    "x_scored": 1.0024
+   },
+   {
+    "case": 3,
+    "n_launch_base": 2,
+    "n_launch_cand": 4,
+    "scored_base_us": 100.4,
+    "scored_cand_us": 57.4,
+    "durs_base": [
+     65.62,
+     34.78
+    ],
+    "durs_cand": [
+     11.3,
+     32.94,
+     11.08,
+     2.08
+    ],
+    "H_base_csv_us": 404.89,
+    "H_cand_csv_us": 430.33,
+    "span_harness_model_us": 439.67,
+    "span_harness_measured_us": 440.5,
+    "span_base_model_us": 1293.07,
+    "span_bare_base_us": 235.29,
+    "span_bare_cand_us": 603.61,
+    "span_graph_base_us": 131.58,
+    "span_graph_cand_us": 119.75,
+    "x_harness": 0.34,
+    "x_bare": 0.3898,
+    "x_graph": 1.0987,
+    "x_scored": 1.7491
+   },
+   {
+    "case": 4,
+    "n_launch_base": 2,
+    "n_launch_cand": 4,
+    "scored_base_us": 85.52,
+    "scored_cand_us": 41.7,
+    "durs_base": [
+     51.28,
+     34.24
+    ],
+    "durs_cand": [
+     10.74,
+     18.94,
+     10.48,
+     1.54
+    ],
+    "H_base_csv_us": 405.03,
+    "H_cand_csv_us": 432.69,
+    "span_harness_model_us": 439.27,
+    "span_harness_measured_us": 439.0,
+    "span_base_model_us": 1299.61,
+    "span_bare_base_us": 234.75,
+    "span_bare_cand_us": 603.07,
+    "span_graph_base_us": 116.7,
+    "span_graph_cand_us": 104.05,
+    "x_harness": 0.338,
+    "x_bare": 0.3893,
+    "x_graph": 1.1215,
+    "x_scored": 2.0508
+   },
+   {
+    "case": 5,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 55.1,
+    "scored_cand_us": 54.18,
+    "durs_base": [
+     35.76,
+     19.34
+    ],
+    "durs_cand": [
+     35.34,
+     18.84
+    ],
+    "H_base_csv_us": 403.75,
+    "H_cand_csv_us": 383.3,
+    "span_harness_model_us": 423.09,
+    "span_harness_measured_us": 423.0,
+    "span_base_model_us": 402.14,
+    "span_bare_base_us": 219.85,
+    "span_bare_cand_us": 219.35,
+    "span_graph_base_us": 86.28,
+    "span_graph_cand_us": 85.36,
+    "x_harness": 1.0521,
+    "x_bare": 1.0023,
+    "x_graph": 1.0108,
+    "x_scored": 1.017
+   },
+   {
+    "case": 6,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 77.94,
+    "scored_cand_us": 77.2,
+    "durs_base": [
+     50.5,
+     27.44
+    ],
+    "durs_cand": [
+     49.98,
+     27.22
+    ],
+    "H_base_csv_us": 403.67,
+    "H_cand_csv_us": 381.92,
+    "span_harness_model_us": 431.11,
+    "span_harness_measured_us": 431.25,
+    "span_base_model_us": 409.14,
+    "span_bare_base_us": 227.95,
+    "span_bare_cand_us": 227.73,
+    "span_graph_base_us": 109.12,
+    "span_graph_cand_us": 108.38,
+    "x_harness": 1.0537,
+    "x_bare": 1.001,
+    "x_graph": 1.0068,
+    "x_scored": 1.0096
+   },
+   {
+    "case": 7,
+    "n_launch_base": 2,
+    "n_launch_cand": 4,
+    "scored_base_us": 728.62,
+    "scored_cand_us": 179.02,
+    "durs_base": [
+     425.04,
+     303.58
+    ],
+    "durs_cand": [
+     42.44,
+     97.1,
+     36.64,
+     2.84
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 431.85,
+    "span_harness_model_us": 728.62,
+    "span_harness_measured_us": 732.0,
+    "span_base_model_us": 1298.39,
+    "span_bare_base_us": 728.62,
+    "span_bare_cand_us": 604.37,
+    "span_graph_base_us": 759.8,
+    "span_graph_cand_us": 241.37,
+    "x_harness": 0.5612,
+    "x_bare": 1.2056,
+    "x_graph": 3.1478,
+    "x_scored": 4.07
+   },
+   {
+    "case": 8,
+    "n_launch_base": 2,
+    "n_launch_cand": 4,
+    "scored_base_us": 91.26,
+    "scored_cand_us": 42.92,
+    "durs_base": [
+     53.98,
+     37.28
+    ],
+    "durs_cand": [
+     6.46,
+     26.48,
+     7.4,
+     2.58
+    ],
+    "H_base_csv_us": 404.9,
+    "H_cand_csv_us": 436.98,
+    "span_harness_model_us": 442.18,
+    "span_harness_measured_us": 442.75,
+    "span_base_model_us": 1313.52,
+    "span_bare_base_us": 237.79,
+    "span_bare_cand_us": 604.11,
+    "span_graph_base_us": 122.44,
+    "span_graph_cand_us": 105.27,
+    "x_harness": 0.3366,
+    "x_bare": 0.3936,
+    "x_graph": 1.163,
+    "x_scored": 2.1263
+   },
+   {
+    "case": 9,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 86.0,
+    "scored_cand_us": 85.74,
+    "durs_base": [
+     65.38,
+     20.62
+    ],
+    "durs_cand": [
+     65.3,
+     20.44
+    ],
+    "H_base_csv_us": 403.88,
+    "H_cand_csv_us": 391.07,
+    "span_harness_model_us": 424.5,
+    "span_harness_measured_us": 424.5,
+    "span_base_model_us": 411.51,
+    "span_bare_base_us": 221.13,
+    "span_bare_cand_us": 220.95,
+    "span_graph_base_us": 117.18,
+    "span_graph_cand_us": 116.92,
+    "x_harness": 1.0316,
+    "x_bare": 1.0008,
+    "x_graph": 1.0022,
+    "x_scored": 1.003
+   },
+   {
+    "case": 10,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 42.68,
+    "scored_cand_us": 42.18,
+    "durs_base": [
+     32.62,
+     10.06
+    ],
+    "durs_cand": [
+     32.26,
+     9.92
+    ],
+    "H_base_csv_us": 405.87,
+    "H_cand_csv_us": 383.87,
+    "span_harness_model_us": 415.93,
+    "span_harness_measured_us": 415.75,
+    "span_base_model_us": 393.79,
+    "span_bare_base_us": 210.57,
+    "span_bare_cand_us": 210.43,
+    "span_graph_base_us": 73.86,
+    "span_graph_cand_us": 73.36,
+    "x_harness": 1.0562,
+    "x_bare": 1.0007,
+    "x_graph": 1.0068,
+    "x_scored": 1.0119
+   },
+   {
+    "case": 11,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 63.04,
+    "scored_cand_us": 62.98,
+    "durs_base": [
+     44.0,
+     19.04
+    ],
+    "durs_cand": [
+     44.22,
+     18.76
+    ],
+    "H_base_csv_us": 402.49,
+    "H_cand_csv_us": 395.61,
+    "span_harness_model_us": 421.53,
+    "span_harness_measured_us": 421.75,
+    "span_base_model_us": 414.37,
+    "span_bare_base_us": 219.55,
+    "span_bare_cand_us": 219.27,
+    "span_graph_base_us": 94.22,
+    "span_graph_cand_us": 94.16,
+    "x_harness": 1.0173,
+    "x_bare": 1.0013,
+    "x_graph": 1.0006,
+    "x_scored": 1.001
+   },
+   {
+    "case": 12,
+    "n_launch_base": 2,
+    "n_launch_cand": 4,
+    "scored_base_us": 161.08,
+    "scored_cand_us": 107.9,
+    "durs_base": [
+     94.86,
+     66.22
+    ],
+    "durs_cand": [
+     40.7,
+     27.96,
+     36.26,
+     2.98
+    ],
+    "H_base_csv_us": 404.14,
+    "H_cand_csv_us": 435.21,
+    "span_harness_model_us": 470.36,
+    "span_harness_measured_us": 470.5,
+    "span_base_model_us": 1308.61,
+    "span_bare_base_us": 266.73,
+    "span_bare_cand_us": 604.51,
+    "span_graph_base_us": 192.26,
+    "span_graph_cand_us": 170.25,
+    "x_harness": 0.3594,
+    "x_bare": 0.4412,
+    "x_graph": 1.1292,
+    "x_scored": 1.4929
+   },
+   {
+    "case": 13,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 23.64,
+    "scored_cand_us": 23.1,
+    "durs_base": [
+     12.18,
+     11.46
+    ],
+    "durs_cand": [
+     11.88,
+     11.22
+    ],
+    "H_base_csv_us": 404.39,
+    "H_cand_csv_us": 383.71,
+    "span_harness_model_us": 415.85,
+    "span_harness_measured_us": 416.0,
+    "span_base_model_us": 394.93,
+    "span_bare_base_us": 211.97,
+    "span_bare_cand_us": 211.73,
+    "span_graph_base_us": 54.82,
+    "span_graph_cand_us": 54.28,
+    "x_harness": 1.053,
+    "x_bare": 1.0011,
+    "x_graph": 1.0099,
+    "x_scored": 1.0234
+   },
+   {
+    "case": 14,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 37.44,
+    "scored_cand_us": 37.36,
+    "durs_base": [
+     26.32,
+     11.12
+    ],
+    "durs_cand": [
+     26.24,
+     11.12
+    ],
+    "H_base_csv_us": 402.47,
+    "H_cand_csv_us": 383.57,
+    "span_harness_model_us": 413.59,
+    "span_harness_measured_us": 413.5,
+    "span_base_model_us": 394.69,
+    "span_bare_base_us": 211.63,
+    "span_bare_cand_us": 211.63,
+    "span_graph_base_us": 68.62,
+    "span_graph_cand_us": 68.54,
+    "x_harness": 1.0479,
+    "x_bare": 1.0,
+    "x_graph": 1.0012,
+    "x_scored": 1.0021
+   },
+   {
+    "case": 15,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 1470.8,
+    "scored_cand_us": 1471.38,
+    "durs_base": [
+     859.28,
+     611.52
+    ],
+    "durs_cand": [
+     859.4,
+     611.98
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 0.0,
+    "span_harness_model_us": 1470.8,
+    "span_harness_measured_us": 1473.25,
+    "span_base_model_us": 1471.38,
+    "span_bare_base_us": 1470.8,
+    "span_bare_cand_us": 1471.38,
+    "span_graph_base_us": 1501.98,
+    "span_graph_cand_us": 1502.56,
+    "x_harness": 0.9996,
+    "x_bare": 0.9996,
+    "x_graph": 0.9996,
+    "x_scored": 0.9996
+   },
+   {
+    "case": 16,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 695.52,
+    "scored_cand_us": 695.88,
+    "durs_base": [
+     433.5,
+     262.02
+    ],
+    "durs_cand": [
+     433.88,
+     262.0
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 0.0,
+    "span_harness_model_us": 695.52,
+    "span_harness_measured_us": 698.5,
+    "span_base_model_us": 695.88,
+    "span_bare_base_us": 695.52,
+    "span_bare_cand_us": 695.88,
+    "span_graph_base_us": 726.7,
+    "span_graph_cand_us": 727.06,
+    "x_harness": 0.9995,
+    "x_bare": 0.9995,
+    "x_graph": 0.9995,
+    "x_scored": 0.9995
+   },
+   {
+    "case": 17,
+    "n_launch_base": 2,
+    "n_launch_cand": 4,
+    "scored_base_us": 736.48,
+    "scored_cand_us": 437.7,
+    "durs_base": [
+     429.76,
+     306.72
+    ],
+    "durs_cand": [
+     183.84,
+     93.96,
+     156.8,
+     3.1
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 430.17,
+    "span_harness_model_us": 736.48,
+    "span_harness_measured_us": 739.25,
+    "span_base_model_us": 1293.61,
+    "span_bare_base_us": 736.48,
+    "span_bare_cand_us": 604.63,
+    "span_graph_base_us": 767.66,
+    "span_graph_cand_us": 500.05,
+    "x_harness": 0.5693,
+    "x_bare": 1.2181,
+    "x_graph": 1.5352,
+    "x_scored": 1.6826
+   },
+   {
+    "case": 18,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 650.62,
+    "scored_cand_us": 650.1,
+    "durs_base": [
+     391.86,
+     258.76
+    ],
+    "durs_cand": [
+     391.56,
+     258.54
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 0.0,
+    "span_harness_model_us": 650.62,
+    "span_harness_measured_us": 662.5,
+    "span_base_model_us": 650.1,
+    "span_bare_base_us": 650.62,
+    "span_bare_cand_us": 650.1,
+    "span_graph_base_us": 681.8,
+    "span_graph_cand_us": 681.28,
+    "x_harness": 1.0008,
+    "x_bare": 1.0008,
+    "x_graph": 1.0008,
+    "x_scored": 1.0008
+   }
+  ],
+  "geomean_scored": 1.28027,
+  "geomean_span_harness": 0.75799,
+  "geomean_span_bare": 0.83513,
+  "geomean_span_graph": 1.12421,
+  "geomean_span_harness_splitonly": 0.40544,
+  "geomean_span_bare_splitonly": 0.58159,
+  "geomean_span_graph_splitonly": 1.40886,
+  "split_cases": [
+   3,
+   4,
+   7,
+   8,
+   12,
+   17
+  ]
+ },
+ "mask": {
+  "per_case": [
+   {
+    "case": 1,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 26.44,
+    "scored_cand_us": 26.14,
+    "durs_base": [
+     24.36,
+     2.08
+    ],
+    "durs_cand": [
+     24.2,
+     1.94
+    ],
+    "H_base_csv_us": 399.07,
+    "H_cand_csv_us": 387.66,
+    "span_harness_model_us": 401.15,
+    "span_harness_measured_us": 401.0,
+    "span_base_model_us": 389.6,
+    "span_bare_base_us": 202.59,
+    "span_bare_cand_us": 202.45,
+    "span_graph_base_us": 57.62,
+    "span_graph_cand_us": 57.32,
+    "x_harness": 1.0296,
+    "x_bare": 1.0007,
+    "x_graph": 1.0052,
+    "x_scored": 1.0115
+   },
+   {
+    "case": 2,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 33.98,
+    "scored_cand_us": 33.92,
+    "durs_base": [
+     31.94,
+     2.04
+    ],
+    "durs_cand": [
+     31.9,
+     2.02
+    ],
+    "H_base_csv_us": 420.67,
+    "H_cand_csv_us": 390.23,
+    "span_harness_model_us": 422.71,
+    "span_harness_measured_us": 422.75,
+    "span_base_model_us": 392.25,
+    "span_bare_base_us": 202.55,
+    "span_bare_cand_us": 202.53,
+    "span_graph_base_us": 65.16,
+    "span_graph_cand_us": 65.1,
+    "x_harness": 1.0777,
+    "x_bare": 1.0001,
+    "x_graph": 1.0009,
+    "x_scored": 1.0018
+   },
+   {
+    "case": 3,
+    "n_launch_base": 2,
+    "n_launch_cand": 3,
+    "scored_base_us": 70.74,
+    "scored_cand_us": 50.8,
+    "durs_base": [
+     65.64,
+     5.1
+    ],
+    "durs_cand": [
+     11.58,
+     33.7,
+     5.52
+    ],
+    "H_base_csv_us": 408.59,
+    "H_cand_csv_us": 493.61,
+    "span_harness_model_us": 413.69,
+    "span_harness_measured_us": 413.5,
+    "span_base_model_us": 992.74,
+    "span_bare_base_us": 205.61,
+    "span_bare_cand_us": 406.54,
+    "span_graph_base_us": 101.92,
+    "span_graph_cand_us": 97.56,
+    "x_harness": 0.4167,
+    "x_bare": 0.5058,
+    "x_graph": 1.0446,
+    "x_scored": 1.3925
+   },
+   {
+    "case": 4,
+    "n_launch_base": 2,
+    "n_launch_cand": 3,
+    "scored_base_us": 55.82,
+    "scored_cand_us": 34.3,
+    "durs_base": [
+     51.04,
+     4.78
+    ],
+    "durs_cand": [
+     10.68,
+     18.92,
+     4.7
+    ],
+    "H_base_csv_us": 400.36,
+    "H_cand_csv_us": 493.55,
+    "span_harness_model_us": 405.14,
+    "span_harness_measured_us": 405.25,
+    "span_base_model_us": 991.8,
+    "span_bare_base_us": 205.29,
+    "span_bare_cand_us": 405.72,
+    "span_graph_base_us": 87.0,
+    "span_graph_cand_us": 81.06,
+    "x_harness": 0.4085,
+    "x_bare": 0.506,
+    "x_graph": 1.0732,
+    "x_scored": 1.6274
+   },
+   {
+    "case": 5,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 40.2,
+    "scored_cand_us": 39.76,
+    "durs_base": [
+     35.74,
+     4.46
+    ],
+    "durs_cand": [
+     35.3,
+     4.46
+    ],
+    "H_base_csv_us": 419.55,
+    "H_cand_csv_us": 390.3,
+    "span_harness_model_us": 424.01,
+    "span_harness_measured_us": 424.0,
+    "span_base_model_us": 394.76,
+    "span_bare_base_us": 204.97,
+    "span_bare_cand_us": 204.97,
+    "span_graph_base_us": 71.38,
+    "span_graph_cand_us": 70.94,
+    "x_harness": 1.0741,
+    "x_bare": 1.0,
+    "x_graph": 1.0062,
+    "x_scored": 1.0111
+   },
+   {
+    "case": 6,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 56.08,
+    "scored_cand_us": 54.78,
+    "durs_base": [
+     50.66,
+     5.42
+    ],
+    "durs_cand": [
+     49.94,
+     4.84
+    ],
+    "H_base_csv_us": 441.66,
+    "H_cand_csv_us": 391.35,
+    "span_harness_model_us": 447.08,
+    "span_harness_measured_us": 446.0,
+    "span_base_model_us": 396.19,
+    "span_bare_base_us": 205.93,
+    "span_bare_cand_us": 205.35,
+    "span_graph_base_us": 87.26,
+    "span_graph_cand_us": 85.96,
+    "x_harness": 1.1284,
+    "x_bare": 1.0028,
+    "x_graph": 1.0151,
+    "x_scored": 1.0237
+   },
+   {
+    "case": 7,
+    "n_launch_base": 2,
+    "n_launch_cand": 3,
+    "scored_base_us": 461.16,
+    "scored_cand_us": 172.88,
+    "durs_base": [
+     424.92,
+     36.24
+    ],
+    "durs_cand": [
+     39.38,
+     97.44,
+     36.06
+    ],
+    "H_base_csv_us": 482.75,
+    "H_cand_csv_us": 492.41,
+    "span_harness_model_us": 518.99,
+    "span_harness_measured_us": 473.75,
+    "span_base_model_us": 1020.88,
+    "span_bare_base_us": 461.16,
+    "span_bare_cand_us": 437.08,
+    "span_graph_base_us": 492.34,
+    "span_graph_cand_us": 219.64,
+    "x_harness": 0.5084,
+    "x_bare": 1.0551,
+    "x_graph": 2.2415,
+    "x_scored": 2.6675
+   },
+   {
+    "case": 8,
+    "n_launch_base": 2,
+    "n_launch_cand": 3,
+    "scored_base_us": 59.94,
+    "scored_cand_us": 37.9,
+    "durs_base": [
+     54.12,
+     5.82
+    ],
+    "durs_cand": [
+     6.04,
+     26.12,
+     5.74
+    ],
+    "H_base_csv_us": 444.87,
+    "H_cand_csv_us": 501.485,
+    "span_harness_model_us": 450.69,
+    "span_harness_measured_us": 450.5,
+    "span_base_model_us": 1008.71,
+    "span_bare_base_us": 206.33,
+    "span_bare_cand_us": 406.76,
+    "span_graph_base_us": 91.12,
+    "span_graph_cand_us": 84.66,
+    "x_harness": 0.4468,
+    "x_bare": 0.5073,
+    "x_graph": 1.0762,
+    "x_scored": 1.5815
+   },
+   {
+    "case": 9,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 69.28,
+    "scored_cand_us": 69.62,
+    "durs_base": [
+     65.2,
+     4.08
+    ],
+    "durs_cand": [
+     65.24,
+     4.38
+    ],
+    "H_base_csv_us": 443.51,
+    "H_cand_csv_us": 401.74,
+    "span_harness_model_us": 447.59,
+    "span_harness_measured_us": 448.0,
+    "span_base_model_us": 406.12,
+    "span_bare_base_us": 204.59,
+    "span_bare_cand_us": 204.89,
+    "span_graph_base_us": 100.46,
+    "span_graph_cand_us": 100.8,
+    "x_harness": 1.1021,
+    "x_bare": 0.9985,
+    "x_graph": 0.9966,
+    "x_scored": 0.9951
+   },
+   {
+    "case": 10,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 34.44,
+    "scored_cand_us": 34.14,
+    "durs_base": [
+     32.48,
+     1.96
+    ],
+    "durs_cand": [
+     32.2,
+     1.94
+    ],
+    "H_base_csv_us": 440.23,
+    "H_cand_csv_us": 398.12,
+    "span_harness_model_us": 442.19,
+    "span_harness_measured_us": 442.0,
+    "span_base_model_us": 400.06,
+    "span_bare_base_us": 202.47,
+    "span_bare_cand_us": 202.45,
+    "span_graph_base_us": 65.62,
+    "span_graph_cand_us": 65.32,
+    "x_harness": 1.1053,
+    "x_bare": 1.0001,
+    "x_graph": 1.0046,
+    "x_scored": 1.0088
+   },
+   {
+    "case": 11,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 47.2,
+    "scored_cand_us": 46.96,
+    "durs_base": [
+     44.22,
+     2.98
+    ],
+    "durs_cand": [
+     43.96,
+     3.0
+    ],
+    "H_base_csv_us": 437.05,
+    "H_cand_csv_us": 393.24,
+    "span_harness_model_us": 440.03,
+    "span_harness_measured_us": 441.25,
+    "span_base_model_us": 396.24,
+    "span_bare_base_us": 203.49,
+    "span_bare_cand_us": 203.51,
+    "span_graph_base_us": 78.38,
+    "span_graph_cand_us": 78.14,
+    "x_harness": 1.1105,
+    "x_bare": 0.9999,
+    "x_graph": 1.0031,
+    "x_scored": 1.0051
+   },
+   {
+    "case": 12,
+    "n_launch_base": 2,
+    "n_launch_cand": 3,
+    "scored_base_us": 103.7,
+    "scored_cand_us": 73.74,
+    "durs_base": [
+     94.92,
+     8.78
+    ],
+    "durs_cand": [
+     39.06,
+     24.88,
+     9.8
+    ],
+    "H_base_csv_us": 443.42,
+    "H_cand_csv_us": 497.55,
+    "span_harness_model_us": 452.2,
+    "span_harness_measured_us": 452.25,
+    "span_base_model_us": 1004.9,
+    "span_bare_base_us": 209.29,
+    "span_bare_cand_us": 410.82,
+    "span_graph_base_us": 134.88,
+    "span_graph_cand_us": 120.5,
+    "x_harness": 0.45,
+    "x_bare": 0.5094,
+    "x_graph": 1.1193,
+    "x_scored": 1.4063
+   },
+   {
+    "case": 13,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 14.74,
+    "scored_cand_us": 14.62,
+    "durs_base": [
+     11.82,
+     2.92
+    ],
+    "durs_cand": [
+     11.9,
+     2.72
+    ],
+    "H_base_csv_us": 442.57,
+    "H_cand_csv_us": 393.65,
+    "span_harness_model_us": 445.49,
+    "span_harness_measured_us": 445.5,
+    "span_base_model_us": 396.37,
+    "span_bare_base_us": 203.43,
+    "span_bare_cand_us": 203.23,
+    "span_graph_base_us": 45.92,
+    "span_graph_cand_us": 45.8,
+    "x_harness": 1.1239,
+    "x_bare": 1.001,
+    "x_graph": 1.0026,
+    "x_scored": 1.0082
+   },
+   {
+    "case": 14,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 29.12,
+    "scored_cand_us": 29.18,
+    "durs_base": [
+     26.32,
+     2.8
+    ],
+    "durs_cand": [
+     26.3,
+     2.88
+    ],
+    "H_base_csv_us": 446.57,
+    "H_cand_csv_us": 394.3,
+    "span_harness_model_us": 449.37,
+    "span_harness_measured_us": 449.25,
+    "span_base_model_us": 397.18,
+    "span_bare_base_us": 203.31,
+    "span_bare_cand_us": 203.39,
+    "span_graph_base_us": 60.3,
+    "span_graph_cand_us": 60.36,
+    "x_harness": 1.1314,
+    "x_bare": 0.9996,
+    "x_graph": 0.999,
+    "x_scored": 0.9979
+   },
+   {
+    "case": 15,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 933.8,
+    "scored_cand_us": 933.84,
+    "durs_base": [
+     858.78,
+     75.02
+    ],
+    "durs_cand": [
+     858.24,
+     75.6
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 0.0,
+    "span_harness_model_us": 933.8,
+    "span_harness_measured_us": 936.0,
+    "span_base_model_us": 933.84,
+    "span_bare_base_us": 933.8,
+    "span_bare_cand_us": 933.84,
+    "span_graph_base_us": 964.98,
+    "span_graph_cand_us": 965.02,
+    "x_harness": 1.0,
+    "x_bare": 1.0,
+    "x_graph": 1.0,
+    "x_scored": 1.0
+   },
+   {
+    "case": 16,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 466.84,
+    "scored_cand_us": 466.66,
+    "durs_base": [
+     433.42,
+     33.42
+    ],
+    "durs_cand": [
+     433.3,
+     33.36
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 0.0,
+    "span_harness_model_us": 466.84,
+    "span_harness_measured_us": 470.75,
+    "span_base_model_us": 466.66,
+    "span_bare_base_us": 466.84,
+    "span_bare_cand_us": 466.66,
+    "span_graph_base_us": 498.02,
+    "span_graph_cand_us": 497.84,
+    "x_harness": 1.0004,
+    "x_bare": 1.0004,
+    "x_graph": 1.0004,
+    "x_scored": 1.0004
+   },
+   {
+    "case": 17,
+    "n_launch_base": 2,
+    "n_launch_cand": 3,
+    "scored_base_us": 472.82,
+    "scored_cand_us": 320.98,
+    "durs_base": [
+     429.38,
+     43.44
+    ],
+    "durs_cand": [
+     181.48,
+     95.18,
+     44.32
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 504.69,
+    "span_harness_model_us": 472.82,
+    "span_harness_measured_us": 483.75,
+    "span_base_model_us": 1053.7,
+    "span_bare_base_us": 472.82,
+    "span_bare_cand_us": 445.34,
+    "span_graph_base_us": 504.0,
+    "span_graph_cand_us": 367.74,
+    "x_harness": 0.4487,
+    "x_bare": 1.0617,
+    "x_graph": 1.3705,
+    "x_scored": 1.4731
+   },
+   {
+    "case": 18,
+    "n_launch_base": 2,
+    "n_launch_cand": 2,
+    "scored_base_us": 423.8,
+    "scored_cand_us": 424.18,
+    "durs_base": [
+     391.34,
+     32.46
+    ],
+    "durs_cand": [
+     391.34,
+     32.84
+    ],
+    "H_base_csv_us": 0.0,
+    "H_cand_csv_us": 0.0,
+    "span_harness_model_us": 423.8,
+    "span_harness_measured_us": 470.75,
+    "span_base_model_us": 424.18,
+    "span_bare_base_us": 423.8,
+    "span_bare_cand_us": 424.18,
+    "span_graph_base_us": 454.98,
+    "span_graph_cand_us": 455.36,
+    "x_harness": 0.9991,
+    "x_bare": 0.9991,
+    "x_graph": 0.9992,
+    "x_scored": 0.9991
+   }
+  ],
+  "geomean_scored": 1.18452,
+  "geomean_span_harness": 0.80009,
+  "geomean_span_bare": 0.86548,
+  "geomean_span_graph": 1.08422,
+  "geomean_span_harness_splitonly": 0.4454,
+  "geomean_span_bare_splitonly": 0.64807,
+  "geomean_span_graph_splitonly": 1.2676,
+  "split_cases": [
+   3,
+   4,
+   7,
+   8,
+   12,
+   17
+  ]
+ }
+}

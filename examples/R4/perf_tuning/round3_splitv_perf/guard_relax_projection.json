@@ -1,0 +1,23 @@
+{
+ "per_task": {
+  "fused": {
+   "geomean_now": 1.2796,
+   "geomean_if_relaxed": 1.32217,
+   "uplift_pct": 3.326,
+   "split8_geomean": 1.85507,
+   "case6_x": 1.44424,
+   "case11_x": 1.24787
+  },
+  "mask": {
+   "geomean_now": 1.18401,
+   "geomean_if_relaxed": 1.21143,
+   "uplift_pct": 2.316,
+   "split8_geomean": 1.53271,
+   "case6_x": 1.30893,
+   "case11_x": 1.15373
+  }
+ },
+ "combined36_now": 1.23088,
+ "combined36_if_relaxed": 1.26559,
+ "combined36_uplift_pct": 2.82
+}

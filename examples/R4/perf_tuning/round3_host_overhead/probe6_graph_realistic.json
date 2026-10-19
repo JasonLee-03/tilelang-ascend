@@ -1,0 +1,641 @@
+{
+ "_meta": {
+  "description": "realistic ACL-graph deployment: static input buffers + D2D copy-in + replay; correctness verified across DISTINCT input VALUE sets",
+  "why": "a captured graph bakes in device ADDRESSES; cann-bench rotates inputs per step (input_pool.py), so naive replay would read stale addresses. This probe measures the correct copy-in+replay pattern instead.",
+  "measurement": "perf_counter_ns host-side; serial figures include device time and are NOT kernel-duration claims",
+  "iters": 25,
+  "n_value_sets": 5,
+  "env": {
+   "tilelang": "0.1.4+d75300ed0a88b0f4b2eef8a62b43f1930fdae44b",
+   "tilelang_file": "/home/developer/.local/lib/python3.12/site-packages/tilelang/__init__.py",
+   "torch": "2.7.1+cpu",
+   "torch_npu": "2.7.1.post4",
+   "python": "3.12.9",
+   "device": "Ascend910_9362",
+   "cwd": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead",
+   "PYTHONPATH": "/home/developer/.local/lib/python3.12/site-packages/tilelang/3rdparty/tvm/python:/home/developer/Ascend/cann-9.2.0/python/site-packages:/home/developer/Ascend/cann-9.2.0/opp/built-in/op_impl/ai_core/tbe:",
+   "ACL_OP_INIT_MODE": "1",
+   "LD_LIBRARY_PATH_has_sqlite3": true,
+   "timestamp": "2026-10-11T17:53:26+0800",
+   "delivered_kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117"
+  }
+ },
+ "1": {
+  "B": 2,
+  "V": 256,
+  "use_split": false,
+  "S": 1,
+  "n_launch": 2,
+  "capture_ok": true,
+  "correctness_all_value_sets_bitwise": true,
+  "correctness_detail": [
+   {
+    "value_set": 0,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 1,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 2,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 3,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 4,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   }
+  ],
+  "L0_bare": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 72.951,
+    "med_us": 88.912,
+    "p90_us": 101.752,
+    "max_us": 110.222
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 101.711,
+    "med_us": 115.852,
+    "p90_us": 126.712,
+    "max_us": 129.522
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 148.453,
+    "med_us": 168.633,
+    "p90_us": 177.913,
+    "max_us": 187.533
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 411.117,
+    "med_us": 415.557,
+    "p90_us": 433.628,
+    "max_us": 476.598
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 440.618,
+    "med_us": 443.268,
+    "p90_us": 459.798,
+    "max_us": 485.459
+   }
+  },
+  "L5_harness": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 303.445,
+    "med_us": 325.006,
+    "p90_us": 342.306,
+    "max_us": 541.369
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 331.536,
+    "med_us": 349.036,
+    "p90_us": 363.936,
+    "max_us": 389.237
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 387.557,
+    "med_us": 403.928,
+    "p90_us": 432.838,
+    "max_us": 448.598
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 1039.589,
+    "med_us": 1059.799,
+    "p90_us": 1083.279,
+    "max_us": 1549.248
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 1078.449,
+    "med_us": 1102.08,
+    "p90_us": 1122.44,
+    "max_us": 1130.63
+   }
+  }
+ },
+ "3": {
+  "B": 8,
+  "V": 16384,
+  "use_split": true,
+  "S": 4,
+  "n_launch": 4,
+  "capture_ok": true,
+  "correctness_all_value_sets_bitwise": true,
+  "correctness_detail": [
+   {
+    "value_set": 0,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 1,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 2,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 3,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 4,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   }
+  ],
+  "L0_bare": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 73.591,
+    "med_us": 80.681,
+    "p90_us": 88.961,
+    "max_us": 104.532
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 103.962,
+    "med_us": 115.142,
+    "p90_us": 122.952,
+    "max_us": 127.672
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 196.053,
+    "med_us": 215.194,
+    "p90_us": 225.254,
+    "max_us": 239.235
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 772.823,
+    "med_us": 790.564,
+    "p90_us": 814.205,
+    "max_us": 863.646
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 801.264,
+    "med_us": 821.765,
+    "p90_us": 846.435,
+    "max_us": 863.766
+   }
+  },
+  "L5_harness": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 288.955,
+    "med_us": 302.166,
+    "p90_us": 318.766,
+    "max_us": 420.798
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 314.286,
+    "med_us": 329.765,
+    "p90_us": 356.156,
+    "max_us": 382.877
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 412.568,
+    "med_us": 428.167,
+    "p90_us": 437.127,
+    "max_us": 547.53
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 1807.892,
+    "med_us": 1863.623,
+    "p90_us": 1875.503,
+    "max_us": 2196.679
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 1842.993,
+    "med_us": 1882.433,
+    "p90_us": 1898.814,
+    "max_us": 1980.875
+   }
+  }
+ },
+ "13": {
+  "B": 6,
+  "V": 2304,
+  "use_split": false,
+  "S": 2,
+  "n_launch": 2,
+  "capture_ok": true,
+  "correctness_all_value_sets_bitwise": true,
+  "correctness_detail": [
+   {
+    "value_set": 0,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 1,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 2,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 3,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 4,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   }
+  ],
+  "L0_bare": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 79.192,
+    "med_us": 88.701,
+    "p90_us": 98.242,
+    "max_us": 120.262
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 102.842,
+    "med_us": 118.982,
+    "p90_us": 124.882,
+    "max_us": 133.242
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 145.003,
+    "med_us": 169.463,
+    "p90_us": 176.273,
+    "max_us": 195.504
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 404.227,
+    "med_us": 411.987,
+    "p90_us": 421.907,
+    "max_us": 462.538
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 431.658,
+    "med_us": 440.268,
+    "p90_us": 454.988,
+    "max_us": 486.118
+   }
+  },
+  "L5_harness": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 301.095,
+    "med_us": 317.566,
+    "p90_us": 344.526,
+    "max_us": 445.248
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 330.096,
+    "med_us": 342.616,
+    "p90_us": 348.457,
+    "max_us": 375.147
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 378.417,
+    "med_us": 396.737,
+    "p90_us": 416.027,
+    "max_us": 430.238
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 1034.108,
+    "med_us": 1053.159,
+    "p90_us": 1078.77,
+    "max_us": 1318.213
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 1070.279,
+    "med_us": 1089.82,
+    "p90_us": 1108.1,
+    "max_us": 1137.83
+   }
+  }
+ },
+ "7": {
+  "B": 4,
+  "V": 152064,
+  "use_split": true,
+  "S": 10,
+  "n_launch": 4,
+  "capture_ok": true,
+  "correctness_all_value_sets_bitwise": true,
+  "correctness_detail": [
+   {
+    "value_set": 0,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 1,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 2,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 3,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   },
+   {
+    "value_set": 4,
+    "per_output_bitwise": [
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "all_ok": true
+   }
+  ],
+  "L0_bare": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 75.661,
+    "med_us": 85.592,
+    "p90_us": 92.071,
+    "max_us": 110.102
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 96.582,
+    "med_us": 117.562,
+    "p90_us": 124.692,
+    "max_us": 141.042
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 311.905,
+    "med_us": 325.886,
+    "p90_us": 335.276,
+    "max_us": 396.487
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 781.064,
+    "med_us": 796.405,
+    "p90_us": 815.745,
+    "max_us": 867.105
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 807.474,
+    "med_us": 824.655,
+    "p90_us": 844.635,
+    "max_us": 857.085
+   }
+  },
+  "L5_harness": {
+   "copy_in_only": {
+    "n": 25,
+    "min_us": 285.125,
+    "med_us": 299.046,
+    "p90_us": 323.676,
+    "max_us": 422.287
+   },
+   "graph_host_async": {
+    "n": 25,
+    "min_us": 314.365,
+    "med_us": 329.676,
+    "p90_us": 362.267,
+    "max_us": 375.567
+   },
+   "graph_serial": {
+    "n": 25,
+    "min_us": 525.67,
+    "med_us": 542.26,
+    "p90_us": 569.42,
+    "max_us": 614.191
+   },
+   "eager_host_async": {
+    "n": 25,
+    "min_us": 1815.832,
+    "med_us": 1853.263,
+    "p90_us": 1868.774,
+    "max_us": 2203.429
+   },
+   "eager_serial": {
+    "n": 25,
+    "min_us": 1850.783,
+    "med_us": 1883.594,
+    "p90_us": 1902.564,
+    "max_us": 1915.064
+   }
+  }
+ },
+ "summary": {
+  "1": {
+   "n_launch": 2,
+   "bitwise_ok": true,
+   "eager_L0": 415.557,
+   "graph_L0": 115.852,
+   "speedup_L0": 3.587,
+   "eager_L5": 1059.799,
+   "graph_L5": 349.036,
+   "speedup_L5": 3.036,
+   "copy_in_L0_us": 88.912,
+   "graph_serial_L0_us": 168.633,
+   "eager_serial_L0_us": 443.268,
+   "serial_speedup_L0": 2.629
+  },
+  "3": {
+   "n_launch": 4,
+   "bitwise_ok": true,
+   "eager_L0": 790.564,
+   "graph_L0": 115.142,
+   "speedup_L0": 6.866,
+   "eager_L5": 1863.623,
+   "graph_L5": 329.765,
+   "speedup_L5": 5.651,
+   "copy_in_L0_us": 80.681,
+   "graph_serial_L0_us": 215.194,
+   "eager_serial_L0_us": 821.765,
+   "serial_speedup_L0": 3.819
+  },
+  "13": {
+   "n_launch": 2,
+   "bitwise_ok": true,
+   "eager_L0": 411.987,
+   "graph_L0": 118.982,
+   "speedup_L0": 3.463,
+   "eager_L5": 1053.159,
+   "graph_L5": 342.616,
+   "speedup_L5": 3.074,
+   "copy_in_L0_us": 88.701,
+   "graph_serial_L0_us": 169.463,
+   "eager_serial_L0_us": 440.268,
+   "serial_speedup_L0": 2.598
+  },
+  "7": {
+   "n_launch": 4,
+   "bitwise_ok": true,
+   "eager_L0": 796.405,
+   "graph_L0": 117.562,
+   "speedup_L0": 6.774,
+   "eager_L5": 1853.263,
+   "graph_L5": 329.676,
+   "speedup_L5": 5.621,
+   "copy_in_L0_us": 85.592,
+   "graph_serial_L0_us": 325.886,
+   "eager_serial_L0_us": 824.655,
+   "serial_speedup_L0": 2.531
+  }
+ }
+}

@@ -1,0 +1,285 @@
+{
+ "_meta": {
+  "description": "quantified evaluation of candidate mitigations (NOT implemented)",
+  "measurement": "perf_counter_ns, host-side, no profiler unless stated",
+  "iters": 200,
+  "env": {
+   "tilelang": "0.1.4+d75300ed0a88b0f4b2eef8a62b43f1930fdae44b",
+   "tilelang_file": "/home/developer/.local/lib/python3.12/site-packages/tilelang/__init__.py",
+   "torch": "2.7.1+cpu",
+   "torch_npu": "2.7.1.post4",
+   "python": "3.12.9",
+   "device": "Ascend910_9362",
+   "cwd": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead",
+   "PYTHONPATH": "/home/developer/.local/lib/python3.12/site-packages/tilelang/3rdparty/tvm/python:/home/developer/Ascend/cann-9.2.0/python/site-packages:/home/developer/Ascend/cann-9.2.0/opp/built-in/op_impl/ai_core/tbe:",
+   "ACL_OP_INIT_MODE": "1",
+   "LD_LIBRARY_PATH_has_sqlite3": true,
+   "timestamp": "2026-10-11T17:45:03+0800",
+   "delivered_kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117"
+  }
+ },
+ "A_execution_backend": {
+  "cython": {
+   "n": 100,
+   "min_us": 170.433,
+   "med_us": 172.943,
+   "max_us": 201.133,
+   "backend": "cython",
+   "build_s": 0.1,
+   "correct": true,
+   "adapter": "CythonKernelAdapter",
+   "vs_cython_ratio": 1.0,
+   "vs_cython_saving_us": 0.0
+  },
+  "ctypes": {
+   "backend": "ctypes",
+   "error": "AttributeError: 'CtypesKernelAdapter' object has no attribute '_legalize_result_idx'"
+  },
+  "dlpack": {
+   "backend": "dlpack",
+   "error": "AssertionError: DLPack backend requires LLVM runtime."
+  }
+ },
+ "B_framework_ceiling": {
+  "K1(4 allocs)": {
+   "current (Analyzer + stream lookup)": {
+    "n": 200,
+    "min_us": 185.823,
+    "med_us": 188.913,
+    "max_us": 274.475,
+    "saving_vs_current_us": 0.0,
+    "saving_pct": 0.0
+   },
+   "lazy Analyzer (skip when dyn map empty)": {
+    "n": 200,
+    "min_us": 57.481,
+    "med_us": 59.491,
+    "max_us": 126.072,
+    "saving_vs_current_us": 129.422,
+    "saving_pct": 68.51
+   },
+   "cached stream only": {
+    "n": 200,
+    "min_us": 167.743,
+    "med_us": 170.258,
+    "max_us": 262.975,
+    "saving_vs_current_us": 18.655,
+    "saving_pct": 9.87
+   },
+   "lazy Analyzer + cached stream": {
+    "n": 200,
+    "min_us": 41.211,
+    "med_us": 42.541,
+    "max_us": 87.281,
+    "saving_vs_current_us": 146.372,
+    "saving_pct": 77.48
+   },
+   "_real_forward_us": 197.884,
+   "_implied_libcall_us": 8.971
+  },
+  "K1A(0 allocs)": {
+   "current (Analyzer + stream lookup)": {
+    "n": 200,
+    "min_us": 147.583,
+    "med_us": 149.793,
+    "max_us": 187.243,
+    "saving_vs_current_us": 0.0,
+    "saving_pct": 0.0
+   },
+   "lazy Analyzer (skip when dyn map empty)": {
+    "n": 200,
+    "min_us": 20.54,
+    "med_us": 20.936,
+    "max_us": 64.781,
+    "saving_vs_current_us": 128.857,
+    "saving_pct": 86.02
+   },
+   "cached stream only": {
+    "n": 200,
+    "min_us": 129.222,
+    "med_us": 131.097,
+    "max_us": 175.103,
+    "saving_vs_current_us": 18.696,
+    "saving_pct": 12.48
+   },
+   "lazy Analyzer + cached stream": {
+    "n": 200,
+    "min_us": 5.95,
+    "med_us": 6.14,
+    "max_us": 6.58,
+    "saving_vs_current_us": 143.653,
+    "saving_pct": 95.9
+   },
+   "_real_forward_us": 158.898,
+   "_implied_libcall_us": 9.105
+  }
+ },
+ "C_wrapper_savings": {
+  "1": {
+   "B": 2,
+   "V": 256,
+   "use_split": false,
+   "S": 1,
+   "items": {
+    "_r4_split_plan -> memoised": {
+     "as_is_us": 4.32,
+     "cached_us": 0.32,
+     "saving_us": 4.0,
+     "applies_to_this_case": true,
+     "effective_saving_us": 4.0
+    },
+    "GM workspace torch.empty -> reused": {
+     "as_is_us": 5.71,
+     "cached_us": 0.14,
+     "saving_us": 5.57,
+     "applies_to_this_case": false,
+     "effective_saving_us": 0.0
+    },
+    "pre-checks -> shape/dtype memoised": {
+     "as_is_us": 0.36,
+     "cached_us": 0.35,
+     "saving_us": 0.01,
+     "applies_to_this_case": true,
+     "effective_saving_us": 0.01
+    }
+   },
+   "total_saving_us": 4.01
+  },
+  "3": {
+   "B": 8,
+   "V": 16384,
+   "use_split": true,
+   "S": 4,
+   "items": {
+    "_r4_split_plan -> memoised": {
+     "as_is_us": 7.495,
+     "cached_us": 0.32,
+     "saving_us": 7.175,
+     "applies_to_this_case": true,
+     "effective_saving_us": 7.175
+    },
+    "GM workspace torch.empty -> reused": {
+     "as_is_us": 5.686,
+     "cached_us": 0.14,
+     "saving_us": 5.546,
+     "applies_to_this_case": true,
+     "effective_saving_us": 5.546
+    },
+    "pre-checks -> shape/dtype memoised": {
+     "as_is_us": 0.36,
+     "cached_us": 0.36,
+     "saving_us": 0.0,
+     "applies_to_this_case": true,
+     "effective_saving_us": 0.0
+    }
+   },
+   "total_saving_us": 12.721
+  },
+  "13": {
+   "B": 6,
+   "V": 2304,
+   "use_split": false,
+   "S": 2,
+   "items": {
+    "_r4_split_plan -> memoised": {
+     "as_is_us": 4.39,
+     "cached_us": 0.32,
+     "saving_us": 4.07,
+     "applies_to_this_case": true,
+     "effective_saving_us": 4.07
+    },
+    "GM workspace torch.empty -> reused": {
+     "as_is_us": 5.68,
+     "cached_us": 0.14,
+     "saving_us": 5.54,
+     "applies_to_this_case": false,
+     "effective_saving_us": 0.0
+    },
+    "pre-checks -> shape/dtype memoised": {
+     "as_is_us": 0.36,
+     "cached_us": 0.36,
+     "saving_us": 0.0,
+     "applies_to_this_case": true,
+     "effective_saving_us": 0.0
+    }
+   },
+   "total_saving_us": 4.07
+  },
+  "7": {
+   "B": 4,
+   "V": 152064,
+   "use_split": true,
+   "S": 10,
+   "items": {
+    "_r4_split_plan -> memoised": {
+     "as_is_us": 10.48,
+     "cached_us": 0.32,
+     "saving_us": 10.16,
+     "applies_to_this_case": true,
+     "effective_saving_us": 10.16
+    },
+    "GM workspace torch.empty -> reused": {
+     "as_is_us": 5.71,
+     "cached_us": 0.14,
+     "saving_us": 5.57,
+     "applies_to_this_case": true,
+     "effective_saving_us": 5.57
+    },
+    "pre-checks -> shape/dtype memoised": {
+     "as_is_us": 0.38,
+     "cached_us": 0.35,
+     "saving_us": 0.03,
+     "applies_to_this_case": true,
+     "effective_saving_us": 0.03
+    }
+   },
+   "total_saving_us": 15.76
+  }
+ },
+ "summary": [
+  {
+   "case": 1,
+   "n_launch": 2,
+   "eager_fn_host_us": 413.327,
+   "C_wrapper_saving_us": 4.01,
+   "C_after_us": 409.317,
+   "C_pct": 0.97,
+   "aclgraph_replay_host_us": 11.101,
+   "aclgraph_pct_of_eager": 2.69,
+   "aclgraph_saving_us": 402.226
+  },
+  {
+   "case": 3,
+   "n_launch": 4,
+   "eager_fn_host_us": 792.875,
+   "C_wrapper_saving_us": 12.721,
+   "C_after_us": 780.154,
+   "C_pct": 1.6,
+   "aclgraph_replay_host_us": 11.26,
+   "aclgraph_pct_of_eager": 1.42,
+   "aclgraph_saving_us": 781.615
+  },
+  {
+   "case": 13,
+   "n_launch": 2,
+   "eager_fn_host_us": 416.537,
+   "C_wrapper_saving_us": 4.07,
+   "C_after_us": 412.467,
+   "C_pct": 0.98,
+   "aclgraph_replay_host_us": 11.28,
+   "aclgraph_pct_of_eager": 2.71,
+   "aclgraph_saving_us": 405.257
+  },
+  {
+   "case": 7,
+   "n_launch": 4,
+   "eager_fn_host_us": 799.055,
+   "C_wrapper_saving_us": 15.76,
+   "C_after_us": 783.295,
+   "C_pct": 1.97,
+   "aclgraph_replay_host_us": 11.44,
+   "aclgraph_pct_of_eager": 1.43,
+   "aclgraph_saving_us": 787.615
+  }
+ ]
+}

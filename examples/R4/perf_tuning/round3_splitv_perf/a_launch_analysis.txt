@@ -1,0 +1,98 @@
+====================================================================================================
+E1/E2  a_launch from K2gB -- the smallest complete kernel in the rev3 chain (UB=132 B)
+====================================================================================================
+case    B b_num   S K2gB blk  K2gB_us   K1A_us   K1B_us  K2gA_us  total_us
+   3    8     4   4        4    2.080   11.300   32.940   11.080    57.520
+   4    4     2   4        2    1.540   10.740   18.940   10.480    41.800
+   7    4     2  10        2    2.840   42.440   97.100   36.640   179.060
+   8    4     2   8        2    2.580    6.460   26.480    7.400    43.040
+  12   16     8   2        8    2.980   40.700   27.960   36.260   108.180
+  17   16     8   2        8    3.100  183.840   93.960  156.800   437.940
+
+  E1 K2gB Duration over the 6 split fused cases: min=1.540 us  median=2.840 us  max=3.100 us
+  => a_launch < 1.540 us  (K2gB does nonzero fold work, so the floor is BELOW its min)
+  => a conservative planning value is a_launch <= 3.100 us = 38.8% of the guard's default 8.0 us
+
+  E2 least-squares fit  K2gB_us = a0 + a1*b_num + a2*S   (n=6 points, 3 params)
+     a0 (launch floor intercept) = -0.050 us
+     a1 (per b_num)              = +0.326 us
+     a2 (per split S)            = +0.231 us
+     max |residual| = 0.128 us  rms = 0.081 us
+     NOTE: 6 points / 3 params is a thin fit; a0 is an EXTRAPOLATION to b_num=0,S=0 and
+           is reported as an order-of-magnitude cross-check on E1, not as the answer.
+
+====================================================================================================
+E3  section 12.4 piecewise-model residual for a_launch (documents where the model mis-fits)
+====================================================================================================
+ task case  kern  meas_us  model_nonlaunch_us  implied a_launch
+fused    3   K1A   11.300               8.902            +2.398
+fused    3   K1B   32.940              32.734            +0.206
+fused    4   K1A   10.740               8.902            +1.838
+fused    4   K1B   18.940              32.734           -13.794
+fused    7   K1A   42.440              35.608            +6.832
+fused    7   K1B   97.100              98.044            -0.944
+fused    8   K1A    6.460               3.955            +2.505
+fused    8   K1B   26.480              39.670           -13.190
+fused   12   K1A   40.700              35.608            +5.092
+fused   12   K1B   27.960              37.994           -10.034
+fused   17   K1A  183.840             169.138           +14.702
+fused   17   K1B   93.960              90.252            +3.708
+ mask    3   K1A   11.580               8.902            +2.678
+ mask    3   K1B   33.700              32.734            +0.966
+ mask    4   K1A   10.680               8.902            +1.778
+ mask    4   K1B   18.920              32.734           -13.814
+ mask    7   K1A   39.380              35.608            +3.772
+ mask    7   K1B   97.440              98.044            -0.604
+ mask    8   K1A    6.040               3.955            +2.085
+ mask    8   K1B   26.120              39.670           -13.550
+ mask   12   K1A   39.060              35.608            +3.452
+ mask   12   K1B   24.880              37.994           -13.114
+ mask   17   K1A  181.480             169.138           +12.342
+ mask   17   K1B   95.180              90.252            +4.928
+
+  E3 spread: 24 residuals, 8 NEGATIVE (model over-predicts the non-launch part), 16 non-negative
+           non-negative range [+0.206, +14.702] us
+  => E3 is INCONSISTENT: section 12.2's F(256)=21.63 us/row was calibrated on the CURRENT
+     single-kernel K1 and does not transfer to K1B (which no longer runs the per-block Sort).
+     E3 is therefore reported only as evidence that the model's F/p split is not separable
+     at this granularity. The DEFENSIBLE answer is E1: a_launch < 1.540 us, plan with <= 3.100 us.
+
+====================================================================================================
+GUARD-RELAXATION SENSITIVITY (analysis only -- the guard is NOT modified here)
+====================================================================================================
+  self-check: re-implementation == delivered _r4_split_plan at _SPLIT_A_LAUNCH_US=8.0 for 18/18 cases  (exact)
+
+  delivered split set at a_launch=8.0: [3, 4, 7, 8, 12, 17]
+
+ a_launch | split set                     n | newly added
+     8.00 | [3, 4, 7, 8, 12, 17]          6 | -  <-- delivered default
+     4.00 | [3, 4, 7, 8, 12, 17]          6 | -
+     3.20 | [3, 4, 7, 8, 11, 12, 17]      7 | [11]
+     2.74 | [3, 4, 6, 7, 8, 11, 12, 17]   8 | [6, 11]
+     1.54 | [3, 4, 6, 7, 8, 11, 12, 17]   8 | [6, 11]
+     1.00 | [3, 4, 6, 7, 8, 11, 12, 17]   8 | [6, 11]
+     0.50 | [3, 4, 6, 7, 8, 11, 12, 17]   8 | [6, 11]
+     0.00 | [3, 4, 6, 7, 8, 11, 12, 17]   8 | [6, 11]
+
+  per-case guard detail at the two candidate relaxations (structural blockers first):
+case    B       V b_num  nbf   S  struct |   saving  thr@8.0  thr@1.54  thr@3.20 | verdict
+   1    2     256     1    0   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=20, n_blk_total=1)=1; binding term = n_blk_total=1) -- cannot flip at any a_launch
+   2    1    4096     1    1   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=20, n_blk_total=1)=1; binding term = n_blk_total=1) -- cannot flip at any a_launch
+   3    8   16384     4    4   4    True |   26.706   17.844     8.154    10.644 | already split
+   4    4   16384     2    4   4    True |   26.706   17.844     8.154    10.644 | already split
+   5    7    4409     4    1   2   False |      nan      nan       nan       nan | BLOCKED structurally (n_blk_full=1 < 2 (S=2 is >= 2, so the cost guard is not reached)) -- cannot flip at any a_launch
+   6    8   10240     4    2   3    True |    8.902   16.383     6.693     9.183 | flips only at 1.54 (margin@3.20=-0.281 us)
+   7    4  152064     2   37  10    True |  293.766   26.610    16.920    19.410 | already split
+   8    4   16384     2    8   8    True |   27.685   17.436     7.746    10.236 | already split
+   9   64    4096    32    1   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=1)=1; binding term = S_cap=cube//b_num=20//32=0) -- cannot flip at any a_launch
+  10    4    4096     2    1   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=10, n_blk_total=1)=1; binding term = n_blk_total=1) -- cannot flip at any a_launch
+  11    8    8192     4    2   2    True |    8.902   14.922     5.232     7.722 | FLIPS at both 1.54 and 3.20 (margin@1.54=+3.670 us)
+  12   16   32768     8    8   2    True |   35.608   14.922     5.232     7.722 | already split
+  13    6    2304     3    1   2   False |      nan      nan       nan       nan | BLOCKED structurally (n_blk_full=1 < 2 (S=2 is >= 2, so the cost guard is not reached)) -- cannot flip at any a_launch
+  14   32    1024    16    0   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=1, n_blk_total=1)=1; binding term = S_cap=cube//b_num=20//16=1) -- cannot flip at any a_launch
+  15   64  152064    32   37   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=38)=1; binding term = S_cap=cube//b_num=20//32=0) -- cannot flip at any a_launch
+  16  128   32768    64    8   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=8)=1; binding term = S_cap=cube//b_num=20//64=0) -- cannot flip at any a_launch
+  17   16  152377     8   37   2    True |  160.236   14.922     5.232     7.722 | already split
+  18   64   65536    32   16   1   False |      nan      nan       nan       nan | BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=16)=1; binding term = S_cap=cube//b_num=20//32=0) -- cannot flip at any a_launch
+
+wrote /mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_splitv_perf/a_launch_analysis.json

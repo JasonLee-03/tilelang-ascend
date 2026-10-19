@@ -1,0 +1,609 @@
+{
+ "_meta": {
+  "description": "Interleaved A/B null probe: does the case-13-mask +4.24% reproduce, or is it run-to-run scatter on a structurally-blocked (identical-dispatch) shape?",
+  "measurement": "torch_npu.profiler Level1 msprof kernel_details.csv, warmup=3 active=5, median of per-step SUMS of main_kernel Duration(us). No Python/torch timing.",
+  "a_base": 8.0,
+  "a_cand": 1.54,
+  "rounds": 5,
+  "kernel_sha256_before": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+  "kernel_sha256_after": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+  "kernel_file_unmodified": true,
+  "caveat": "no CannBenchCacheClean kernel in this probe (the harness launches one per step), so absolute us may read slightly optimistic; both arms identical => ratios unaffected"
+ },
+ "census": {
+  "case13_mask": {
+   "B": 6,
+   "V": 2304,
+   "K_MAX": 128,
+   "BV": 2048,
+   "plan_base": [
+    false,
+    2,
+    1,
+    1
+   ],
+   "plan_cand": [
+    false,
+    2,
+    1,
+    1
+   ],
+   "null_probe": true,
+   "n_launch_base": 2,
+   "n_launch_cand": 2
+  },
+  "case13_fused": {
+   "B": 6,
+   "V": 2304,
+   "K_MAX": 128,
+   "BV": 2048,
+   "plan_base": [
+    false,
+    2,
+    1,
+    1
+   ],
+   "plan_cand": [
+    false,
+    2,
+    1,
+    1
+   ],
+   "null_probe": true,
+   "n_launch_base": 2,
+   "n_launch_cand": 2
+  },
+  "case1_mask": {
+   "B": 2,
+   "V": 256,
+   "K_MAX": 256,
+   "BV": 4096,
+   "plan_base": [
+    false,
+    1,
+    1,
+    0
+   ],
+   "plan_cand": [
+    false,
+    1,
+    1,
+    0
+   ],
+   "null_probe": true,
+   "n_launch_base": 2,
+   "n_launch_cand": 2
+  },
+  "case14_mask": {
+   "B": 32,
+   "V": 1024,
+   "K_MAX": 256,
+   "BV": 4096,
+   "plan_base": [
+    false,
+    1,
+    1,
+    0
+   ],
+   "plan_cand": [
+    false,
+    1,
+    1,
+    0
+   ],
+   "null_probe": true,
+   "n_launch_base": 2,
+   "n_launch_cand": 2
+  },
+  "case2_mask": {
+   "B": 1,
+   "V": 4096,
+   "K_MAX": 256,
+   "BV": 4096,
+   "plan_base": [
+    false,
+    1,
+    1,
+    -1
+   ],
+   "plan_cand": [
+    false,
+    1,
+    1,
+    -1
+   ],
+   "null_probe": true,
+   "n_launch_base": 2,
+   "n_launch_cand": 2
+  },
+  "case6_mask": {
+   "B": 8,
+   "V": 10240,
+   "K_MAX": 256,
+   "BV": 4096,
+   "plan_base": [
+    false,
+    3,
+    1,
+    2
+   ],
+   "plan_cand": [
+    true,
+    3,
+    1,
+    2
+   ],
+   "null_probe": false,
+   "n_launch_base": 2,
+   "n_launch_cand": 3
+  },
+  "case11_mask": {
+   "B": 8,
+   "V": 8192,
+   "K_MAX": 256,
+   "BV": 4096,
+   "plan_base": [
+    false,
+    2,
+    1,
+    -1
+   ],
+   "plan_cand": [
+    true,
+    2,
+    1,
+    -1
+   ],
+   "null_probe": false,
+   "n_launch_base": 2,
+   "n_launch_cand": 3
+  },
+  "case6_fused": {
+   "B": 8,
+   "V": 10240,
+   "K_MAX": 256,
+   "BV": 4096,
+   "plan_base": [
+    false,
+    3,
+    1,
+    2
+   ],
+   "plan_cand": [
+    true,
+    3,
+    1,
+    2
+   ],
+   "null_probe": false,
+   "n_launch_base": 2,
+   "n_launch_cand": 4
+  },
+  "case11_fused": {
+   "B": 8,
+   "V": 8192,
+   "K_MAX": 256,
+   "BV": 4096,
+   "plan_base": [
+    false,
+    2,
+    1,
+    -1
+   ],
+   "plan_cand": [
+    true,
+    2,
+    1,
+    -1
+   ],
+   "null_probe": false,
+   "n_launch_base": 2,
+   "n_launch_cand": 4
+  }
+ },
+ "summary": {
+  "case13_mask": {
+   "kind": "NULL",
+   "n_rounds": 5,
+   "A_us": [
+    14.12,
+    14.18,
+    14.12,
+    14.18,
+    14.18
+   ],
+   "B_us": [
+    14.04,
+    14.12,
+    14.1,
+    14.18,
+    14.18
+   ],
+   "A_median": 14.18,
+   "A_min": 14.12,
+   "A_max": 14.18,
+   "B_median": 14.12,
+   "B_min": 14.04,
+   "B_max": 14.18,
+   "median_ratio": 1.00425,
+   "median_delta_pct": -0.423,
+   "per_round_delta_pct": [
+    -0.567,
+    -0.423,
+    -0.142,
+    0.0,
+    0.0
+   ],
+   "per_round_delta_min": -0.567,
+   "per_round_delta_max": 0.0,
+   "per_round_delta_stdev": 0.257,
+   "blocks_A": [
+    3,
+    3
+   ],
+   "blocks_B": [
+    3,
+    3
+   ]
+  },
+  "case13_fused": {
+   "kind": "NULL",
+   "n_rounds": 5,
+   "A_us": [
+    22.52,
+    22.86,
+    22.8,
+    22.78,
+    22.8
+   ],
+   "B_us": [
+    22.42,
+    22.34,
+    22.36,
+    22.34,
+    22.34
+   ],
+   "A_median": 22.8,
+   "A_min": 22.52,
+   "A_max": 22.86,
+   "B_median": 22.34,
+   "B_min": 22.34,
+   "B_max": 22.42,
+   "median_ratio": 1.02059,
+   "median_delta_pct": -2.018,
+   "per_round_delta_pct": [
+    -0.444,
+    -2.275,
+    -1.93,
+    -1.932,
+    -2.018
+   ],
+   "per_round_delta_min": -2.275,
+   "per_round_delta_max": -0.444,
+   "per_round_delta_stdev": 0.727,
+   "blocks_A": [
+    3,
+    3
+   ],
+   "blocks_B": [
+    3,
+    3
+   ]
+  },
+  "case1_mask": {
+   "kind": "NULL",
+   "n_rounds": 5,
+   "A_us": [
+    11.2,
+    11.06,
+    11.1,
+    11.14,
+    11.14
+   ],
+   "B_us": [
+    10.62,
+    10.58,
+    10.58,
+    10.58,
+    10.6
+   ],
+   "A_median": 11.14,
+   "A_min": 11.06,
+   "A_max": 11.2,
+   "B_median": 10.58,
+   "B_min": 10.58,
+   "B_max": 10.62,
+   "median_ratio": 1.05293,
+   "median_delta_pct": -5.027,
+   "per_round_delta_pct": [
+    -5.179,
+    -4.34,
+    -4.685,
+    -5.027,
+    -4.847
+   ],
+   "per_round_delta_min": -5.179,
+   "per_round_delta_max": -4.34,
+   "per_round_delta_stdev": 0.324,
+   "blocks_A": [
+    1,
+    1
+   ],
+   "blocks_B": [
+    1,
+    1
+   ]
+  },
+  "case14_mask": {
+   "kind": "NULL",
+   "n_rounds": 5,
+   "A_us": [
+    14.6,
+    14.58,
+    14.56,
+    14.54,
+    14.56
+   ],
+   "B_us": [
+    14.6,
+    14.58,
+    14.68,
+    14.64,
+    14.54
+   ],
+   "A_median": 14.56,
+   "A_min": 14.54,
+   "A_max": 14.6,
+   "B_median": 14.6,
+   "B_min": 14.54,
+   "B_max": 14.68,
+   "median_ratio": 0.99726,
+   "median_delta_pct": 0.275,
+   "per_round_delta_pct": [
+    0.0,
+    0.0,
+    0.824,
+    0.688,
+    -0.137
+   ],
+   "per_round_delta_min": -0.137,
+   "per_round_delta_max": 0.824,
+   "per_round_delta_stdev": 0.445,
+   "blocks_A": [
+    16,
+    16
+   ],
+   "blocks_B": [
+    16,
+    16
+   ]
+  },
+  "case2_mask": {
+   "kind": "NULL",
+   "n_rounds": 5,
+   "A_us": [
+    18.94,
+    18.92,
+    18.9,
+    18.96,
+    18.96
+   ],
+   "B_us": [
+    18.66,
+    18.66,
+    18.66,
+    18.66,
+    18.66
+   ],
+   "A_median": 18.94,
+   "A_min": 18.9,
+   "A_max": 18.96,
+   "B_median": 18.66,
+   "B_min": 18.66,
+   "B_max": 18.66,
+   "median_ratio": 1.01501,
+   "median_delta_pct": -1.478,
+   "per_round_delta_pct": [
+    -1.478,
+    -1.374,
+    -1.27,
+    -1.582,
+    -1.582
+   ],
+   "per_round_delta_min": -1.582,
+   "per_round_delta_max": -1.27,
+   "per_round_delta_stdev": 0.136,
+   "blocks_A": [
+    1,
+    1
+   ],
+   "blocks_B": [
+    1,
+    1
+   ]
+  },
+  "case6_mask": {
+   "kind": "FLIP",
+   "n_rounds": 5,
+   "A_us": [
+    39.56,
+    39.58,
+    39.76,
+    39.6,
+    39.5
+   ],
+   "B_us": [
+    30.14,
+    29.96,
+    30.0,
+    30.1,
+    30.06
+   ],
+   "A_median": 39.58,
+   "A_min": 39.5,
+   "A_max": 39.76,
+   "B_median": 30.06,
+   "B_min": 29.96,
+   "B_max": 30.14,
+   "median_ratio": 1.3167,
+   "median_delta_pct": -24.053,
+   "per_round_delta_pct": [
+    -23.812,
+    -24.305,
+    -24.547,
+    -23.99,
+    -23.899
+   ],
+   "per_round_delta_min": -24.547,
+   "per_round_delta_max": -23.812,
+   "per_round_delta_stdev": 0.307,
+   "blocks_A": [
+    4,
+    4
+   ],
+   "blocks_B": [
+    12,
+    4,
+    4
+   ]
+  },
+  "case11_mask": {
+   "kind": "FLIP",
+   "n_rounds": 5,
+   "A_us": [
+    31.66,
+    31.78,
+    31.68,
+    31.76,
+    31.72
+   ],
+   "B_us": [
+    28.16,
+    28.14,
+    28.18,
+    28.06,
+    28.06
+   ],
+   "A_median": 31.72,
+   "A_min": 31.66,
+   "A_max": 31.78,
+   "B_median": 28.14,
+   "B_min": 28.06,
+   "B_max": 28.18,
+   "median_ratio": 1.12722,
+   "median_delta_pct": -11.286,
+   "per_round_delta_pct": [
+    -11.055,
+    -11.454,
+    -11.048,
+    -11.65,
+    -11.538
+   ],
+   "per_round_delta_min": -11.65,
+   "per_round_delta_max": -11.048,
+   "per_round_delta_stdev": 0.28,
+   "blocks_A": [
+    4,
+    4
+   ],
+   "blocks_B": [
+    8,
+    4,
+    4
+   ]
+  },
+  "case6_fused": {
+   "kind": "FLIP",
+   "n_rounds": 5,
+   "A_us": [
+    62.22,
+    62.12,
+    62.12,
+    62.14,
+    62.08
+   ],
+   "B_us": [
+    43.34,
+    43.24,
+    43.24,
+    43.3,
+    43.18
+   ],
+   "A_median": 62.12,
+   "A_min": 62.08,
+   "A_max": 62.22,
+   "B_median": 43.24,
+   "B_min": 43.18,
+   "B_max": 43.34,
+   "median_ratio": 1.43663,
+   "median_delta_pct": -30.393,
+   "per_round_delta_pct": [
+    -30.344,
+    -30.393,
+    -30.393,
+    -30.319,
+    -30.445
+   ],
+   "per_round_delta_min": -30.445,
+   "per_round_delta_max": -30.319,
+   "per_round_delta_stdev": 0.049,
+   "blocks_A": [
+    4,
+    4
+   ],
+   "blocks_B": [
+    12,
+    4,
+    12,
+    4
+   ]
+  },
+  "case11_fused": {
+   "kind": "FLIP",
+   "n_rounds": 5,
+   "A_us": [
+    47.4,
+    47.2,
+    47.2,
+    47.18,
+    47.24
+   ],
+   "B_us": [
+    38.3,
+    38.2,
+    38.26,
+    38.22,
+    38.2
+   ],
+   "A_median": 47.2,
+   "A_min": 47.18,
+   "A_max": 47.4,
+   "B_median": 38.22,
+   "B_min": 38.2,
+   "B_max": 38.3,
+   "median_ratio": 1.23496,
+   "median_delta_pct": -19.025,
+   "per_round_delta_pct": [
+    -19.198,
+    -19.068,
+    -18.941,
+    -18.991,
+    -19.136
+   ],
+   "per_round_delta_min": -19.198,
+   "per_round_delta_max": -18.941,
+   "per_round_delta_stdev": 0.105,
+   "blocks_A": [
+    4,
+    4
+   ],
+   "blocks_B": [
+    8,
+    4,
+    8,
+    4
+   ]
+  }
+ },
+ "null_envelope_pct": 5.179
+}

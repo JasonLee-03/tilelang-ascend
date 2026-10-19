@@ -1,0 +1,3790 @@
+{
+ "_meta": {
+  "description": "R4 host wrapper segment decomposition under 3 msprof configs",
+  "measurement": "time.perf_counter_ns() around HOST calls only; launches are async so this is host submission cost, NOT kernel duration (see probe_common.py)",
+  "iters": 25,
+  "cases": [
+   1,
+   3,
+   13,
+   7
+  ],
+  "env": {
+   "tilelang": "0.1.4+d75300ed0a88b0f4b2eef8a62b43f1930fdae44b",
+   "tilelang_file": "/home/developer/.local/lib/python3.12/site-packages/tilelang/__init__.py",
+   "torch": "2.7.1+cpu",
+   "torch_npu": "2.7.1.post4",
+   "python": "3.12.9",
+   "device": "Ascend910_9362",
+   "cwd": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead",
+   "PYTHONPATH": "/home/developer/.local/lib/python3.12/site-packages/tilelang/3rdparty/tvm/python:/home/developer/Ascend/cann-9.2.0/python/site-packages:/home/developer/Ascend/cann-9.2.0/opp/built-in/op_impl/ai_core/tbe:",
+   "ACL_OP_INIT_MODE": "1",
+   "LD_LIBRARY_PATH_has_sqlite3": true,
+   "timestamp": "2026-10-11T17:39:20+0800",
+   "delivered_kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117"
+  },
+  "probe_modes": {
+   "none": "no profiler at all",
+   "npu_only": "torch_npu.profiler activities=[NPU] (harness per-case path)",
+   "cpu_npu": "activities=[CPU,NPU] + per-step record_function (harness _batched path == the config that produced the round-3 span_vs_scored CSVs)"
+  }
+ },
+ "fused": {
+  "none": {
+   "1": {
+    "B": 2,
+    "V": 256,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "smallest; base arm K1=24.48us -> round3 gap=458.75us",
+    "use_split": false,
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "n_launch": 2,
+    "replica": {
+     "label": "[none] case1 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.77,
+       "med_us": 1.96,
+       "mean_us": 1.974,
+       "max_us": 2.22,
+       "p90_us": 2.13,
+       "stdev_us": 0.125
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 8.26,
+       "med_us": 8.61,
+       "mean_us": 8.596,
+       "max_us": 9.131,
+       "p90_us": 8.78,
+       "stdev_us": 0.205
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.16,
+       "med_us": 0.18,
+       "mean_us": 0.182,
+       "max_us": 0.22,
+       "p90_us": 0.2,
+       "stdev_us": 0.016
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.27,
+       "med_us": 2.41,
+       "mean_us": 2.439,
+       "max_us": 2.72,
+       "p90_us": 2.56,
+       "stdev_us": 0.103
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 200.564,
+       "med_us": 204.194,
+       "mean_us": 207.15,
+       "max_us": 232.975,
+       "p90_us": 207.723,
+       "stdev_us": 8.57
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.26,
+       "med_us": 2.41,
+       "mean_us": 2.426,
+       "max_us": 2.75,
+       "p90_us": 2.52,
+       "stdev_us": 0.106
+      },
+      "10_launch_k2g": {
+       "n": 25,
+       "min_us": 177.973,
+       "med_us": 180.193,
+       "mean_us": 182.214,
+       "max_us": 215.724,
+       "p90_us": 182.503,
+       "stdev_us": 7.606
+      }
+     },
+     "sum_median_us": 399.957,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "10_launch_k2g"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case1 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 406.697,
+       "med_us": 413.327,
+       "mean_us": 417.104,
+       "max_us": 440.708,
+       "p90_us": 424.398,
+       "stdev_us": 8.622
+      }
+     },
+     "sum_median_us": 413.327,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case1 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 430.138,
+       "med_us": 433.878,
+       "mean_us": 437.306,
+       "max_us": 460.128,
+       "p90_us": 447.229,
+       "stdev_us": 8.672
+      }
+     },
+     "sum_median_us": 433.878,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 413.327,
+     "host_async_per_launch_us": 206.663,
+     "serial_us": 433.878,
+     "implied_device_us": 20.551,
+     "replica_sum_us": 399.957,
+     "replica_vs_delivered_ratio": 0.9677
+    }
+   },
+   "3": {
+    "B": 8,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "split path, 4 launches, round3 gap_c=1329.77us",
+    "use_split": true,
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "n_launch": 4,
+    "replica": {
+     "label": "[none] case3 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.75,
+       "med_us": 1.96,
+       "mean_us": 1.971,
+       "max_us": 2.391,
+       "p90_us": 2.06,
+       "stdev_us": 0.116
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 13.53,
+       "med_us": 14.0,
+       "mean_us": 13.986,
+       "max_us": 14.371,
+       "p90_us": 14.26,
+       "stdev_us": 0.248
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 8.18,
+       "med_us": 8.43,
+       "mean_us": 8.878,
+       "max_us": 18.621,
+       "p90_us": 8.72,
+       "stdev_us": 2.038
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.43,
+       "med_us": 2.6,
+       "mean_us": 2.616,
+       "max_us": 2.95,
+       "p90_us": 2.72,
+       "stdev_us": 0.118
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 167.673,
+       "med_us": 170.183,
+       "mean_us": 170.97,
+       "max_us": 184.223,
+       "p90_us": 172.514,
+       "stdev_us": 3.148
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.28,
+       "med_us": 2.47,
+       "mean_us": 2.471,
+       "max_us": 2.68,
+       "p90_us": 2.55,
+       "stdev_us": 0.089
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 200.934,
+       "med_us": 202.914,
+       "mean_us": 205.893,
+       "max_us": 227.314,
+       "p90_us": 206.894,
+       "stdev_us": 7.77
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.351,
+       "med_us": 2.49,
+       "mean_us": 2.474,
+       "max_us": 2.741,
+       "p90_us": 2.54,
+       "stdev_us": 0.089
+      },
+      "09_alloc_k2ws": {
+       "n": 25,
+       "min_us": 13.521,
+       "med_us": 13.81,
+       "mean_us": 13.861,
+       "max_us": 14.92,
+       "p90_us": 14.08,
+       "stdev_us": 0.295
+      },
+      "10_launch_k2gA": {
+       "n": 25,
+       "min_us": 169.733,
+       "med_us": 172.513,
+       "mean_us": 175.301,
+       "max_us": 197.674,
+       "p90_us": 182.433,
+       "stdev_us": 6.705
+      },
+      "11_jit_lookup_k2gB": {
+       "n": 25,
+       "min_us": 2.05,
+       "med_us": 2.34,
+       "mean_us": 2.337,
+       "max_us": 2.56,
+       "p90_us": 2.51,
+       "stdev_us": 0.127
+      },
+      "12_launch_k2gB": {
+       "n": 25,
+       "min_us": 173.603,
+       "med_us": 176.304,
+       "mean_us": 178.057,
+       "max_us": 205.833,
+       "p90_us": 180.233,
+       "stdev_us": 6.678
+      }
+     },
+     "sum_median_us": 770.014,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_alloc_k2ws",
+      "10_launch_k2gA",
+      "11_jit_lookup_k2gB",
+      "12_launch_k2gB"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case3 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 782.584,
+       "med_us": 792.875,
+       "mean_us": 796.892,
+       "max_us": 822.655,
+       "p90_us": 812.045,
+       "stdev_us": 11.823
+      }
+     },
+     "sum_median_us": 792.875,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case3 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 805.064,
+       "med_us": 814.455,
+       "mean_us": 818.459,
+       "max_us": 849.635,
+       "p90_us": 830.055,
+       "stdev_us": 10.587
+      }
+     },
+     "sum_median_us": 814.455,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 792.875,
+     "host_async_per_launch_us": 198.219,
+     "serial_us": 814.455,
+     "implied_device_us": 21.58,
+     "replica_sum_us": 770.014,
+     "replica_vs_delivered_ratio": 0.9712
+    }
+   },
+   "13": {
+    "B": 6,
+    "V": 2304,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "why": "94% of wall clock was host (23.84us device / 416.75us wall)",
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "n_launch": 2,
+    "replica": {
+     "label": "[none] case13 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.76,
+       "med_us": 1.9,
+       "mean_us": 1.915,
+       "max_us": 2.44,
+       "p90_us": 2.0,
+       "stdev_us": 0.13
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 8.48,
+       "med_us": 8.871,
+       "mean_us": 8.868,
+       "max_us": 10.03,
+       "p90_us": 9.051,
+       "stdev_us": 0.308
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.14,
+       "med_us": 0.19,
+       "mean_us": 0.188,
+       "max_us": 0.23,
+       "p90_us": 0.22,
+       "stdev_us": 0.025
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.4,
+       "med_us": 2.58,
+       "mean_us": 2.57,
+       "max_us": 2.68,
+       "p90_us": 2.66,
+       "stdev_us": 0.085
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 202.754,
+       "med_us": 204.854,
+       "mean_us": 205.639,
+       "max_us": 211.944,
+       "p90_us": 207.134,
+       "stdev_us": 1.937
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.37,
+       "med_us": 2.53,
+       "mean_us": 2.516,
+       "max_us": 2.731,
+       "p90_us": 2.58,
+       "stdev_us": 0.079
+      },
+      "10_launch_k2g": {
+       "n": 25,
+       "min_us": 178.483,
+       "med_us": 180.103,
+       "mean_us": 187.184,
+       "max_us": 264.425,
+       "p90_us": 196.894,
+       "stdev_us": 18.744
+      }
+     },
+     "sum_median_us": 401.028,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "10_launch_k2g"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case13 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 409.947,
+       "med_us": 416.537,
+       "mean_us": 423.148,
+       "max_us": 486.489,
+       "p90_us": 437.868,
+       "stdev_us": 17.793
+      }
+     },
+     "sum_median_us": 416.537,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case13 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 433.038,
+       "med_us": 436.858,
+       "mean_us": 441.082,
+       "max_us": 465.179,
+       "p90_us": 453.259,
+       "stdev_us": 8.871
+      }
+     },
+     "sum_median_us": 436.858,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 416.537,
+     "host_async_per_launch_us": 208.268,
+     "serial_us": 436.858,
+     "implied_device_us": 20.321,
+     "replica_sum_us": 401.028,
+     "replica_vs_delivered_ratio": 0.9628
+    }
+   },
+   "7": {
+    "B": 4,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "long kernels; base gap=3.00us -> the H-d1 identity check",
+    "use_split": true,
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "n_launch": 4,
+    "replica": {
+     "label": "[none] case7 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.87,
+       "med_us": 1.97,
+       "mean_us": 2.002,
+       "max_us": 2.28,
+       "p90_us": 2.07,
+       "stdev_us": 0.106
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 16.6,
+       "med_us": 17.241,
+       "mean_us": 17.241,
+       "max_us": 17.941,
+       "p90_us": 17.58,
+       "stdev_us": 0.322
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 8.18,
+       "med_us": 8.4,
+       "mean_us": 8.48,
+       "max_us": 9.441,
+       "p90_us": 8.67,
+       "stdev_us": 0.316
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.41,
+       "med_us": 2.55,
+       "mean_us": 3.433,
+       "max_us": 24.551,
+       "p90_us": 2.67,
+       "stdev_us": 4.4
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 167.853,
+       "med_us": 170.193,
+       "mean_us": 170.845,
+       "max_us": 183.774,
+       "p90_us": 173.654,
+       "stdev_us": 3.154
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.33,
+       "med_us": 2.51,
+       "mean_us": 2.512,
+       "max_us": 2.74,
+       "p90_us": 2.58,
+       "stdev_us": 0.084
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 201.074,
+       "med_us": 202.504,
+       "mean_us": 203.697,
+       "max_us": 218.063,
+       "p90_us": 206.463,
+       "stdev_us": 3.54
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.34,
+       "med_us": 2.52,
+       "mean_us": 2.511,
+       "max_us": 2.68,
+       "p90_us": 2.59,
+       "stdev_us": 0.083
+      },
+      "09_alloc_k2ws": {
+       "n": 25,
+       "min_us": 13.43,
+       "med_us": 13.77,
+       "mean_us": 13.883,
+       "max_us": 14.701,
+       "p90_us": 14.31,
+       "stdev_us": 0.342
+      },
+      "10_launch_k2gA": {
+       "n": 25,
+       "min_us": 171.503,
+       "med_us": 172.423,
+       "mean_us": 175.074,
+       "max_us": 216.184,
+       "p90_us": 174.433,
+       "stdev_us": 9.222
+      },
+      "11_jit_lookup_k2gB": {
+       "n": 25,
+       "min_us": 2.13,
+       "med_us": 2.34,
+       "mean_us": 2.344,
+       "max_us": 2.52,
+       "p90_us": 2.43,
+       "stdev_us": 0.09
+      },
+      "12_launch_k2gB": {
+       "n": 25,
+       "min_us": 174.143,
+       "med_us": 175.814,
+       "mean_us": 178.488,
+       "max_us": 201.103,
+       "p90_us": 179.723,
+       "stdev_us": 6.781
+      }
+     },
+     "sum_median_us": 772.235,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_alloc_k2ws",
+      "10_launch_k2gA",
+      "11_jit_lookup_k2gB",
+      "12_launch_k2gB"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case7 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 785.934,
+       "med_us": 799.055,
+       "mean_us": 801.792,
+       "max_us": 821.735,
+       "p90_us": 816.615,
+       "stdev_us": 11.741
+      }
+     },
+     "sum_median_us": 799.055,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case7 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 806.035,
+       "med_us": 816.494,
+       "mean_us": 820.319,
+       "max_us": 848.095,
+       "p90_us": 831.886,
+       "stdev_us": 11.594
+      }
+     },
+     "sum_median_us": 816.494,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 799.055,
+     "host_async_per_launch_us": 199.764,
+     "serial_us": 816.494,
+     "implied_device_us": 17.439,
+     "replica_sum_us": 772.235,
+     "replica_vs_delivered_ratio": 0.9664
+    }
+   }
+  },
+  "npu_only": {
+   "1": {
+    "B": 2,
+    "V": 256,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "smallest; base arm K1=24.48us -> round3 gap=458.75us",
+    "use_split": false,
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "n_launch": 2,
+    "replica": {
+     "label": "[npu_only] case1 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.2,
+       "med_us": 2.36,
+       "mean_us": 2.335,
+       "max_us": 2.47,
+       "p90_us": 2.4,
+       "stdev_us": 0.068
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 9.741,
+       "med_us": 10.19,
+       "mean_us": 11.083,
+       "max_us": 31.291,
+       "p90_us": 10.71,
+       "stdev_us": 4.221
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.15,
+       "med_us": 0.18,
+       "mean_us": 0.186,
+       "max_us": 0.22,
+       "p90_us": 0.21,
+       "stdev_us": 0.019
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.64,
+       "med_us": 2.75,
+       "mean_us": 2.768,
+       "max_us": 2.93,
+       "p90_us": 2.84,
+       "stdev_us": 0.074
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 243.444,
+       "med_us": 245.334,
+       "mean_us": 247.265,
+       "max_us": 267.115,
+       "p90_us": 248.944,
+       "stdev_us": 5.415
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.67,
+       "med_us": 2.841,
+       "mean_us": 2.852,
+       "max_us": 3.02,
+       "p90_us": 2.95,
+       "stdev_us": 0.089
+      },
+      "10_launch_k2g": {
+       "n": 25,
+       "min_us": 217.364,
+       "med_us": 219.914,
+       "mean_us": 222.096,
+       "max_us": 239.025,
+       "p90_us": 228.224,
+       "stdev_us": 5.87
+      }
+     },
+     "sum_median_us": 483.569,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "10_launch_k2g"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case1 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 492.619,
+       "med_us": 498.959,
+       "mean_us": 502.421,
+       "max_us": 525.2,
+       "p90_us": 514.31,
+       "stdev_us": 9.021
+      }
+     },
+     "sum_median_us": 498.959,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case1 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 520.749,
+       "med_us": 525.4,
+       "mean_us": 528.608,
+       "max_us": 549.3,
+       "p90_us": 542.45,
+       "stdev_us": 8.746
+      }
+     },
+     "sum_median_us": 525.4,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 498.959,
+     "host_async_per_launch_us": 249.48,
+     "serial_us": 525.4,
+     "implied_device_us": 26.441,
+     "replica_sum_us": 483.569,
+     "replica_vs_delivered_ratio": 0.9692
+    }
+   },
+   "3": {
+    "B": 8,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "split path, 4 launches, round3 gap_c=1329.77us",
+    "use_split": true,
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "n_launch": 4,
+    "replica": {
+     "label": "[npu_only] case3 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.25,
+       "med_us": 2.41,
+       "mean_us": 2.413,
+       "max_us": 2.56,
+       "p90_us": 2.54,
+       "stdev_us": 0.094
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 15.29,
+       "med_us": 16.15,
+       "mean_us": 16.102,
+       "max_us": 16.771,
+       "p90_us": 16.501,
+       "stdev_us": 0.365
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 9.44,
+       "med_us": 10.041,
+       "mean_us": 10.593,
+       "max_us": 25.441,
+       "p90_us": 10.27,
+       "stdev_us": 3.105
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.69,
+       "med_us": 2.85,
+       "mean_us": 2.853,
+       "max_us": 3.03,
+       "p90_us": 2.96,
+       "stdev_us": 0.09
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 206.553,
+       "med_us": 211.244,
+       "mean_us": 216.246,
+       "max_us": 235.944,
+       "p90_us": 228.865,
+       "stdev_us": 9.383
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.72,
+       "med_us": 2.87,
+       "mean_us": 2.881,
+       "max_us": 3.1,
+       "p90_us": 3.03,
+       "stdev_us": 0.119
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 243.725,
+       "med_us": 245.775,
+       "mean_us": 248.994,
+       "max_us": 271.625,
+       "p90_us": 259.055,
+       "stdev_us": 7.286
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.8,
+       "med_us": 2.931,
+       "mean_us": 2.942,
+       "max_us": 3.22,
+       "p90_us": 3.01,
+       "stdev_us": 0.086
+      },
+      "09_alloc_k2ws": {
+       "n": 25,
+       "min_us": 15.13,
+       "med_us": 15.601,
+       "mean_us": 15.653,
+       "max_us": 16.08,
+       "p90_us": 15.98,
+       "stdev_us": 0.261
+      },
+      "10_launch_k2gA": {
+       "n": 25,
+       "min_us": 209.324,
+       "med_us": 211.304,
+       "mean_us": 211.689,
+       "max_us": 214.764,
+       "p90_us": 214.434,
+       "stdev_us": 1.758
+      },
+      "11_jit_lookup_k2gB": {
+       "n": 25,
+       "min_us": 2.58,
+       "med_us": 2.73,
+       "mean_us": 2.746,
+       "max_us": 2.92,
+       "p90_us": 2.86,
+       "stdev_us": 0.092
+      },
+      "12_launch_k2gB": {
+       "n": 25,
+       "min_us": 211.374,
+       "med_us": 214.803,
+       "mean_us": 214.539,
+       "max_us": 216.294,
+       "p90_us": 216.264,
+       "stdev_us": 1.41
+      }
+     },
+     "sum_median_us": 938.709,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_alloc_k2ws",
+      "10_launch_k2gA",
+      "11_jit_lookup_k2gB",
+      "12_launch_k2gB"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case3 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 944.617,
+       "med_us": 956.878,
+       "mean_us": 958.749,
+       "max_us": 990.738,
+       "p90_us": 969.487,
+       "stdev_us": 11.605
+      }
+     },
+     "sum_median_us": 956.878,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case3 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 973.888,
+       "med_us": 989.538,
+       "mean_us": 989.261,
+       "max_us": 1013.418,
+       "p90_us": 1003.159,
+       "stdev_us": 11.14
+      }
+     },
+     "sum_median_us": 989.538,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 956.878,
+     "host_async_per_launch_us": 239.22,
+     "serial_us": 989.538,
+     "implied_device_us": 32.66,
+     "replica_sum_us": 938.709,
+     "replica_vs_delivered_ratio": 0.981
+    }
+   },
+   "13": {
+    "B": 6,
+    "V": 2304,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "why": "94% of wall clock was host (23.84us device / 416.75us wall)",
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "n_launch": 2,
+    "replica": {
+     "label": "[npu_only] case13 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.21,
+       "med_us": 2.31,
+       "mean_us": 2.343,
+       "max_us": 2.54,
+       "p90_us": 2.49,
+       "stdev_us": 0.103
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 10.031,
+       "med_us": 10.43,
+       "mean_us": 10.548,
+       "max_us": 12.81,
+       "p90_us": 10.811,
+       "stdev_us": 0.541
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.15,
+       "med_us": 0.19,
+       "mean_us": 0.192,
+       "max_us": 0.31,
+       "p90_us": 0.22,
+       "stdev_us": 0.031
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.73,
+       "med_us": 2.88,
+       "mean_us": 2.876,
+       "max_us": 3.0,
+       "p90_us": 2.97,
+       "stdev_us": 0.074
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 242.544,
+       "med_us": 245.314,
+       "mean_us": 257.577,
+       "max_us": 453.349,
+       "p90_us": 267.475,
+       "stdev_us": 41.971
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.77,
+       "med_us": 2.9,
+       "mean_us": 2.989,
+       "max_us": 4.13,
+       "p90_us": 3.21,
+       "stdev_us": 0.28
+      },
+      "10_launch_k2g": {
+       "n": 25,
+       "min_us": 215.784,
+       "med_us": 219.154,
+       "mean_us": 223.606,
+       "max_us": 326.606,
+       "p90_us": 222.544,
+       "stdev_us": 21.635
+      }
+     },
+     "sum_median_us": 483.178,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "10_launch_k2g"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case13 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 492.459,
+       "med_us": 497.269,
+       "mean_us": 503.682,
+       "max_us": 527.1,
+       "p90_us": 518.679,
+       "stdev_us": 11.125
+      }
+     },
+     "sum_median_us": 497.269,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case13 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 519.3,
+       "med_us": 523.659,
+       "mean_us": 528.53,
+       "max_us": 549.64,
+       "p90_us": 540.17,
+       "stdev_us": 10.0
+      }
+     },
+     "sum_median_us": 523.659,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 497.269,
+     "host_async_per_launch_us": 248.635,
+     "serial_us": 523.659,
+     "implied_device_us": 26.39,
+     "replica_sum_us": 483.178,
+     "replica_vs_delivered_ratio": 0.9717
+    }
+   },
+   "7": {
+    "B": 4,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "long kernels; base gap=3.00us -> the H-d1 identity check",
+    "use_split": true,
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "n_launch": 4,
+    "replica": {
+     "label": "[npu_only] case7 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.07,
+       "med_us": 2.32,
+       "mean_us": 2.301,
+       "max_us": 2.39,
+       "p90_us": 2.37,
+       "stdev_us": 0.078
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 18.53,
+       "med_us": 19.06,
+       "mean_us": 19.063,
+       "max_us": 19.6,
+       "p90_us": 19.331,
+       "stdev_us": 0.275
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 9.46,
+       "med_us": 9.8,
+       "mean_us": 9.793,
+       "max_us": 10.05,
+       "p90_us": 9.97,
+       "stdev_us": 0.168
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.65,
+       "med_us": 2.79,
+       "mean_us": 2.798,
+       "max_us": 2.98,
+       "p90_us": 2.89,
+       "stdev_us": 0.086
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 207.404,
+       "med_us": 209.644,
+       "mean_us": 210.917,
+       "max_us": 222.664,
+       "p90_us": 211.923,
+       "stdev_us": 3.858
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.64,
+       "med_us": 2.8,
+       "mean_us": 2.821,
+       "max_us": 2.94,
+       "p90_us": 2.91,
+       "stdev_us": 0.073
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 242.774,
+       "med_us": 259.445,
+       "mean_us": 255.732,
+       "max_us": 274.115,
+       "p90_us": 264.075,
+       "stdev_us": 9.213
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.68,
+       "med_us": 2.96,
+       "mean_us": 3.374,
+       "max_us": 13.76,
+       "p90_us": 3.07,
+       "stdev_us": 2.167
+      },
+      "09_alloc_k2ws": {
+       "n": 25,
+       "min_us": 15.25,
+       "med_us": 16.1,
+       "mean_us": 17.048,
+       "max_us": 28.471,
+       "p90_us": 16.801,
+       "stdev_us": 3.387
+      },
+      "10_launch_k2gA": {
+       "n": 25,
+       "min_us": 213.754,
+       "med_us": 217.164,
+       "mean_us": 222.163,
+       "max_us": 244.105,
+       "p90_us": 236.824,
+       "stdev_us": 9.807
+      },
+      "11_jit_lookup_k2gB": {
+       "n": 25,
+       "min_us": 2.65,
+       "med_us": 2.83,
+       "mean_us": 2.831,
+       "max_us": 2.97,
+       "p90_us": 2.94,
+       "stdev_us": 0.077
+      },
+      "12_launch_k2gB": {
+       "n": 25,
+       "min_us": 214.074,
+       "med_us": 217.453,
+       "mean_us": 217.423,
+       "max_us": 220.354,
+       "p90_us": 219.184,
+       "stdev_us": 1.654
+      }
+     },
+     "sum_median_us": 962.366,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_alloc_k2ws",
+      "10_launch_k2gA",
+      "11_jit_lookup_k2gB",
+      "12_launch_k2gB"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case7 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 950.318,
+       "med_us": 957.558,
+       "mean_us": 958.131,
+       "max_us": 964.807,
+       "p90_us": 962.177,
+       "stdev_us": 3.271
+      }
+     },
+     "sum_median_us": 957.558,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case7 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 979.867,
+       "med_us": 993.528,
+       "mean_us": 997.713,
+       "max_us": 1019.858,
+       "p90_us": 1014.809,
+       "stdev_us": 12.883
+      }
+     },
+     "sum_median_us": 993.528,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 957.558,
+     "host_async_per_launch_us": 239.389,
+     "serial_us": 993.528,
+     "implied_device_us": 35.97,
+     "replica_sum_us": 962.366,
+     "replica_vs_delivered_ratio": 1.005
+    }
+   }
+  },
+  "cpu_npu": {
+   "1": {
+    "B": 2,
+    "V": 256,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "smallest; base arm K1=24.48us -> round3 gap=458.75us",
+    "use_split": false,
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "n_launch": 2,
+    "replica": {
+     "label": "[cpu_npu] case1 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.21,
+       "med_us": 2.4,
+       "mean_us": 2.452,
+       "max_us": 3.23,
+       "p90_us": 2.61,
+       "stdev_us": 0.204
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 10.76,
+       "med_us": 11.37,
+       "mean_us": 11.378,
+       "max_us": 11.87,
+       "p90_us": 11.73,
+       "stdev_us": 0.289
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.18,
+       "med_us": 0.2,
+       "mean_us": 0.214,
+       "max_us": 0.36,
+       "p90_us": 0.25,
+       "stdev_us": 0.039
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.74,
+       "med_us": 3.03,
+       "mean_us": 3.061,
+       "max_us": 3.46,
+       "p90_us": 3.33,
+       "stdev_us": 0.198
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 255.045,
+       "med_us": 261.034,
+       "mean_us": 264.721,
+       "max_us": 305.735,
+       "p90_us": 277.285,
+       "stdev_us": 10.805
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.82,
+       "med_us": 3.24,
+       "mean_us": 3.259,
+       "max_us": 3.61,
+       "p90_us": 3.58,
+       "stdev_us": 0.23
+      },
+      "10_launch_k2g": {
+       "n": 25,
+       "min_us": 226.754,
+       "med_us": 231.815,
+       "mean_us": 237.432,
+       "max_us": 263.645,
+       "p90_us": 260.915,
+       "stdev_us": 13.437
+      }
+     },
+     "sum_median_us": 513.089,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "10_launch_k2g"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case1 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 518.32,
+       "med_us": 531.02,
+       "mean_us": 533.638,
+       "max_us": 556.17,
+       "p90_us": 546.57,
+       "stdev_us": 10.746
+      }
+     },
+     "sum_median_us": 531.02,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case1 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 540.85,
+       "med_us": 550.0,
+       "mean_us": 557.329,
+       "max_us": 595.861,
+       "p90_us": 580.521,
+       "stdev_us": 17.413
+      }
+     },
+     "sum_median_us": 550.0,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 531.02,
+     "host_async_per_launch_us": 265.51,
+     "serial_us": 550.0,
+     "implied_device_us": 18.98,
+     "replica_sum_us": 513.089,
+     "replica_vs_delivered_ratio": 0.9662
+    }
+   },
+   "3": {
+    "B": 8,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "split path, 4 launches, round3 gap_c=1329.77us",
+    "use_split": true,
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "n_launch": 4,
+    "replica": {
+     "label": "[cpu_npu] case3 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.35,
+       "med_us": 2.51,
+       "mean_us": 2.53,
+       "max_us": 2.84,
+       "p90_us": 2.69,
+       "stdev_us": 0.127
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 16.761,
+       "med_us": 17.401,
+       "mean_us": 17.853,
+       "max_us": 28.16,
+       "p90_us": 18.101,
+       "stdev_us": 2.193
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 12.19,
+       "med_us": 12.55,
+       "mean_us": 12.655,
+       "max_us": 14.32,
+       "p90_us": 12.88,
+       "stdev_us": 0.445
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.92,
+       "med_us": 3.26,
+       "mean_us": 4.126,
+       "max_us": 25.421,
+       "p90_us": 3.45,
+       "stdev_us": 4.441
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 212.814,
+       "med_us": 215.544,
+       "mean_us": 218.714,
+       "max_us": 247.365,
+       "p90_us": 222.594,
+       "stdev_us": 8.328
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.79,
+       "med_us": 3.02,
+       "mean_us": 3.913,
+       "max_us": 24.491,
+       "p90_us": 3.27,
+       "stdev_us": 4.29
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 254.175,
+       "med_us": 259.515,
+       "mean_us": 264.647,
+       "max_us": 296.195,
+       "p90_us": 273.455,
+       "stdev_us": 11.1
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.83,
+       "med_us": 3.08,
+       "mean_us": 3.083,
+       "max_us": 3.47,
+       "p90_us": 3.2,
+       "stdev_us": 0.131
+      },
+      "09_alloc_k2ws": {
+       "n": 25,
+       "min_us": 17.83,
+       "med_us": 18.651,
+       "mean_us": 18.816,
+       "max_us": 20.631,
+       "p90_us": 19.57,
+       "stdev_us": 0.699
+      },
+      "10_launch_k2gA": {
+       "n": 25,
+       "min_us": 215.774,
+       "med_us": 220.074,
+       "mean_us": 225.356,
+       "max_us": 250.324,
+       "p90_us": 235.354,
+       "stdev_us": 10.493
+      },
+      "11_jit_lookup_k2gB": {
+       "n": 25,
+       "min_us": 2.66,
+       "med_us": 3.1,
+       "mean_us": 3.112,
+       "max_us": 3.441,
+       "p90_us": 3.38,
+       "stdev_us": 0.205
+      },
+      "12_launch_k2gB": {
+       "n": 25,
+       "min_us": 220.994,
+       "med_us": 226.705,
+       "mean_us": 229.997,
+       "max_us": 251.095,
+       "p90_us": 243.684,
+       "stdev_us": 9.382
+      }
+     },
+     "sum_median_us": 985.41,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_alloc_k2ws",
+      "10_launch_k2gA",
+      "11_jit_lookup_k2gB",
+      "12_launch_k2gB"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case3 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 992.338,
+       "med_us": 1017.278,
+       "mean_us": 1020.125,
+       "max_us": 1092.77,
+       "p90_us": 1044.559,
+       "stdev_us": 23.612
+      }
+     },
+     "sum_median_us": 1017.278,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case3 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 1020.168,
+       "med_us": 1041.519,
+       "mean_us": 1050.195,
+       "max_us": 1110.27,
+       "p90_us": 1099.02,
+       "stdev_us": 28.267
+      }
+     },
+     "sum_median_us": 1041.519,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 1017.278,
+     "host_async_per_launch_us": 254.32,
+     "serial_us": 1041.519,
+     "implied_device_us": 24.241,
+     "replica_sum_us": 985.41,
+     "replica_vs_delivered_ratio": 0.9687
+    }
+   },
+   "13": {
+    "B": 6,
+    "V": 2304,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "why": "94% of wall clock was host (23.84us device / 416.75us wall)",
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "n_launch": 2,
+    "replica": {
+     "label": "[cpu_npu] case13 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.26,
+       "med_us": 2.46,
+       "mean_us": 2.473,
+       "max_us": 2.8,
+       "p90_us": 2.65,
+       "stdev_us": 0.127
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 10.601,
+       "med_us": 11.08,
+       "mean_us": 11.996,
+       "max_us": 33.52,
+       "p90_us": 11.51,
+       "stdev_us": 4.497
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.18,
+       "med_us": 0.22,
+       "mean_us": 0.214,
+       "max_us": 0.26,
+       "p90_us": 0.24,
+       "stdev_us": 0.023
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.8,
+       "med_us": 2.88,
+       "mean_us": 2.917,
+       "max_us": 3.23,
+       "p90_us": 3.051,
+       "stdev_us": 0.112
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 255.015,
+       "med_us": 260.825,
+       "mean_us": 264.339,
+       "max_us": 293.675,
+       "p90_us": 276.235,
+       "stdev_us": 10.166
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.86,
+       "med_us": 3.0,
+       "mean_us": 3.038,
+       "max_us": 3.31,
+       "p90_us": 3.19,
+       "stdev_us": 0.131
+      },
+      "10_launch_k2g": {
+       "n": 25,
+       "min_us": 226.734,
+       "med_us": 230.115,
+       "mean_us": 234.304,
+       "max_us": 263.605,
+       "p90_us": 245.415,
+       "stdev_us": 9.909
+      }
+     },
+     "sum_median_us": 510.58,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "10_launch_k2g"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case13 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 515.59,
+       "med_us": 524.69,
+       "mean_us": 530.625,
+       "max_us": 558.79,
+       "p90_us": 546.61,
+       "stdev_us": 13.264
+      }
+     },
+     "sum_median_us": 524.69,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case13 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 542.86,
+       "med_us": 558.27,
+       "mean_us": 560.894,
+       "max_us": 589.05,
+       "p90_us": 577.071,
+       "stdev_us": 14.794
+      }
+     },
+     "sum_median_us": 558.27,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 524.69,
+     "host_async_per_launch_us": 262.345,
+     "serial_us": 558.27,
+     "implied_device_us": 33.58,
+     "replica_sum_us": 510.58,
+     "replica_vs_delivered_ratio": 0.9731
+    }
+   },
+   "7": {
+    "B": 4,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "long kernels; base gap=3.00us -> the H-d1 identity check",
+    "use_split": true,
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "n_launch": 4,
+    "replica": {
+     "label": "[cpu_npu] case7 REPLICA segments (fuse_gumbel=True)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.35,
+       "med_us": 2.46,
+       "mean_us": 2.472,
+       "max_us": 2.67,
+       "p90_us": 2.56,
+       "stdev_us": 0.078
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 19.64,
+       "med_us": 20.801,
+       "mean_us": 20.697,
+       "max_us": 21.641,
+       "p90_us": 20.95,
+       "stdev_us": 0.45
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 12.051,
+       "med_us": 12.49,
+       "mean_us": 12.655,
+       "max_us": 14.78,
+       "p90_us": 13.15,
+       "stdev_us": 0.548
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.78,
+       "med_us": 2.99,
+       "mean_us": 3.023,
+       "max_us": 3.24,
+       "p90_us": 3.16,
+       "stdev_us": 0.121
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 214.574,
+       "med_us": 217.154,
+       "mean_us": 220.893,
+       "max_us": 247.564,
+       "p90_us": 222.824,
+       "stdev_us": 10.069
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 3.0,
+       "med_us": 3.11,
+       "mean_us": 3.125,
+       "max_us": 3.57,
+       "p90_us": 3.24,
+       "stdev_us": 0.132
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 256.504,
+       "med_us": 259.515,
+       "mean_us": 263.374,
+       "max_us": 315.896,
+       "p90_us": 265.505,
+       "stdev_us": 13.333
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.88,
+       "med_us": 3.18,
+       "mean_us": 3.175,
+       "max_us": 3.69,
+       "p90_us": 3.23,
+       "stdev_us": 0.157
+      },
+      "09_alloc_k2ws": {
+       "n": 25,
+       "min_us": 17.89,
+       "med_us": 18.8,
+       "mean_us": 20.151,
+       "max_us": 43.66,
+       "p90_us": 19.321,
+       "stdev_us": 5.354
+      },
+      "10_launch_k2gA": {
+       "n": 25,
+       "min_us": 215.664,
+       "med_us": 219.194,
+       "mean_us": 221.781,
+       "max_us": 246.604,
+       "p90_us": 227.095,
+       "stdev_us": 6.98
+      },
+      "11_jit_lookup_k2gB": {
+       "n": 25,
+       "min_us": 2.68,
+       "med_us": 2.85,
+       "mean_us": 2.879,
+       "max_us": 3.27,
+       "p90_us": 3.03,
+       "stdev_us": 0.146
+      },
+      "12_launch_k2gB": {
+       "n": 25,
+       "min_us": 221.254,
+       "med_us": 223.984,
+       "mean_us": 229.711,
+       "max_us": 265.385,
+       "p90_us": 247.835,
+       "stdev_us": 12.52
+      }
+     },
+     "sum_median_us": 986.528,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_alloc_k2ws",
+      "10_launch_k2gA",
+      "11_jit_lookup_k2gB",
+      "12_launch_k2gB"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case7 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 996.828,
+       "med_us": 1034.108,
+       "mean_us": 1030.053,
+       "max_us": 1055.52,
+       "p90_us": 1052.489,
+       "stdev_us": 18.814
+      }
+     },
+     "sum_median_us": 1034.108,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case7 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 1023.438,
+       "med_us": 1064.519,
+       "mean_us": 1059.304,
+       "max_us": 1101.81,
+       "p90_us": 1081.979,
+       "stdev_us": 21.929
+      }
+     },
+     "sum_median_us": 1064.519,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 1034.108,
+     "host_async_per_launch_us": 258.527,
+     "serial_us": 1064.519,
+     "implied_device_us": 30.411,
+     "replica_sum_us": 986.528,
+     "replica_vs_delivered_ratio": 0.954
+    }
+   }
+  }
+ },
+ "mask": {
+  "none": {
+   "1": {
+    "B": 2,
+    "V": 256,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "smallest; base arm K1=24.48us -> round3 gap=458.75us",
+    "use_split": false,
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "n_launch": 2,
+    "replica": {
+     "label": "[none] case1 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.79,
+       "med_us": 1.96,
+       "mean_us": 1.972,
+       "max_us": 2.38,
+       "p90_us": 2.06,
+       "stdev_us": 0.117
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 8.7,
+       "med_us": 8.981,
+       "mean_us": 9.023,
+       "max_us": 9.89,
+       "p90_us": 9.281,
+       "stdev_us": 0.253
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.16,
+       "med_us": 0.18,
+       "mean_us": 0.181,
+       "max_us": 0.22,
+       "p90_us": 0.19,
+       "stdev_us": 0.014
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.27,
+       "med_us": 2.44,
+       "mean_us": 2.463,
+       "max_us": 2.9,
+       "p90_us": 2.561,
+       "stdev_us": 0.125
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 200.783,
+       "med_us": 204.014,
+       "mean_us": 205.806,
+       "max_us": 226.094,
+       "p90_us": 207.894,
+       "stdev_us": 6.06
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.26,
+       "med_us": 2.37,
+       "mean_us": 2.389,
+       "max_us": 2.7,
+       "p90_us": 2.47,
+       "stdev_us": 0.099
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 179.153,
+       "med_us": 182.024,
+       "mean_us": 182.758,
+       "max_us": 197.084,
+       "p90_us": 183.943,
+       "stdev_us": 4.073
+      }
+     },
+     "sum_median_us": 401.969,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case1 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 407.858,
+       "med_us": 415.167,
+       "mean_us": 419.841,
+       "max_us": 450.249,
+       "p90_us": 432.158,
+       "stdev_us": 9.95
+      }
+     },
+     "sum_median_us": 415.167,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case1 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 433.268,
+       "med_us": 438.748,
+       "mean_us": 441.382,
+       "max_us": 473.119,
+       "p90_us": 449.658,
+       "stdev_us": 8.936
+      }
+     },
+     "sum_median_us": 438.748,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 415.167,
+     "host_async_per_launch_us": 207.583,
+     "serial_us": 438.748,
+     "implied_device_us": 23.581,
+     "replica_sum_us": 401.969,
+     "replica_vs_delivered_ratio": 0.9682
+    }
+   },
+   "3": {
+    "B": 8,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "split path, 4 launches, round3 gap_c=1329.77us",
+    "use_split": true,
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "n_launch": 3,
+    "replica": {
+     "label": "[none] case3 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.85,
+       "med_us": 2.01,
+       "mean_us": 2.02,
+       "max_us": 2.41,
+       "p90_us": 2.19,
+       "stdev_us": 0.143
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 13.17,
+       "med_us": 13.88,
+       "mean_us": 13.924,
+       "max_us": 15.18,
+       "p90_us": 14.691,
+       "stdev_us": 0.616
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 8.29,
+       "med_us": 8.51,
+       "mean_us": 8.666,
+       "max_us": 10.09,
+       "p90_us": 9.07,
+       "stdev_us": 0.439
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.33,
+       "med_us": 2.56,
+       "mean_us": 2.579,
+       "max_us": 2.88,
+       "p90_us": 2.77,
+       "stdev_us": 0.152
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 167.833,
+       "med_us": 173.053,
+       "mean_us": 176.495,
+       "max_us": 211.253,
+       "p90_us": 182.423,
+       "stdev_us": 10.104
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.33,
+       "med_us": 2.44,
+       "mean_us": 2.459,
+       "max_us": 2.77,
+       "p90_us": 2.531,
+       "stdev_us": 0.098
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 201.874,
+       "med_us": 205.774,
+       "mean_us": 208.263,
+       "max_us": 235.625,
+       "p90_us": 211.233,
+       "stdev_us": 7.907
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.18,
+       "med_us": 2.37,
+       "mean_us": 2.378,
+       "max_us": 2.69,
+       "p90_us": 2.5,
+       "stdev_us": 0.119
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 178.864,
+       "med_us": 182.703,
+       "mean_us": 184.658,
+       "max_us": 205.214,
+       "p90_us": 190.374,
+       "stdev_us": 6.493
+      }
+     },
+     "sum_median_us": 593.3,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case3 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 599.201,
+       "med_us": 609.011,
+       "mean_us": 622.021,
+       "max_us": 692.903,
+       "p90_us": 653.101,
+       "stdev_us": 27.22
+      }
+     },
+     "sum_median_us": 609.011,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case3 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 624.621,
+       "med_us": 640.572,
+       "mean_us": 643.294,
+       "max_us": 683.722,
+       "p90_us": 667.992,
+       "stdev_us": 18.299
+      }
+     },
+     "sum_median_us": 640.572,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 609.011,
+     "host_async_per_launch_us": 203.004,
+     "serial_us": 640.572,
+     "implied_device_us": 31.561,
+     "replica_sum_us": 593.3,
+     "replica_vs_delivered_ratio": 0.9742
+    }
+   },
+   "13": {
+    "B": 6,
+    "V": 2304,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "why": "94% of wall clock was host (23.84us device / 416.75us wall)",
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "n_launch": 2,
+    "replica": {
+     "label": "[none] case13 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.85,
+       "med_us": 2.0,
+       "mean_us": 2.002,
+       "max_us": 2.16,
+       "p90_us": 2.07,
+       "stdev_us": 0.072
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 8.59,
+       "med_us": 9.24,
+       "mean_us": 9.839,
+       "max_us": 23.131,
+       "p90_us": 9.98,
+       "stdev_us": 2.804
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.16,
+       "med_us": 0.2,
+       "mean_us": 0.212,
+       "max_us": 0.3,
+       "p90_us": 0.28,
+       "stdev_us": 0.04
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.16,
+       "med_us": 2.47,
+       "mean_us": 2.711,
+       "max_us": 8.9,
+       "p90_us": 2.55,
+       "stdev_us": 1.295
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 203.954,
+       "med_us": 210.724,
+       "mean_us": 212.604,
+       "max_us": 231.375,
+       "p90_us": 226.224,
+       "stdev_us": 8.411
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.34,
+       "med_us": 2.471,
+       "mean_us": 2.498,
+       "max_us": 2.89,
+       "p90_us": 2.64,
+       "stdev_us": 0.13
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 181.604,
+       "med_us": 186.733,
+       "mean_us": 189.797,
+       "max_us": 222.404,
+       "p90_us": 200.203,
+       "stdev_us": 9.387
+      }
+     },
+     "sum_median_us": 413.838,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case13 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 414.568,
+       "med_us": 426.818,
+       "mean_us": 430.389,
+       "max_us": 462.109,
+       "p90_us": 443.048,
+       "stdev_us": 11.605
+      }
+     },
+     "sum_median_us": 426.818,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case13 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 436.478,
+       "med_us": 445.618,
+       "mean_us": 453.375,
+       "max_us": 486.059,
+       "p90_us": 472.039,
+       "stdev_us": 14.659
+      }
+     },
+     "sum_median_us": 445.618,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 426.818,
+     "host_async_per_launch_us": 213.409,
+     "serial_us": 445.618,
+     "implied_device_us": 18.8,
+     "replica_sum_us": 413.838,
+     "replica_vs_delivered_ratio": 0.9696
+    }
+   },
+   "7": {
+    "B": 4,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "long kernels; base gap=3.00us -> the H-d1 identity check",
+    "use_split": true,
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "n_launch": 3,
+    "replica": {
+     "label": "[none] case7 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 1.89,
+       "med_us": 2.07,
+       "mean_us": 2.086,
+       "max_us": 2.35,
+       "p90_us": 2.22,
+       "stdev_us": 0.118
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 16.83,
+       "med_us": 17.19,
+       "mean_us": 17.303,
+       "max_us": 17.91,
+       "p90_us": 17.82,
+       "stdev_us": 0.337
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 8.26,
+       "med_us": 8.47,
+       "mean_us": 9.06,
+       "max_us": 20.64,
+       "p90_us": 9.251,
+       "stdev_us": 2.437
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.43,
+       "med_us": 2.57,
+       "mean_us": 2.575,
+       "max_us": 2.79,
+       "p90_us": 2.69,
+       "stdev_us": 0.094
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 168.683,
+       "med_us": 171.794,
+       "mean_us": 175.313,
+       "max_us": 213.874,
+       "p90_us": 184.274,
+       "stdev_us": 9.878
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.35,
+       "med_us": 2.46,
+       "mean_us": 2.482,
+       "max_us": 2.64,
+       "p90_us": 2.57,
+       "stdev_us": 0.075
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 200.923,
+       "med_us": 204.693,
+       "mean_us": 206.573,
+       "max_us": 231.784,
+       "p90_us": 208.694,
+       "stdev_us": 6.452
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.3,
+       "med_us": 2.451,
+       "mean_us": 2.463,
+       "max_us": 2.71,
+       "p90_us": 2.59,
+       "stdev_us": 0.116
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 178.764,
+       "med_us": 183.053,
+       "mean_us": 184.009,
+       "max_us": 208.534,
+       "p90_us": 184.003,
+       "stdev_us": 6.124
+      }
+     },
+     "sum_median_us": 594.751,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[none] case7 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 603.311,
+       "med_us": 610.962,
+       "mean_us": 619.417,
+       "max_us": 685.852,
+       "p90_us": 632.282,
+       "stdev_us": 17.837
+      }
+     },
+     "sum_median_us": 610.962,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[none] case7 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 639.212,
+       "med_us": 647.572,
+       "mean_us": 654.749,
+       "max_us": 688.612,
+       "p90_us": 679.922,
+       "stdev_us": 14.724
+      }
+     },
+     "sum_median_us": 647.572,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 610.962,
+     "host_async_per_launch_us": 203.654,
+     "serial_us": 647.572,
+     "implied_device_us": 36.61,
+     "replica_sum_us": 594.751,
+     "replica_vs_delivered_ratio": 0.9735
+    }
+   }
+  },
+  "npu_only": {
+   "1": {
+    "B": 2,
+    "V": 256,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "smallest; base arm K1=24.48us -> round3 gap=458.75us",
+    "use_split": false,
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "n_launch": 2,
+    "replica": {
+     "label": "[npu_only] case1 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.13,
+       "med_us": 2.29,
+       "mean_us": 2.317,
+       "max_us": 3.37,
+       "p90_us": 2.36,
+       "stdev_us": 0.234
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 10.17,
+       "med_us": 10.501,
+       "mean_us": 10.517,
+       "max_us": 11.22,
+       "p90_us": 10.7,
+       "stdev_us": 0.269
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.18,
+       "med_us": 0.2,
+       "mean_us": 0.204,
+       "max_us": 0.29,
+       "p90_us": 0.22,
+       "stdev_us": 0.027
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.62,
+       "med_us": 2.72,
+       "mean_us": 2.741,
+       "max_us": 2.98,
+       "p90_us": 2.83,
+       "stdev_us": 0.099
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 247.574,
+       "med_us": 250.905,
+       "mean_us": 254.509,
+       "max_us": 278.155,
+       "p90_us": 262.364,
+       "stdev_us": 8.539
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.61,
+       "med_us": 2.83,
+       "mean_us": 2.849,
+       "max_us": 3.07,
+       "p90_us": 3.0,
+       "stdev_us": 0.117
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 223.264,
+       "med_us": 224.794,
+       "mean_us": 227.707,
+       "max_us": 258.654,
+       "p90_us": 230.424,
+       "stdev_us": 7.335
+      }
+     },
+     "sum_median_us": 494.24,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case1 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 501.649,
+       "med_us": 509.669,
+       "mean_us": 512.886,
+       "max_us": 535.23,
+       "p90_us": 523.749,
+       "stdev_us": 8.231
+      }
+     },
+     "sum_median_us": 509.669,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case1 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 531.939,
+       "med_us": 538.1,
+       "mean_us": 544.088,
+       "max_us": 578.12,
+       "p90_us": 562.661,
+       "stdev_us": 13.129
+      }
+     },
+     "sum_median_us": 538.1,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 509.669,
+     "host_async_per_launch_us": 254.834,
+     "serial_us": 538.1,
+     "implied_device_us": 28.431,
+     "replica_sum_us": 494.24,
+     "replica_vs_delivered_ratio": 0.9697
+    }
+   },
+   "3": {
+    "B": 8,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "split path, 4 launches, round3 gap_c=1329.77us",
+    "use_split": true,
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "n_launch": 3,
+    "replica": {
+     "label": "[npu_only] case3 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.15,
+       "med_us": 2.35,
+       "mean_us": 2.363,
+       "max_us": 2.63,
+       "p90_us": 2.51,
+       "stdev_us": 0.11
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 15.64,
+       "med_us": 16.4,
+       "mean_us": 16.424,
+       "max_us": 17.201,
+       "p90_us": 16.81,
+       "stdev_us": 0.4
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 9.84,
+       "med_us": 10.15,
+       "mean_us": 10.225,
+       "max_us": 11.41,
+       "p90_us": 10.7,
+       "stdev_us": 0.367
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.71,
+       "med_us": 2.86,
+       "mean_us": 2.879,
+       "max_us": 3.1,
+       "p90_us": 2.99,
+       "stdev_us": 0.096
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 210.734,
+       "med_us": 212.543,
+       "mean_us": 216.179,
+       "max_us": 244.164,
+       "p90_us": 221.314,
+       "stdev_us": 8.305
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.67,
+       "med_us": 2.87,
+       "mean_us": 2.881,
+       "max_us": 3.15,
+       "p90_us": 2.99,
+       "stdev_us": 0.11
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 246.415,
+       "med_us": 248.905,
+       "mean_us": 250.787,
+       "max_us": 268.295,
+       "p90_us": 254.505,
+       "stdev_us": 5.615
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.75,
+       "med_us": 2.97,
+       "mean_us": 2.976,
+       "max_us": 3.18,
+       "p90_us": 3.1,
+       "stdev_us": 0.109
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 222.374,
+       "med_us": 225.094,
+       "mean_us": 228.284,
+       "max_us": 256.135,
+       "p90_us": 233.554,
+       "stdev_us": 8.518
+      }
+     },
+     "sum_median_us": 724.142,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case3 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 733.553,
+       "med_us": 743.924,
+       "mean_us": 748.779,
+       "max_us": 779.664,
+       "p90_us": 764.954,
+       "stdev_us": 12.941
+      }
+     },
+     "sum_median_us": 743.924,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case3 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 761.474,
+       "med_us": 769.814,
+       "mean_us": 778.159,
+       "max_us": 812.985,
+       "p90_us": 798.754,
+       "stdev_us": 17.434
+      }
+     },
+     "sum_median_us": 769.814,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 743.924,
+     "host_async_per_launch_us": 247.975,
+     "serial_us": 769.814,
+     "implied_device_us": 25.89,
+     "replica_sum_us": 724.142,
+     "replica_vs_delivered_ratio": 0.9734
+    }
+   },
+   "13": {
+    "B": 6,
+    "V": 2304,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "why": "94% of wall clock was host (23.84us device / 416.75us wall)",
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "n_launch": 2,
+    "replica": {
+     "label": "[npu_only] case13 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.11,
+       "med_us": 2.32,
+       "mean_us": 2.315,
+       "max_us": 2.51,
+       "p90_us": 2.41,
+       "stdev_us": 0.089
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 10.0,
+       "med_us": 10.44,
+       "mean_us": 10.51,
+       "max_us": 11.16,
+       "p90_us": 10.86,
+       "stdev_us": 0.27
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.19,
+       "med_us": 0.21,
+       "mean_us": 0.217,
+       "max_us": 0.27,
+       "p90_us": 0.25,
+       "stdev_us": 0.024
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.65,
+       "med_us": 2.89,
+       "mean_us": 2.879,
+       "max_us": 3.05,
+       "p90_us": 3.02,
+       "stdev_us": 0.111
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 246.415,
+       "med_us": 250.364,
+       "mean_us": 253.662,
+       "max_us": 282.056,
+       "p90_us": 267.405,
+       "stdev_us": 9.099
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.74,
+       "med_us": 2.92,
+       "mean_us": 2.924,
+       "max_us": 3.24,
+       "p90_us": 3.09,
+       "stdev_us": 0.132
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 220.674,
+       "med_us": 224.694,
+       "mean_us": 227.256,
+       "max_us": 247.385,
+       "p90_us": 229.284,
+       "stdev_us": 6.599
+      }
+     },
+     "sum_median_us": 493.838,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case13 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 501.549,
+       "med_us": 509.919,
+       "mean_us": 514.057,
+       "max_us": 548.43,
+       "p90_us": 525.96,
+       "stdev_us": 10.927
+      }
+     },
+     "sum_median_us": 509.919,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case13 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 529.23,
+       "med_us": 536.56,
+       "mean_us": 544.421,
+       "max_us": 609.611,
+       "p90_us": 563.87,
+       "stdev_us": 18.458
+      }
+     },
+     "sum_median_us": 536.56,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 509.919,
+     "host_async_per_launch_us": 254.959,
+     "serial_us": 536.56,
+     "implied_device_us": 26.641,
+     "replica_sum_us": 493.838,
+     "replica_vs_delivered_ratio": 0.9685
+    }
+   },
+   "7": {
+    "B": 4,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "long kernels; base gap=3.00us -> the H-d1 identity check",
+    "use_split": true,
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "n_launch": 3,
+    "replica": {
+     "label": "[npu_only] case7 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.3,
+       "med_us": 2.44,
+       "mean_us": 2.739,
+       "max_us": 9.93,
+       "p90_us": 2.56,
+       "stdev_us": 1.501
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 18.73,
+       "med_us": 19.04,
+       "mean_us": 20.137,
+       "max_us": 43.37,
+       "p90_us": 19.63,
+       "stdev_us": 4.851
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 9.72,
+       "med_us": 9.89,
+       "mean_us": 10.215,
+       "max_us": 14.981,
+       "p90_us": 10.26,
+       "stdev_us": 1.046
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.61,
+       "med_us": 2.74,
+       "mean_us": 2.759,
+       "max_us": 3.13,
+       "p90_us": 2.85,
+       "stdev_us": 0.105
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 209.604,
+       "med_us": 213.524,
+       "mean_us": 219.26,
+       "max_us": 262.775,
+       "p90_us": 230.084,
+       "stdev_us": 12.075
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.8,
+       "med_us": 2.92,
+       "mean_us": 3.057,
+       "max_us": 5.94,
+       "p90_us": 3.09,
+       "stdev_us": 0.61
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 246.024,
+       "med_us": 250.475,
+       "mean_us": 253.487,
+       "max_us": 286.665,
+       "p90_us": 265.315,
+       "stdev_us": 10.296
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.9,
+       "med_us": 3.06,
+       "mean_us": 3.206,
+       "max_us": 6.88,
+       "p90_us": 3.18,
+       "stdev_us": 0.77
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 221.774,
+       "med_us": 227.284,
+       "mean_us": 232.285,
+       "max_us": 268.555,
+       "p90_us": 242.905,
+       "stdev_us": 11.911
+      }
+     },
+     "sum_median_us": 731.373,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[npu_only] case7 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 737.164,
+       "med_us": 756.584,
+       "mean_us": 759.206,
+       "max_us": 812.034,
+       "p90_us": 780.024,
+       "stdev_us": 18.411
+      }
+     },
+     "sum_median_us": 756.584,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[npu_only] case7 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 762.444,
+       "med_us": 778.435,
+       "mean_us": 786.173,
+       "max_us": 825.245,
+       "p90_us": 814.125,
+       "stdev_us": 21.157
+      }
+     },
+     "sum_median_us": 778.435,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 756.584,
+     "host_async_per_launch_us": 252.195,
+     "serial_us": 778.435,
+     "implied_device_us": 21.851,
+     "replica_sum_us": 731.373,
+     "replica_vs_delivered_ratio": 0.9667
+    }
+   }
+  },
+  "cpu_npu": {
+   "1": {
+    "B": 2,
+    "V": 256,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "smallest; base arm K1=24.48us -> round3 gap=458.75us",
+    "use_split": false,
+    "S": 1,
+    "NBS": 1,
+    "S_TAIL": 0,
+    "n_launch": 2,
+    "replica": {
+     "label": "[cpu_npu] case1 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.11,
+       "med_us": 2.28,
+       "mean_us": 2.292,
+       "max_us": 2.59,
+       "p90_us": 2.35,
+       "stdev_us": 0.097
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 10.35,
+       "med_us": 10.75,
+       "mean_us": 10.757,
+       "max_us": 11.5,
+       "p90_us": 11.081,
+       "stdev_us": 0.305
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.18,
+       "med_us": 0.2,
+       "mean_us": 0.206,
+       "max_us": 0.31,
+       "p90_us": 0.22,
+       "stdev_us": 0.027
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.72,
+       "med_us": 2.88,
+       "mean_us": 2.909,
+       "max_us": 3.09,
+       "p90_us": 3.05,
+       "stdev_us": 0.103
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 255.155,
+       "med_us": 259.324,
+       "mean_us": 263.528,
+       "max_us": 290.016,
+       "p90_us": 279.145,
+       "stdev_us": 9.767
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.79,
+       "med_us": 3.11,
+       "mean_us": 3.11,
+       "max_us": 3.54,
+       "p90_us": 3.26,
+       "stdev_us": 0.153
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 226.834,
+       "med_us": 230.555,
+       "mean_us": 234.964,
+       "max_us": 264.765,
+       "p90_us": 243.455,
+       "stdev_us": 9.748
+      }
+     },
+     "sum_median_us": 509.099,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case1 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 513.599,
+       "med_us": 522.679,
+       "mean_us": 526.93,
+       "max_us": 549.14,
+       "p90_us": 546.27,
+       "stdev_us": 11.256
+      }
+     },
+     "sum_median_us": 522.679,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case1 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 542.82,
+       "med_us": 551.25,
+       "mean_us": 557.461,
+       "max_us": 586.321,
+       "p90_us": 575.041,
+       "stdev_us": 14.366
+      }
+     },
+     "sum_median_us": 551.25,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 522.679,
+     "host_async_per_launch_us": 261.339,
+     "serial_us": 551.25,
+     "implied_device_us": 28.571,
+     "replica_sum_us": 509.099,
+     "replica_vs_delivered_ratio": 0.974
+    }
+   },
+   "3": {
+    "B": 8,
+    "V": 16384,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "split path, 4 launches, round3 gap_c=1329.77us",
+    "use_split": true,
+    "S": 4,
+    "NBS": 1,
+    "S_TAIL": -1,
+    "n_launch": 3,
+    "replica": {
+     "label": "[cpu_npu] case3 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.21,
+       "med_us": 2.38,
+       "mean_us": 2.392,
+       "max_us": 2.62,
+       "p90_us": 2.49,
+       "stdev_us": 0.091
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 15.76,
+       "med_us": 16.25,
+       "mean_us": 16.26,
+       "max_us": 16.971,
+       "p90_us": 16.611,
+       "stdev_us": 0.312
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 11.251,
+       "med_us": 11.74,
+       "mean_us": 11.803,
+       "max_us": 12.931,
+       "p90_us": 12.1,
+       "stdev_us": 0.413
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.7,
+       "med_us": 2.95,
+       "mean_us": 2.952,
+       "max_us": 3.11,
+       "p90_us": 3.06,
+       "stdev_us": 0.094
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 210.254,
+       "med_us": 213.734,
+       "mean_us": 215.256,
+       "max_us": 244.004,
+       "p90_us": 217.034,
+       "stdev_us": 6.976
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.78,
+       "med_us": 2.92,
+       "mean_us": 3.386,
+       "max_us": 14.42,
+       "p90_us": 3.05,
+       "stdev_us": 2.301
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 251.175,
+       "med_us": 254.494,
+       "mean_us": 258.521,
+       "max_us": 283.435,
+       "p90_us": 269.285,
+       "stdev_us": 8.631
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.88,
+       "med_us": 3.14,
+       "mean_us": 3.149,
+       "max_us": 3.37,
+       "p90_us": 3.32,
+       "stdev_us": 0.123
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 223.084,
+       "med_us": 225.924,
+       "mean_us": 228.612,
+       "max_us": 260.044,
+       "p90_us": 230.905,
+       "stdev_us": 7.794
+      }
+     },
+     "sum_median_us": 733.532,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case3 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 741.413,
+       "med_us": 754.874,
+       "mean_us": 758.099,
+       "max_us": 786.055,
+       "p90_us": 774.294,
+       "stdev_us": 12.677
+      }
+     },
+     "sum_median_us": 754.874,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case3 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 772.864,
+       "med_us": 784.184,
+       "mean_us": 785.889,
+       "max_us": 815.604,
+       "p90_us": 800.794,
+       "stdev_us": 11.131
+      }
+     },
+     "sum_median_us": 784.184,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 754.874,
+     "host_async_per_launch_us": 251.625,
+     "serial_us": 784.184,
+     "implied_device_us": 29.31,
+     "replica_sum_us": 733.532,
+     "replica_vs_delivered_ratio": 0.9717
+    }
+   },
+   "13": {
+    "B": 6,
+    "V": 2304,
+    "K_MAX": 128,
+    "BV": 2048,
+    "need_min_p": false,
+    "why": "94% of wall clock was host (23.84us device / 416.75us wall)",
+    "use_split": false,
+    "S": 2,
+    "NBS": 1,
+    "S_TAIL": 1,
+    "n_launch": 2,
+    "replica": {
+     "label": "[cpu_npu] case13 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.24,
+       "med_us": 2.36,
+       "mean_us": 2.381,
+       "max_us": 2.64,
+       "p90_us": 2.49,
+       "stdev_us": 0.104
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 10.22,
+       "med_us": 10.531,
+       "mean_us": 10.535,
+       "max_us": 11.35,
+       "p90_us": 10.83,
+       "stdev_us": 0.281
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 0.17,
+       "med_us": 0.22,
+       "mean_us": 0.238,
+       "max_us": 0.56,
+       "p90_us": 0.25,
+       "stdev_us": 0.074
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.71,
+       "med_us": 2.89,
+       "mean_us": 2.915,
+       "max_us": 3.22,
+       "p90_us": 3.07,
+       "stdev_us": 0.131
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 252.385,
+       "med_us": 255.354,
+       "mean_us": 259.037,
+       "max_us": 286.395,
+       "p90_us": 269.545,
+       "stdev_us": 8.861
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.75,
+       "med_us": 3.09,
+       "mean_us": 3.076,
+       "max_us": 3.32,
+       "p90_us": 3.24,
+       "stdev_us": 0.149
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 225.134,
+       "med_us": 229.035,
+       "mean_us": 233.807,
+       "max_us": 264.874,
+       "p90_us": 249.714,
+       "stdev_us": 11.151
+      }
+     },
+     "sum_median_us": 503.48,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case13 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 510.499,
+       "med_us": 517.93,
+       "mean_us": 521.166,
+       "max_us": 542.819,
+       "p90_us": 533.97,
+       "stdev_us": 9.584
+      }
+     },
+     "sum_median_us": 517.93,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case13 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 538.46,
+       "med_us": 543.82,
+       "mean_us": 550.386,
+       "max_us": 588.671,
+       "p90_us": 567.221,
+       "stdev_us": 13.146
+      }
+     },
+     "sum_median_us": 543.82,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 517.93,
+     "host_async_per_launch_us": 258.965,
+     "serial_us": 543.82,
+     "implied_device_us": 25.89,
+     "replica_sum_us": 503.48,
+     "replica_vs_delivered_ratio": 0.9721
+    }
+   },
+   "7": {
+    "B": 4,
+    "V": 152064,
+    "K_MAX": 256,
+    "BV": 4096,
+    "need_min_p": false,
+    "why": "long kernels; base gap=3.00us -> the H-d1 identity check",
+    "use_split": true,
+    "S": 10,
+    "NBS": 4,
+    "S_TAIL": 9,
+    "n_launch": 3,
+    "replica": {
+     "label": "[cpu_npu] case7 REPLICA segments (fuse_gumbel=False)",
+     "segments": {
+      "01_prechecks": {
+       "n": 25,
+       "min_us": 2.27,
+       "med_us": 2.46,
+       "mean_us": 2.444,
+       "max_us": 2.65,
+       "p90_us": 2.53,
+       "stdev_us": 0.087
+      },
+      "02_split_plan": {
+       "n": 25,
+       "min_us": 18.71,
+       "med_us": 19.271,
+       "mean_us": 19.227,
+       "max_us": 19.791,
+       "p90_us": 19.56,
+       "stdev_us": 0.289
+      },
+      "03_alloc_workspace": {
+       "n": 25,
+       "min_us": 11.34,
+       "med_us": 11.66,
+       "mean_us": 12.048,
+       "max_us": 19.37,
+       "p90_us": 12.211,
+       "stdev_us": 1.579
+      },
+      "04_jit_lookup_k1": {
+       "n": 25,
+       "min_us": 2.72,
+       "med_us": 2.89,
+       "mean_us": 2.89,
+       "max_us": 3.04,
+       "p90_us": 2.98,
+       "stdev_us": 0.083
+      },
+      "05_launch_k1": {
+       "n": 25,
+       "min_us": 209.684,
+       "med_us": 214.104,
+       "mean_us": 216.932,
+       "max_us": 253.875,
+       "p90_us": 216.884,
+       "stdev_us": 9.575
+      },
+      "06_jit_lookup_k1b": {
+       "n": 25,
+       "min_us": 2.73,
+       "med_us": 2.86,
+       "mean_us": 2.89,
+       "max_us": 3.22,
+       "p90_us": 3.01,
+       "stdev_us": 0.112
+      },
+      "07_launch_k1b": {
+       "n": 25,
+       "min_us": 250.805,
+       "med_us": 255.315,
+       "mean_us": 257.781,
+       "max_us": 285.105,
+       "p90_us": 261.925,
+       "stdev_us": 8.22
+      },
+      "08_jit_lookup_k2": {
+       "n": 25,
+       "min_us": 2.94,
+       "med_us": 3.08,
+       "mean_us": 3.119,
+       "max_us": 3.51,
+       "p90_us": 3.28,
+       "stdev_us": 0.132
+      },
+      "09_launch_k2": {
+       "n": 25,
+       "min_us": 224.344,
+       "med_us": 227.454,
+       "mean_us": 231.279,
+       "max_us": 254.455,
+       "p90_us": 243.484,
+       "stdev_us": 8.337
+      }
+     },
+     "sum_median_us": 739.094,
+     "keys": [
+      "01_prechecks",
+      "02_split_plan",
+      "03_alloc_workspace",
+      "04_jit_lookup_k1",
+      "05_launch_k1",
+      "06_jit_lookup_k1b",
+      "07_launch_k1b",
+      "08_jit_lookup_k2",
+      "09_launch_k2"
+     ]
+    },
+    "delivered": {
+     "label": "[cpu_npu] case7 DELIVERED wrapper",
+     "segments": {
+      "delivered_host_async_us": {
+       "n": 25,
+       "min_us": 748.474,
+       "med_us": 758.504,
+       "mean_us": 764.847,
+       "max_us": 795.954,
+       "p90_us": 780.954,
+       "stdev_us": 12.432
+      }
+     },
+     "sum_median_us": 758.504,
+     "keys": [
+      "delivered_host_async_us"
+     ]
+    },
+    "serial": {
+     "label": "[cpu_npu] case7 DELIVERED serial(host+device)",
+     "segments": {
+      "delivered_host_PLUS_device_us": {
+       "n": 25,
+       "min_us": 772.114,
+       "med_us": 788.434,
+       "mean_us": 789.767,
+       "max_us": 818.245,
+       "p90_us": 802.185,
+       "stdev_us": 11.854
+      }
+     },
+     "sum_median_us": 788.434,
+     "keys": [
+      "delivered_host_PLUS_device_us"
+     ]
+    },
+    "derived": {
+     "host_async_us": 758.504,
+     "host_async_per_launch_us": 252.835,
+     "serial_us": 788.434,
+     "implied_device_us": 29.93,
+     "replica_sum_us": 739.094,
+     "replica_vs_delivered_ratio": 0.9744
+    }
+   }
+  }
+ },
+ "_c1_isolation": {
+  "fused_case1": {
+   "n_launch": 2,
+   "none": 413.327,
+   "npu_only": 498.959,
+   "cpu_npu": 531.02,
+   "ratio_npu_over_none": 1.2072,
+   "ratio_cpunpu_over_none": 1.2847,
+   "per_launch_cpu_npu_us": 265.51,
+   "per_launch_none_us": 206.663
+  },
+  "fused_case3": {
+   "n_launch": 4,
+   "none": 792.875,
+   "npu_only": 956.878,
+   "cpu_npu": 1017.278,
+   "ratio_npu_over_none": 1.2068,
+   "ratio_cpunpu_over_none": 1.283,
+   "per_launch_cpu_npu_us": 254.32,
+   "per_launch_none_us": 198.219
+  },
+  "fused_case13": {
+   "n_launch": 2,
+   "none": 416.537,
+   "npu_only": 497.269,
+   "cpu_npu": 524.69,
+   "ratio_npu_over_none": 1.1938,
+   "ratio_cpunpu_over_none": 1.2596,
+   "per_launch_cpu_npu_us": 262.345,
+   "per_launch_none_us": 208.268
+  },
+  "fused_case7": {
+   "n_launch": 4,
+   "none": 799.055,
+   "npu_only": 957.558,
+   "cpu_npu": 1034.108,
+   "ratio_npu_over_none": 1.1984,
+   "ratio_cpunpu_over_none": 1.2942,
+   "per_launch_cpu_npu_us": 258.527,
+   "per_launch_none_us": 199.764
+  },
+  "mask_case1": {
+   "n_launch": 2,
+   "none": 415.167,
+   "npu_only": 509.669,
+   "cpu_npu": 522.679,
+   "ratio_npu_over_none": 1.2276,
+   "ratio_cpunpu_over_none": 1.259,
+   "per_launch_cpu_npu_us": 261.339,
+   "per_launch_none_us": 207.583
+  },
+  "mask_case3": {
+   "n_launch": 3,
+   "none": 609.011,
+   "npu_only": 743.924,
+   "cpu_npu": 754.874,
+   "ratio_npu_over_none": 1.2215,
+   "ratio_cpunpu_over_none": 1.2395,
+   "per_launch_cpu_npu_us": 251.625,
+   "per_launch_none_us": 203.004
+  },
+  "mask_case13": {
+   "n_launch": 2,
+   "none": 426.818,
+   "npu_only": 509.919,
+   "cpu_npu": 517.93,
+   "ratio_npu_over_none": 1.1947,
+   "ratio_cpunpu_over_none": 1.2135,
+   "per_launch_cpu_npu_us": 258.965,
+   "per_launch_none_us": 213.409
+  },
+  "mask_case7": {
+   "n_launch": 3,
+   "none": 610.962,
+   "npu_only": 756.584,
+   "cpu_npu": 758.504,
+   "ratio_npu_over_none": 1.2383,
+   "ratio_cpunpu_over_none": 1.2415,
+   "per_launch_cpu_npu_us": 252.835,
+   "per_launch_none_us": 203.654
+  }
+ }
+}

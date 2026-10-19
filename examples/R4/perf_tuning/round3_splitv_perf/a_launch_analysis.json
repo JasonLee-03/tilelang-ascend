@@ -1,0 +1,592 @@
+{
+ "_meta": {
+  "description": "a_launch measured from msprof (round-3 cand arm) + guard-relaxation sensitivity. No Python/torch timing.",
+  "kernel_sha256": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/r4_fused_sampling.py",
+  "cube_core_num": 20,
+  "vec_num": 2,
+  "guard_default_a_launch_us": 8.0,
+  "guard_safety": 1.5
+ },
+ "E1_k2gb_floor_us": {
+  "min": 1.54,
+  "median": 2.84,
+  "max": 3.1,
+  "conclusion": "a_launch < 1.540 us; plan with <= 3.100 us"
+ },
+ "E1_points": [
+  {
+   "b_num": 4,
+   "S": 4,
+   "k2gb_us": 2.08
+  },
+  {
+   "b_num": 2,
+   "S": 4,
+   "k2gb_us": 1.54
+  },
+  {
+   "b_num": 2,
+   "S": 10,
+   "k2gb_us": 2.84
+  },
+  {
+   "b_num": 2,
+   "S": 8,
+   "k2gb_us": 2.58
+  },
+  {
+   "b_num": 8,
+   "S": 2,
+   "k2gb_us": 2.98
+  },
+  {
+   "b_num": 8,
+   "S": 2,
+   "k2gb_us": 3.1
+  }
+ ],
+ "E2_fit": {
+  "a0_intercept_us": -0.05047619047618497,
+  "a1_per_b_num": 0.3264285714285708,
+  "a2_per_S": 0.23119047619047572,
+  "max_abs_resid_us": 0.12809523809523782
+ },
+ "E3_model_residuals": [
+  {
+   "task": "fused",
+   "case": 3,
+   "kernel": "K1A",
+   "meas_us": 11.3,
+   "model_nonlaunch_us": 8.902,
+   "implied_a_launch_us": 2.3980000000000015
+  },
+  {
+   "task": "fused",
+   "case": 3,
+   "kernel": "K1B",
+   "meas_us": 32.94,
+   "model_nonlaunch_us": 32.734,
+   "implied_a_launch_us": 0.20599999999999596
+  },
+  {
+   "task": "fused",
+   "case": 4,
+   "kernel": "K1A",
+   "meas_us": 10.74,
+   "model_nonlaunch_us": 8.902,
+   "implied_a_launch_us": 1.838000000000001
+  },
+  {
+   "task": "fused",
+   "case": 4,
+   "kernel": "K1B",
+   "meas_us": 18.94,
+   "model_nonlaunch_us": 32.734,
+   "implied_a_launch_us": -13.794
+  },
+  {
+   "task": "fused",
+   "case": 7,
+   "kernel": "K1A",
+   "meas_us": 42.44,
+   "model_nonlaunch_us": 35.608,
+   "implied_a_launch_us": 6.832000000000001
+  },
+  {
+   "task": "fused",
+   "case": 7,
+   "kernel": "K1B",
+   "meas_us": 97.1,
+   "model_nonlaunch_us": 98.044,
+   "implied_a_launch_us": -0.9440000000000026
+  },
+  {
+   "task": "fused",
+   "case": 8,
+   "kernel": "K1A",
+   "meas_us": 6.46,
+   "model_nonlaunch_us": 3.955,
+   "implied_a_launch_us": 2.505
+  },
+  {
+   "task": "fused",
+   "case": 8,
+   "kernel": "K1B",
+   "meas_us": 26.48,
+   "model_nonlaunch_us": 39.67,
+   "implied_a_launch_us": -13.190000000000001
+  },
+  {
+   "task": "fused",
+   "case": 12,
+   "kernel": "K1A",
+   "meas_us": 40.7,
+   "model_nonlaunch_us": 35.608,
+   "implied_a_launch_us": 5.092000000000006
+  },
+  {
+   "task": "fused",
+   "case": 12,
+   "kernel": "K1B",
+   "meas_us": 27.96,
+   "model_nonlaunch_us": 37.994,
+   "implied_a_launch_us": -10.033999999999999
+  },
+  {
+   "task": "fused",
+   "case": 17,
+   "kernel": "K1A",
+   "meas_us": 183.84,
+   "model_nonlaunch_us": 169.13799999999998,
+   "implied_a_launch_us": 14.702000000000027
+  },
+  {
+   "task": "fused",
+   "case": 17,
+   "kernel": "K1B",
+   "meas_us": 93.96,
+   "model_nonlaunch_us": 90.252,
+   "implied_a_launch_us": 3.7079999999999984
+  },
+  {
+   "task": "mask",
+   "case": 3,
+   "kernel": "K1A",
+   "meas_us": 11.58,
+   "model_nonlaunch_us": 8.902,
+   "implied_a_launch_us": 2.678000000000001
+  },
+  {
+   "task": "mask",
+   "case": 3,
+   "kernel": "K1B",
+   "meas_us": 33.7,
+   "model_nonlaunch_us": 32.734,
+   "implied_a_launch_us": 0.9660000000000011
+  },
+  {
+   "task": "mask",
+   "case": 4,
+   "kernel": "K1A",
+   "meas_us": 10.68,
+   "model_nonlaunch_us": 8.902,
+   "implied_a_launch_us": 1.7780000000000005
+  },
+  {
+   "task": "mask",
+   "case": 4,
+   "kernel": "K1B",
+   "meas_us": 18.92,
+   "model_nonlaunch_us": 32.734,
+   "implied_a_launch_us": -13.814
+  },
+  {
+   "task": "mask",
+   "case": 7,
+   "kernel": "K1A",
+   "meas_us": 39.38,
+   "model_nonlaunch_us": 35.608,
+   "implied_a_launch_us": 3.7720000000000056
+  },
+  {
+   "task": "mask",
+   "case": 7,
+   "kernel": "K1B",
+   "meas_us": 97.44,
+   "model_nonlaunch_us": 98.044,
+   "implied_a_launch_us": -0.6039999999999992
+  },
+  {
+   "task": "mask",
+   "case": 8,
+   "kernel": "K1A",
+   "meas_us": 6.04,
+   "model_nonlaunch_us": 3.955,
+   "implied_a_launch_us": 2.085
+  },
+  {
+   "task": "mask",
+   "case": 8,
+   "kernel": "K1B",
+   "meas_us": 26.12,
+   "model_nonlaunch_us": 39.67,
+   "implied_a_launch_us": -13.55
+  },
+  {
+   "task": "mask",
+   "case": 12,
+   "kernel": "K1A",
+   "meas_us": 39.06,
+   "model_nonlaunch_us": 35.608,
+   "implied_a_launch_us": 3.4520000000000053
+  },
+  {
+   "task": "mask",
+   "case": 12,
+   "kernel": "K1B",
+   "meas_us": 24.88,
+   "model_nonlaunch_us": 37.994,
+   "implied_a_launch_us": -13.114
+  },
+  {
+   "task": "mask",
+   "case": 17,
+   "kernel": "K1A",
+   "meas_us": 181.48,
+   "model_nonlaunch_us": 169.13799999999998,
+   "implied_a_launch_us": 12.342000000000013
+  },
+  {
+   "task": "mask",
+   "case": 17,
+   "kernel": "K1B",
+   "meas_us": 95.18,
+   "model_nonlaunch_us": 90.252,
+   "implied_a_launch_us": 4.9280000000000115
+  }
+ ],
+ "guard_selfcheck_mismatches": [],
+ "delivered_split_set": [
+  3,
+  4,
+  7,
+  8,
+  12,
+  17
+ ],
+ "flip_scan": {
+  "8.0": [],
+  "4.0": [],
+  "3.2": [
+   11
+  ],
+  "2.74": [
+   6,
+   11
+  ],
+  "1.54": [
+   6,
+   11
+  ],
+  "1.0": [
+   6,
+   11
+  ],
+  "0.5": [
+   6,
+   11
+  ],
+  "0.0": [
+   6,
+   11
+  ]
+ },
+ "per_case_guard_detail": {
+  "1": {
+   "B": 2,
+   "V": 256,
+   "b_num": 1,
+   "n_blk_full": 0,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=20, n_blk_total=1)=1; binding term = n_blk_total=1",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=20, n_blk_total=1)=1; binding term = n_blk_total=1) -- cannot flip at any a_launch"
+  },
+  "2": {
+   "B": 1,
+   "V": 4096,
+   "b_num": 1,
+   "n_blk_full": 1,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=20, n_blk_total=1)=1; binding term = n_blk_total=1",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=20, n_blk_total=1)=1; binding term = n_blk_total=1) -- cannot flip at any a_launch"
+  },
+  "3": {
+   "B": 8,
+   "V": 16384,
+   "b_num": 4,
+   "n_blk_full": 4,
+   "S": 4,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 26.706,
+   "threshold_a8": 17.844,
+   "threshold_a320": 10.644,
+   "threshold_a154": 8.154,
+   "split_at_8": true,
+   "split_at_320": true,
+   "split_at_154": true,
+   "verdict": "already split"
+  },
+  "4": {
+   "B": 4,
+   "V": 16384,
+   "b_num": 2,
+   "n_blk_full": 4,
+   "S": 4,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 26.706,
+   "threshold_a8": 17.844,
+   "threshold_a320": 10.644,
+   "threshold_a154": 8.154,
+   "split_at_8": true,
+   "split_at_320": true,
+   "split_at_154": true,
+   "verdict": "already split"
+  },
+  "5": {
+   "B": 7,
+   "V": 4409,
+   "b_num": 4,
+   "n_blk_full": 1,
+   "S": 2,
+   "structural_ok": false,
+   "blocker": "n_blk_full=1 < 2 (S=2 is >= 2, so the cost guard is not reached)",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (n_blk_full=1 < 2 (S=2 is >= 2, so the cost guard is not reached)) -- cannot flip at any a_launch"
+  },
+  "6": {
+   "B": 8,
+   "V": 10240,
+   "b_num": 4,
+   "n_blk_full": 2,
+   "S": 3,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 8.902,
+   "threshold_a8": 16.383,
+   "threshold_a320": 9.183,
+   "threshold_a154": 6.693,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": true,
+   "verdict": "flips only at 1.54 (margin@3.20=-0.281 us)"
+  },
+  "7": {
+   "B": 4,
+   "V": 152064,
+   "b_num": 2,
+   "n_blk_full": 37,
+   "S": 10,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 293.766,
+   "threshold_a8": 26.61,
+   "threshold_a320": 19.41,
+   "threshold_a154": 16.92,
+   "split_at_8": true,
+   "split_at_320": true,
+   "split_at_154": true,
+   "verdict": "already split"
+  },
+  "8": {
+   "B": 4,
+   "V": 16384,
+   "b_num": 2,
+   "n_blk_full": 8,
+   "S": 8,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 27.685,
+   "threshold_a8": 17.436,
+   "threshold_a320": 10.236,
+   "threshold_a154": 7.746,
+   "split_at_8": true,
+   "split_at_320": true,
+   "split_at_154": true,
+   "verdict": "already split"
+  },
+  "9": {
+   "B": 64,
+   "V": 4096,
+   "b_num": 32,
+   "n_blk_full": 1,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=0, n_blk_total=1)=1; binding term = S_cap=cube//b_num=20//32=0",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=1)=1; binding term = S_cap=cube//b_num=20//32=0) -- cannot flip at any a_launch"
+  },
+  "10": {
+   "B": 4,
+   "V": 4096,
+   "b_num": 2,
+   "n_blk_full": 1,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=10, n_blk_total=1)=1; binding term = n_blk_total=1",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=10, n_blk_total=1)=1; binding term = n_blk_total=1) -- cannot flip at any a_launch"
+  },
+  "11": {
+   "B": 8,
+   "V": 8192,
+   "b_num": 4,
+   "n_blk_full": 2,
+   "S": 2,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 8.902,
+   "threshold_a8": 14.922,
+   "threshold_a320": 7.722,
+   "threshold_a154": 5.232,
+   "split_at_8": false,
+   "split_at_320": true,
+   "split_at_154": true,
+   "verdict": "FLIPS at both 1.54 and 3.20 (margin@1.54=+3.670 us)"
+  },
+  "12": {
+   "B": 16,
+   "V": 32768,
+   "b_num": 8,
+   "n_blk_full": 8,
+   "S": 2,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 35.608,
+   "threshold_a8": 14.922,
+   "threshold_a320": 7.722,
+   "threshold_a154": 5.232,
+   "split_at_8": true,
+   "split_at_320": true,
+   "split_at_154": true,
+   "verdict": "already split"
+  },
+  "13": {
+   "B": 6,
+   "V": 2304,
+   "b_num": 3,
+   "n_blk_full": 1,
+   "S": 2,
+   "structural_ok": false,
+   "blocker": "n_blk_full=1 < 2 (S=2 is >= 2, so the cost guard is not reached)",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (n_blk_full=1 < 2 (S=2 is >= 2, so the cost guard is not reached)) -- cannot flip at any a_launch"
+  },
+  "14": {
+   "B": 32,
+   "V": 1024,
+   "b_num": 16,
+   "n_blk_full": 0,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=1, n_blk_total=1)=1; binding term = S_cap=cube//b_num=20//16=1",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=1, n_blk_total=1)=1; binding term = S_cap=cube//b_num=20//16=1) -- cannot flip at any a_launch"
+  },
+  "15": {
+   "B": 64,
+   "V": 152064,
+   "b_num": 32,
+   "n_blk_full": 37,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=0, n_blk_total=38)=1; binding term = S_cap=cube//b_num=20//32=0",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=38)=1; binding term = S_cap=cube//b_num=20//32=0) -- cannot flip at any a_launch"
+  },
+  "16": {
+   "B": 128,
+   "V": 32768,
+   "b_num": 64,
+   "n_blk_full": 8,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=0, n_blk_total=8)=1; binding term = S_cap=cube//b_num=20//64=0",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=8)=1; binding term = S_cap=cube//b_num=20//64=0) -- cannot flip at any a_launch"
+  },
+  "17": {
+   "B": 16,
+   "V": 152377,
+   "b_num": 8,
+   "n_blk_full": 37,
+   "S": 2,
+   "structural_ok": true,
+   "blocker": null,
+   "pred_saving": 160.236,
+   "threshold_a8": 14.922,
+   "threshold_a320": 7.722,
+   "threshold_a154": 5.232,
+   "split_at_8": true,
+   "split_at_320": true,
+   "split_at_154": true,
+   "verdict": "already split"
+  },
+  "18": {
+   "B": 64,
+   "V": 65536,
+   "b_num": 32,
+   "n_blk_full": 16,
+   "S": 1,
+   "structural_ok": false,
+   "blocker": "S<2: S=min(S_cap=0, n_blk_total=16)=1; binding term = S_cap=cube//b_num=20//32=0",
+   "pred_saving": NaN,
+   "threshold_a8": NaN,
+   "threshold_a320": NaN,
+   "threshold_a154": NaN,
+   "split_at_8": false,
+   "split_at_320": false,
+   "split_at_154": false,
+   "verdict": "BLOCKED structurally (S<2: S=min(S_cap=0, n_blk_total=16)=1; binding term = S_cap=cube//b_num=20//32=0) -- cannot flip at any a_launch"
+  }
+ }
+}

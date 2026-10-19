@@ -1,0 +1,4 @@
+gate_all=0
+gate_stability=0
+gate_stress=0
+gate_coverage=0

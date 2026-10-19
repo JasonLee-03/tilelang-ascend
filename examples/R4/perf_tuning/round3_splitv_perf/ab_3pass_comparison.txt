@@ -1,0 +1,89 @@
+
+====================================================================================================
+fused   base1=R4FusedSampling  score base1=59.211626 cand=60.762869 base2=59.236929
+====================================================================================================
+case    path |  base1_us   cand_us  base2_us |   c/b1 %  b2/b1 % driftadj% |  meas_x model_x  m_err% |   acc mism
+   1    curr |     35.30     34.38     34.44 |    -2.61    -2.44     -1.41 |   1.027   1.000    +2.7 |  True    0
+   2    curr |     42.12     41.98     42.10 |    -0.33    -0.05     -0.31 |   1.003   1.000    +0.3 |  True    0
+   3   SPLIT |    100.30     57.52     99.86 |   -42.65    -0.44    -42.53 |   1.744   1.490   +17.0 |  True    0
+   4   SPLIT |     85.50     41.80     85.48 |   -51.11    -0.02    -51.11 |   2.045   1.520   +34.6 |  True    0
+   5    curr |     55.10     54.08     54.76 |    -1.85    -0.62     -1.55 |   1.019   1.000    +1.9 |  True    0
+   6    curr |     77.98     77.16     77.36 |    -1.05    -0.80     -0.66 |   1.011   1.000    +1.1 |  True    0
+   7   SPLIT |    728.42    179.06    728.00 |   -75.42    -0.06    -75.41 |   4.068   3.890    +4.6 |  True    0
+   8   SPLIT |     91.22     43.04     91.26 |   -52.82    +0.04    -52.83 |   2.119   1.870   +13.3 |  True    0
+   9    curr |     85.98     85.66     85.98 |    -0.37    +0.00     -0.37 |   1.004   1.000    +0.4 |  True    0
+  10    curr |     42.50     42.18     42.38 |    -0.75    -0.28     -0.61 |   1.008   1.000    +0.8 |  True    0
+  11    curr |     62.96     62.92     62.80 |    -0.06    -0.25     +0.06 |   1.001   1.000    +0.1 |  True    0
+  12   SPLIT |    160.98    108.18    161.42 |   -32.80    +0.27    -32.89 |   1.488   1.440    +3.3 |  True    0
+  13    curr |     23.62     23.06     23.24 |    -2.37    -1.61     -1.58 |   1.024   1.000    +2.4 |  True    0
+  14    curr |     37.44     37.48     37.62 |    +0.11    +0.48     -0.13 |   0.999   1.000    -0.1 |  True    0
+  15    curr |   1470.62   1470.76   1472.28 |    +0.01    +0.11     -0.05 |   1.000   1.000    -0.0 |  True    0
+  16    curr |    695.62    695.66    695.36 |    +0.01    -0.04     +0.02 |   1.000   1.000    -0.0 |  True    0
+  17   SPLIT |    736.42    437.94    735.58 |   -40.53    -0.11    -40.50 |   1.682   1.720    -2.2 |  True    0
+  18    curr |    650.66    650.00    650.76 |    -0.10    +0.02     -0.11 |   1.001   1.000    +0.1 |  True    0
+
+  -- fused aggregates --
+  geomean speedup ALL 18       = 1.2796x   (drift-adjusted 1.2775x)
+  geomean speedup SPLIT 6      = 2.0624x   (drift-adjusted 2.0618x)   [model section 12.4 @a_launch=3us: 1.855x]
+  geomean speedup NON-SPLIT 12 = 1.0079x   (drift-adjusted 1.0056x)   [MUST be 1.000x -- byte-identical code]
+  DRIFT CONTROL geomean(base2/base1) = 0.996762 (-0.324%)  worst single-case drift +0.481%  best -2.436%
+  NON-SPLIT worst delta = +0.107%  best = -2.606%  n outside +/-3.0% = 0
+  NON-SPLIT pairwise geomean ratios (identical device code in both arms):
+      cand /base1 = 0.992139 (-0.786%)
+      cand /base2 = 0.996713 (-0.329%)
+      base2/base1 = 0.995411 (-0.459%)  <-- IDENTICAL-CODE CONTROL
+      |cand/base2| - |control| = -0.130 pp  ->  residual is within the identical-code drift magnitude
+  SPLIT     worst delta = -32.799%  best = -75.418%  n regress>3.0% = 0
+  acc: 18/18 passed, total mismatch_count = 0, failed_cases = 0
+  MODEL CHECK geomean: measured 1.2796x vs section 12.4 band [1.151x, 1.292x] -> INSIDE band
+  MODEL CHECK case7  : measured 4.0680x vs band [3.52x, 4.15x] -> INSIDE
+
+====================================================================================================
+mask   base1=R4MaskSample  score base1=58.422600 cand=59.249786 base2=58.428332
+====================================================================================================
+case    path |  base1_us   cand_us  base2_us |   c/b1 %  b2/b1 % driftadj% |  meas_x model_x  m_err% |   acc mism
+   1    curr |     26.44     26.10     26.60 |    -1.29    +0.61     -1.58 |   1.013   1.000    +1.3 |  True    0
+   2    curr |     33.96     33.98     33.78 |    +0.06    -0.53     +0.32 |   0.999   1.000    -0.1 |  True    0
+   3   SPLIT |     70.60     50.92     70.42 |   -27.88    -0.25    -27.78 |   1.386   1.320    +5.0 |  True    0
+   4   SPLIT |     55.82     34.20     55.86 |   -38.73    +0.07    -38.75 |   1.632   1.310   +24.6 |  True    0
+   5    curr |     40.24     39.76     40.24 |    -1.19    +0.00     -1.19 |   1.012   1.000    +1.2 |  True    0
+   6    curr |     55.80     54.78     55.92 |    -1.83    +0.22     -1.93 |   1.019   1.000    +1.9 |  True    0
+   7   SPLIT |    461.14    172.86    461.26 |   -62.51    +0.03    -62.52 |   2.668   2.570    +3.8 |  True    0
+   8   SPLIT |     59.94     37.88     59.76 |   -36.80    -0.30    -36.71 |   1.582   1.570    +0.8 |  True    0
+   9    curr |     69.28     69.58     69.66 |    +0.43    +0.55     +0.16 |   0.996   1.000    -0.4 |  True    0
+  10    curr |     34.28     34.08     33.96 |    -0.58    -0.93     -0.12 |   1.006   1.000    +0.6 |  True    0
+  11    curr |     47.18     46.96     47.12 |    -0.47    -0.13     -0.40 |   1.005   1.000    +0.5 |  True    0
+  12   SPLIT |    103.64     73.92    103.82 |   -28.68    +0.17    -28.74 |   1.402   1.310    +7.0 |  True    0
+  13    curr |     14.84     14.64     14.66 |    -1.35    -1.21     -0.75 |   1.014   1.000    +1.4 |  True    0
+  14    curr |     29.12     29.18     29.44 |    +0.21    +1.10     -0.34 |   0.998   1.000    -0.2 |  True    0
+  15    curr |    933.10    933.98    932.72 |    +0.09    -0.04     +0.11 |   0.999   1.000    -0.1 |  True    0
+  16    curr |    466.70    466.62    467.06 |    -0.02    +0.08     -0.06 |   1.000   1.000    +0.0 |  True    0
+  17   SPLIT |    472.78    321.32    472.18 |   -32.04    -0.13    -31.99 |   1.471   1.540    -4.5 |  True    0
+  18    curr |    423.78    423.96    424.12 |    +0.04    +0.08     +0.00 |   1.000   1.000    -0.0 |  True    0
+
+  -- mask aggregates --
+  geomean speedup ALL 18       = 1.1840x   (drift-adjusted 1.1838x)
+  geomean speedup SPLIT 6      = 1.6435x   (drift-adjusted 1.6429x)   [model section 12.4 @a_launch=3us: 1.554x]
+  geomean speedup NON-SPLIT 12 = 1.0050x   (drift-adjusted 1.0049x)   [MUST be 1.000x -- byte-identical code]
+  DRIFT CONTROL geomean(base2/base1) = 0.999637 (-0.036%)  worst single-case drift +1.099%  best -1.213%
+  NON-SPLIT worst delta = +0.433%  best = -1.828%  n outside +/-3.0% = 0
+  NON-SPLIT pairwise geomean ratios (identical device code in both arms):
+      cand /base1 = 0.995069 (-0.493%)
+      cand /base2 = 0.995270 (-0.473%)
+      base2/base1 = 0.999798 (-0.020%)  <-- IDENTICAL-CODE CONTROL
+      |cand/base2| - |control| = +0.453 pp  ->  residual is within the identical-code drift magnitude
+  SPLIT     worst delta = -27.875%  best = -62.515%  n regress>3.0% = 0
+  acc: 18/18 passed, total mismatch_count = 0, failed_cases = 0
+  MODEL CHECK geomean: measured 1.1840x vs section 12.4 band [1.107x, 1.196x] -> INSIDE band
+  MODEL CHECK case7  : measured 2.6677x vs band [2.43x, 2.66x] -> ABOVE
+
+====================================================================================================
+36-CASE COMBINED (fused 18 + mask 18)
+====================================================================================================
+  geomean speedup 36           = 1.2309x
+  geomean speedup SPLIT 12     = 1.8411x   (6 cases x 2 tasks)
+  geomean speedup NON-SPLIT 24 = 1.0064x   [MUST be 1.000x]
+  DRIFT CONTROL 36             = -0.180%
+  acc: mismatch total = 0, n_acc_fail = 0
+
+wrote perf_tuning/round3_splitv_perf/ab_3pass_comparison.json

@@ -1,0 +1,244 @@
+{
+ "_meta": {
+  "kernel_sha256_before": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+  "kernel_sha256_after": "c59a83bcfa5f43365ab921499e2d3a6f9ec54011d861149e50d1beb12079c534",
+  "kernel_unmodified": true,
+  "a_launch_us": 1.54,
+  "fresh_cache_dir": "/tmp/opencode/r4_itemA_coldcache",
+  "source_of_spec_list": "preflight.json P3_total_new",
+  "note": "host wall-clock for compilation only; excluded from every performance number by construction"
+ },
+ "n_new_specs": 17,
+ "cold_total_s": 87.15,
+ "cold_avg_s_per_spec": 5.126,
+ "warm_total_s": 0.0,
+ "cache_entries_before": 0,
+ "cache_entries_after": 17,
+ "new_cache_entries": 17,
+ "specs": [
+  {
+   "kernel": "K1A",
+   "args": [
+    5,
+    10240,
+    256,
+    4096,
+    3,
+    1,
+    2
+   ],
+   "cold_compile_s": 5.18,
+   "src_bytes": 4636
+  },
+  {
+   "kernel": "K1A",
+   "args": [
+    7,
+    4409,
+    256,
+    2048,
+    3,
+    1,
+    2
+   ],
+   "cold_compile_s": 5.16,
+   "src_bytes": 4623
+  },
+  {
+   "kernel": "K1A",
+   "args": [
+    8,
+    10240,
+    256,
+    4096,
+    3,
+    1,
+    2
+   ],
+   "cold_compile_s": 5.17,
+   "src_bytes": 4445
+  },
+  {
+   "kernel": "K1A",
+   "args": [
+    8,
+    8192,
+    256,
+    4096,
+    2,
+    1,
+    -1
+   ],
+   "cold_compile_s": 5.0,
+   "src_bytes": 3063
+  },
+  {
+   "kernel": "K1B",
+   "args": [
+    5,
+    10240,
+    256,
+    4096,
+    3,
+    false
+   ],
+   "cold_compile_s": 5.67,
+   "src_bytes": 14003
+  },
+  {
+   "kernel": "K1B",
+   "args": [
+    7,
+    4409,
+    256,
+    2048,
+    3,
+    false
+   ],
+   "cold_compile_s": 5.69,
+   "src_bytes": 13981
+  },
+  {
+   "kernel": "K1B",
+   "args": [
+    8,
+    10240,
+    256,
+    4096,
+    3,
+    false
+   ],
+   "cold_compile_s": 5.68,
+   "src_bytes": 13452
+  },
+  {
+   "kernel": "K1B",
+   "args": [
+    8,
+    8192,
+    256,
+    4096,
+    2,
+    false
+   ],
+   "cold_compile_s": 5.61,
+   "src_bytes": 12064
+  },
+  {
+   "kernel": "K1B",
+   "args": [
+    8,
+    8192,
+    256,
+    4096,
+    2,
+    true
+   ],
+   "cold_compile_s": 5.64,
+   "src_bytes": 12567
+  },
+  {
+   "kernel": "K2gA",
+   "args": [
+    5,
+    10240,
+    4096,
+    3,
+    1
+   ],
+   "cold_compile_s": 5.06,
+   "src_bytes": 9194
+  },
+  {
+   "kernel": "K2gA",
+   "args": [
+    7,
+    4409,
+    2048,
+    3,
+    1
+   ],
+   "cold_compile_s": 5.04,
+   "src_bytes": 9187
+  },
+  {
+   "kernel": "K2gA",
+   "args": [
+    8,
+    10240,
+    4096,
+    3,
+    1
+   ],
+   "cold_compile_s": 5.08,
+   "src_bytes": 8829
+  },
+  {
+   "kernel": "K2gA",
+   "args": [
+    8,
+    8192,
+    4096,
+    2,
+    1
+   ],
+   "cold_compile_s": 5.05,
+   "src_bytes": 8627
+  },
+  {
+   "kernel": "K2gB",
+   "args": [
+    5,
+    3
+   ],
+   "cold_compile_s": 4.52,
+   "src_bytes": 3260
+  },
+  {
+   "kernel": "K2gB",
+   "args": [
+    7,
+    3
+   ],
+   "cold_compile_s": 4.53,
+   "src_bytes": 3260
+  },
+  {
+   "kernel": "K2gB",
+   "args": [
+    8,
+    2
+   ],
+   "cold_compile_s": 4.52,
+   "src_bytes": 2933
+  },
+  {
+   "kernel": "K2gB",
+   "args": [
+    8,
+    3
+   ],
+   "cold_compile_s": 4.55,
+   "src_bytes": 2933
+  }
+ ],
+ "warm_retiming_s": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ]
+}

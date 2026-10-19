@@ -1,0 +1,239 @@
+--- history_version/test_r4_fused_sampling_impl_s3r3_itemA_attempt0.py	2026-10-12 18:52:51.312077116 +0800
++++ test_r4_fused_sampling.py	2026-10-12 19:26:51.352735739 +0800
+@@ -34,10 +34,16 @@
+     test_r4_rev3_static()  section 9.2.5 assertions 1-4 (pass_configs, frozen-kernel sha256,
+                            measured UB, padCount==0 / UB->UB 32B / static loop bounds)
+     test_r4_rev3_l0()      section 9.2.3's 15-case matrix x 2 tasks = 30 runs
+-    STAB_CASES / ADV_CASES gained split-path configs (V-S5 / V-S6) because every legacy config
+-                           has n_blk_full <= 2 and is vetoed by D-SPLIT-GUARD, i.e. the legacy
+-                           stability + tail-adversary gates covered ZERO lines of the split
+-                           path (section 16.8). Both suites now FAIL LOUDLY if that regress.
++    STAB_CASES / ADV_CASES gained split-path configs (V-S5 / V-S6) because when rev3 landed every
++                           legacy config had n_blk_full <= 2 and was vetoed by D-SPLIT-GUARD, i.e.
++                           the legacy stability + tail-adversary gates covered ZERO lines of the
++                           split path (section 16.8). Both suites now FAIL LOUDLY if that regress.
++                           [Stage-3 round-3 item A] _SPLIT_A_LAUNCH_US moved from the conservative
++                           8.0 us placeholder to the MEASURED 1.540 us, which additionally routes 2
++                           of the 8 legacy STAB configs (both n_blk_full == 2, i.e. vetoed by the
++                           COST guard rather than structurally) onto the split path, and adds
++                           cb6/cb11 -- the two contract cases that relaxation newly admits -- to
++                           REV3_L1_CASES, STAB_CASES and _REV3_STATIC_SHAPES.
+ """
+ 
+ import argparse
+@@ -219,10 +225,16 @@
+ # tolerance yet flips tau at a tau_p prefix-sum boundary, which then flips valid / tok_out --
+ # both int32 EXACT-match gates. Tier 2 is therefore the primary rev3 gate (section 9.0 point 3).
+ #
+-# Section 16.8 blind spot this layer closes: every pre-existing STAB_CASES / ADV_CASES config
+-# has n_blk_full in {0,1,2} and is therefore vetoed by D-SPLIT-GUARD, so the old stability and
+-# tail-adversary gates never executed ONE LINE of the split path no matter how many reps they
+-# ran. Split-path STAB and ADV configs are added further below (V-S5 / V-S6).
++# Section 16.8 blind spot this layer closes: when rev3 landed, every pre-existing STAB_CASES /
++# ADV_CASES config had n_blk_full in {0,1,2} and was therefore vetoed by D-SPLIT-GUARD, so the old
++# stability and tail-adversary gates never executed ONE LINE of the split path no matter how many
++# reps they ran. Split-path STAB and ADV configs are added further below (V-S5 / V-S6).
++# [Stage-3 round-3 item A] The veto is no longer universal on the STAB side: _SPLIT_A_LAUNCH_US is
++# now the MEASURED 1.540 us instead of the 8.0 us placeholder, and the two legacy configs with
++# n_blk_full == 2 (stab_B7_V4409_bv2048_gumbel, stab_B5_V10240_gumbel) were vetoed by the COST
++# guard alone, so they now route to the split path. The other 6 legacy configs are blocked
++# STRUCTURALLY (n_blk_total == 1 or n_blk_full < 2) and cannot move at any guard value. ADV_CASES
++# is unaffected: all 8 of its shapes have n_blk_full <= 1.
+ # =========================================================================================
+ 
+ # ---- section 9.2.5 static assertion 2 baseline: sha256 of each FROZEN kernel's source
+@@ -523,6 +535,15 @@
+     ("A2_S10_grid20", 4, 152064, 256, 4096),
+     ("F1_shrink_S3", 10, 20480, 256, 4096),
+     ("B5_TAIL825_S2", 16, 152377, 256, 4096),
++    # ---- Stage-3 round-3 item A: the two geometries the MEASURED guard newly admits ----
++    # _SPLIT_A_LAUNCH_US went from the conservative 8.0 us placeholder to the measured 1.540 us,
++    # which routes cann-bench case 6 (S=3/NBS=1/S_TAIL=2, TAIL=2048 mid tail) and case 11
++    # (S=2/NBS=1/S_TAIL=-1, aligned) onto the split path. Before this change those two geometries
++    # were only ever checked by an OUT-OF-BAND Stage-2 probe, so the delivered gate did not own
++    # the "UB fits + padCount==0 + 32B ub2ub + no dynamic bounds" property for shapes the contract
++    # really dispatches here. Adding them makes the gate own it (38 -> 48 STATIC_PASS lines).
++    ("cb6_S3_NBS1_STAIL2", 8, 10240, 256, 4096),
++    ("cb11_S2_NBS1_aligned", 8, 8192, 256, 4096),
+ )
+ 
+ 
+@@ -738,6 +759,31 @@
+     # K_MAX=128 with BV=4096 (only K_MAX varies): AT = _aligned_topk(128) = 256.
+     ("l1r3_split_kmax128_bv4096", 4, 16384, 128, 4096, 100, 0.95, 0.0, False, 8.0, 0.0,
+      ["D-PATH-SPLIT", "D-BITWISE-DUALPATH", "D-PARAM-K_MAX", "D-PARAM-top_k"]),
++    # ---- Stage-3 round-3 item A: RUNTIME split-path coverage for the two newly admitted cases ----
++    # Relaxing _SPLIT_A_LAUNCH_US to the measured 1.540 us routes cann-bench case 6 and case 11
++    # onto the split path. Until this change NEITHER shape had any runtime split-path precision
++    # coverage at all: case 11's shape (8, 8192) appeared in NO test table, and case 6's shape
++    # (8, 10240) appeared only as l1_tailmid_V / l1b_tailmid_V, which judge against the golden
++    # (Tier 1) but never against the frozen kernels (Tier 2) -- and Tier 1 alone cannot see a
++    # reduction-order bug (E-S4). Without these two entries the guard relaxation would move two
++    # contract cases into a code path with no dual-path bitwise gate. Both are judged by
++    # _rev3_dual_compare with expect_split=True + blocking=True, so they run BOTH tasks (mask and
++    # fused), compare Tier 1 vs golden_r4/golden_gumbel_sample AND Tier 2 bit-pattern vs the three
++    # frozen kernels, and FAIL LOUDLY if a future guard change ever routes them back to the
++    # delivered path. Both shapes were CPU-pre-verified under the section 9.2.1 recipe
++    # (manual_seed(0) + randn*8.0) to yield valid_ref all-1 with no golden NaN
++    # (perf_tuning/round3_itemA_guard/preflight.json, P2).
++    # cb6: S=3, NBS=1, S_TAIL=2 -> TAIL=2048 (V % BV == BV//2) owned by the LAST split, so the
++    #      tail-owning split carries 0 full blocks while splits 0/1 carry 1 each: an unbalanced
++    #      full-block load with a non-zero S_TAIL, a combination no pre-existing L1 case had.
++    ("l1r3_split_cb6_B8_V10240", 8, 10240, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0,
++     ["D-PATH-SPLIT", "D-BITWISE-DUALPATH", "D-SHAPE-TAIL-MID", "D-SPLIT-NBS1",
++      "D-SPLIT-TAILOWNER", "D-PARAM-top_k", "D-PARAM-top_p"]),
++    # cb11: S=2, NBS=1, S_TAIL=-1 -> perfectly aligned (V % BV == 0), the minimum splittable S,
++    #      and the smallest V of any split-path case: the tightest geometry the guard admits.
++    ("l1r3_split_cb11_B8_V8192", 8, 8192, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0,
++     ["D-PATH-SPLIT", "D-BITWISE-DUALPATH", "D-SHAPE-ALIGNED", "D-SPLIT-S-MIN", "D-SPLIT-NBS1",
++      "D-PARAM-top_k", "D-PARAM-top_p"]),
+ ]
+ 
+ # V-S4 (DESIGN.md 9.3 rev3 addendum / 10.2): a WHOLE split's V-interval forced to -inf.
+@@ -866,12 +912,15 @@
+ def test_r4_rev3_l1():
+     """rev3 L1 extension: split-path functional coverage, Tier-1 + Tier-2 judged (blocking).
+ 
+-    13 shapes, every one CPU-pre-verified with golden_r4 to yield valid_ref all-1 (section
+-    9.2.1) AND to satisfy use_split == True, so this layer really executes K1A/K1B/K2gA/K2gB.
+-    Coverage added on top of the legacy L1: k=1 and k==K_MAX on the split route (rank-0 and the
+-    D-TIE saturated-list fast path), both contract specializations, odd B with a live row guard
+-    in K1A, the theorem-P3 shrink shape, three value ranges, a non-aligned tail with S_TAIL=5,
+-    and a (BV,K_MAX) pairing outside the two calibrated cost points.
++    Every shape in REV3_L1_CASES (15 as of Stage-3 round-3 item A) was CPU-pre-verified with
++    golden_r4 to yield valid_ref all-1 (section 9.2.1) AND to satisfy use_split == True, so this
++    layer really executes K1A/K1B/K2gA/K2gB. Coverage added on top of the legacy L1: k=1 and
++    k==K_MAX on the split route (rank-0 and the D-TIE saturated-list fast path), both contract
++    specializations, odd B with a live row guard in K1A, the theorem-P3 shrink shape, three value
++    ranges, a non-aligned tail with S_TAIL=5, a (BV,K_MAX) pairing outside the two calibrated cost
++    points, and -- added together with the measured _SPLIT_A_LAUNCH_US relaxation -- the two
++    cann-bench geometries that relaxation newly admits (case 6 S=3/NBS=1/S_TAIL=2 and case 11
++    S=2/NBS=1/S_TAIL=-1), which previously had NO runtime dual-path coverage.
+     """
+     print("=" * 80)
+     print(f"[L1-REV3] split-V functional tests -- {len(REV3_L1_CASES)} cases x 2 tasks")
+@@ -1267,7 +1316,15 @@
+     # B=5 -> B % VEC_NUM(2) == 1: batch-axis tail remainder 1 (row guard).
+     ("l1_tail1_oddB", 5, 16384, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, ["D-SHAPE-TAIL-1"]),
+     # V=10240 -> V % BV == 2048 == BV//2: vocab-axis mid tail.
+-    ("l1_tailmid_V", 8, 10240, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, ["D-SHAPE-TAIL-MID"]),
++    # [Stage-3 round-3 item A] PATH CHANGED: this is cann-bench case 6's shape. n_blk_full=2,
++    # n_blk_total=3 -> S=3/NBS=1/S_TAIL=2, and with _SPLIT_A_LAUNCH_US at the measured 1.540 us the
++    # guard's pred_saving 8.902 us clears 1.5*(1.540 + 3*0.974) = 6.693 us, so it now routes to the
++    # SPLIT path (the shipped 8.0 us placeholder gave a 16.383 us threshold and kept it CURRENT).
++    # Nothing is weakened: the Tier-1 golden comparison below is identical on either path, and the
++    # Tier-2 dual-path bitwise gate for this exact shape is l1r3_split_cb6_B8_V10240 in
++    # REV3_L1_CASES. D-PATH-SPLIT/D-SPLIT-* tags added so the routing is asserted, not incidental.
++    ("l1_tailmid_V", 8, 10240, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0,
++     ["D-PATH-SPLIT", "D-SPLIT-NBS1", "D-SPLIT-TAILOWNER", "D-SHAPE-TAIL-MID"]),
+     # V=4409 prime (V % BV == 313 >= K_MAX, C3 ok); B=7 prime.
+     ("l1_prime_V_B", 7, 4409, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, ["D-SHAPE-PRIME"]),
+     ("l1_edge_B1", 1, 4096, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, ["D-SHAPE-EDGE"]),
+@@ -1528,7 +1585,14 @@
+     ("l1b_valrange_L", 4, 16384, 256, 4096, 40, 0.95, 0.0, False, 1000.0, 0.0, "arange", ["D-PARAM-FUSE_GUMBEL", "D-VALRANGE-L"]),
+     ("l1b_valrange_ASYM", 4, 4096, 256, 4096, 40, 0.95, 0.0, False, 6.0, -4.0, "arange", ["D-PARAM-FUSE_GUMBEL", "D-VALRANGE-ASYM"]),
+     ("l1b_tail1_oddB", 5, 16384, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, "arange", ["D-PARAM-FUSE_GUMBEL", "D-SHAPE-TAIL-1"]),
+-    ("l1b_tailmid_V", 8, 10240, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, "arange", ["D-PARAM-FUSE_GUMBEL", "D-SHAPE-TAIL-MID"]),
++    # [Stage-3 round-3 item A] PATH CHANGED: same shape as l1_tailmid_V (cann-bench case 6), so
++    # S=3/NBS=1/S_TAIL=2 now clears the measured guard and routes to the SPLIT path. This is the
++    # FUSE_GUMBEL=True variant, i.e. it exercises the full split chain K1A -> K1B -> K2gA -> K2gB
++    # and judges tok_out bitwise against golden_gumbel_sample. Tier-2 dual-path bitwise coverage for
++    # this shape lives in REV3_L1_CASES/l1r3_split_cb6_B8_V10240.
++    ("l1b_tailmid_V", 8, 10240, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, "arange",
++     ["D-PATH-SPLIT", "D-SPLIT-NBS1", "D-SPLIT-TAILOWNER", "D-PARAM-FUSE_GUMBEL",
++      "D-SHAPE-TAIL-MID"]),
+     ("l1b_prime_V_B", 7, 4409, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, "arange", ["D-PARAM-FUSE_GUMBEL", "D-SHAPE-PRIME"]),
+     ("l1b_edge_B1", 1, 4096, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, "arange", ["D-PARAM-FUSE_GUMBEL", "D-SHAPE-EDGE"]),
+     ("l1b_edge_V_eq_KMAX", 2, 256, 256, 4096, 40, 0.95, 0.0, False, 8.0, 0.0, "arange", ["D-PARAM-FUSE_GUMBEL", "D-SHAPE-EDGE"]),
+@@ -1962,18 +2026,40 @@
+     ("stab_B9_V4607_gumbel", 9, 4607, 256, 4096, 30, 0.9, True,
+      ["D-SHAPE-PRIME", "D-PARAM-FUSE_GUMBEL"]),
+     # odd B + non-aligned tail + non-default BV (TAIL=313 with BV=2048)
++    # [Stage-3 round-3 item A] PATH CHANGED: n_blk_full=2, n_blk_total=3 -> S=3/NBS=1/S_TAIL=2,
++    # and the guard's pred_saving 8.902 us now clears 1.5*(1.540 + 3*0.974) = 6.693 us, so this
++    # config routes to the SPLIT path (it was CURRENT under the shipped 8.0 us placeholder, whose
++    # threshold was 16.383 us). Its assertion is UNCHANGED and NOT weakened -- N>=20 bit-identical
++    # launches + golden match + the tau invariant are required on either path -- and it now also
++    # exercises (BV=2048, K_MAX=256) on the split route at S=3, a geometry the S=8 case
++    # l1r3_split_bv2048_k256 did not reach. D-PATH-SPLIT/D-SPLIT-* tags added to say so.
+     ("stab_B7_V4409_bv2048_gumbel", 7, 4409, 256, 2048, 40, 0.95, True,
+-     ["D-PARAM-BV", "D-PARAM-FUSE_GUMBEL"]),
+-    # aligned-tail control (TAIL=2048): must stay clean, guards against over-fitting the fix
++     ["D-PATH-SPLIT", "D-SPLIT-NBS1", "D-SPLIT-TAILOWNER", "D-PARAM-BV", "D-PARAM-FUSE_GUMBEL"]),
++    # 32B-aligned-tail control (TAIL=2048, 2048 % 32 == 0): must stay clean, guards against
++    # over-fitting the rev2 fix to the non-aligned remainders {1, 25, 31, 5}.
++    # [Stage-3 round-3 item A] PATH CHANGED for the same reason and with the same numbers as above
++    # (n_blk_full=2 -> S=3/NBS=1/S_TAIL=2, pred_saving 8.902 > 6.693). The control role is
++    # PRESERVED -- it still feeds TAIL=2048 through the tail-padding path and still demands 20
++    # bit-identical launches -- but it now does so on the SPLIT route, so it is no longer a
++    # CURRENT-path control. The CURRENT-path aligned/odd-B controls that remain are
++    # stab_case5_B7_V4409_{gumbel,mask}, stab_B1_V4096_{gumbel,mask}, stab_B3_V4353_gumbel and
++    # stab_B9_V4607_gumbel (6 of the 8 legacy configs; all are blocked STRUCTURALLY by
++    # n_blk_total == 1 or n_blk_full < 2, so no guard value can ever move them).
+     ("stab_B5_V10240_gumbel", 5, 10240, 256, 4096, 40, 0.95, True,
+-     ["D-SHAPE-TAIL-MID", "D-PARAM-FUSE_GUMBEL"]),
++     ["D-PATH-SPLIT", "D-SPLIT-NBS1", "D-SPLIT-TAILOWNER", "D-SHAPE-TAIL-MID",
++      "D-PARAM-FUSE_GUMBEL"]),
+     # ---- rev3 SPLIT-PATH stability configs (V-S5; DESIGN.md section 9.2.4 + 16.8) ----
+-    # WHY: every config above has n_blk_full in {0,1,2} and is therefore vetoed by
+-    # D-SPLIT-GUARD, so the 8 legacy configs never execute ONE LINE of the split path no
+-    # matter how many reps they run (section 16.8: "现有 STAB 全部走现行路径，对 split 路径
+-    # 零覆盖"). The four shapes below all satisfy use_split == True, so this gate plus
+-    # --level stress (which iterates STAB_CASES) is what applies the UB poisoner and the
+-    # N>=20 bit-identity requirement to K1A / K1B / K2gA / K2gB.
++    # WHY: when rev3 landed, every legacy config above had n_blk_full in {0,1,2} and was vetoed by
++    # D-SPLIT-GUARD, so the 8 legacy configs executed ZERO lines of the split path no matter how
++    # many reps they ran (section 16.8: "现有 STAB 全部走现行路径，对 split 路径零覆盖"). The
++    # shapes below all satisfy use_split == True, so this gate plus --level stress (which iterates
++    # STAB_CASES) is what applies the UB poisoner and the N>=20 bit-identity requirement to
++    # K1A / K1B / K2gA / K2gB.
++    # [Stage-3 round-3 item A] The blanket claim "every config above is vetoed" is no longer true:
++    # relaxing _SPLIT_A_LAUNCH_US to the measured 1.540 us moves 2 of the 8 legacy configs
++    # (stab_B7_V4409_bv2048_gumbel, stab_B5_V10240_gumbel -- both n_blk_full == 2, i.e. vetoed by
++    # the COST guard rather than structurally) onto the split path, so split-path STAB coverage is
++    # now 6 configs, not 4. The 6 remaining legacy configs are still blocked structurally.
+     # A2: S=10 (max), grid=20 = exactly one full wave, n_blk_full=37 >> 2, uneven [4x9, 2],
+     #     S_TAIL=9, aligned tail 512. The heaviest split shape (cann-bench case7).
+     ("stab_split_A2_B4_V152064_gumbel", 4, 152064, 256, 4096, 40, 0.95, True,
+@@ -1990,6 +2076,28 @@
+     #     exactly like the rev2 defect A symptom (intermittent huge tau_out).
+     ("stab_split_F1_B10_V20480_gumbel", 10, 20480, 256, 4096, 40, 0.95, True,
+      ["D-PATH-SPLIT", "D-SPLIT-SHRINK", "D-SPLIT-UNEVEN", "D-PARAM-FUSE_GUMBEL"]),
++    # ---- Stage-3 round-3 item A: stability configs for the two NEWLY ADMITTED contract cases ----
++    # The measured guard routes cann-bench case 6 (8, 10240) and case 11 (8, 8192) onto the split
++    # path. Neither shape had ANY repeat-execution coverage before, and the UB poisoner is the only
++    # RUNTIME detector of a stale-UB slot being consumed as a real candidate (padCount == 0 is
++    # proven at compile time only -- this is how the rev2 defect A was reproduced). Both tasks are
++    # covered per shape because the fused task additionally exercises K2gA/K2gB while the mask task
++    # does not. Shapes CPU-pre-verified under the section 9.2.1 recipe (preflight.json P2:
++    # valid_ref all-1, no golden NaN).
++    # cb6: S=3/NBS=1/S_TAIL=2, TAIL=2048 -> the tail-owning split (sid 2) carries 0 FULL blocks
++    #      while splits 0/1 carry 1 each, and grid_A = b_num*S = 4*3 = 12 <= cube_core_num 20, so
++    #      theorem P2's one-wave requirement still holds.
++    ("stab_split_cb6_B8_V10240_gumbel", 8, 10240, 256, 4096, 40, 0.95, True,
++     ["D-PATH-SPLIT", "D-SPLIT-NBS1", "D-SPLIT-TAILOWNER", "D-SHAPE-TAIL-MID",
++      "D-PARAM-FUSE_GUMBEL"]),
++    ("stab_split_cb6_B8_V10240_mask", 8, 10240, 256, 4096, 40, 0.95, False,
++     ["D-PATH-SPLIT", "D-SPLIT-NBS1", "D-SPLIT-TAILOWNER", "D-SHAPE-TAIL-MID"]),
++    # cb11: S=2/NBS=1/S_TAIL=-1, perfectly aligned, the SMALLEST V and the minimum splittable S of
++    #       any split-path config -> the tightest geometry the relaxed guard admits.
++    ("stab_split_cb11_B8_V8192_gumbel", 8, 8192, 256, 4096, 40, 0.95, True,
++     ["D-PATH-SPLIT", "D-SPLIT-S-MIN", "D-SPLIT-NBS1", "D-SHAPE-ALIGNED", "D-PARAM-FUSE_GUMBEL"]),
++    ("stab_split_cb11_B8_V8192_mask", 8, 8192, 256, 4096, 40, 0.95, False,
++     ["D-PATH-SPLIT", "D-SPLIT-S-MIN", "D-SPLIT-NBS1", "D-SHAPE-ALIGNED"]),
+ ]
+ 
+ # Adversary probes: (B, V, K_MAX, BV) -> sentinel swept over the at-risk tail indices.
+@@ -2332,7 +2440,11 @@
+     # These are EXTRA dimensions: proto.yaml is unchanged, so the coverage gate's REQUIRED
+     # set (category Fusion + proto dtype/attr derived) stays at 25 and must stay 25/0/0.
+     # COVERAGE_NA stays empty because Fusion exempts nothing.
+-    "D-PATH-SPLIT": 12,          # use_split == True (A1-A4, B1-B5, C1, D1, E1, F1 + split STAB/ADV)
++    # use_split == True (A1-A4, B1-B5, C1, D1, E1, F1 + split STAB/ADV). Stage-3 round-3 item A:
++    # the measured _SPLIT_A_LAUNCH_US also routes cb6/cb11 (new REV3_L1 + STAB + static entries) and
++    # the 2 cost-guard-vetoed legacy STAB configs here, so this is a FLOOR, not an exact count.
++    # D-PATH-CURRENT stays at 4: no case lost current-path coverage (C2/C3 are blocked structurally).
++    "D-PATH-SPLIT": 12,
+     "D-PATH-CURRENT": 4,         # use_split == False (C2, C3 + D1/E1 baseline side)
+     "D-SPLIT-S-MAX": 3,          # S == S_cap and grid == CUBE_CORE_NUM (A2, D1, split STAB A2)
+     "D-SPLIT-S-MIN": 4,          # S == 2 (A1, B5, C1, split STAB B5)

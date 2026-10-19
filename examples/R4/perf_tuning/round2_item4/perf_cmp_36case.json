@@ -1,0 +1,1697 @@
+{
+ "summary": {
+  "r4_fused_sampling": {
+   "base_score": 59.1997242983001,
+   "cand_score": 59.22507572939603,
+   "geomean_elapsed_ratio": 0.9964937318962465,
+   "speedup_pct": 0.351860527720671,
+   "worst_delta_pct": 0.28530670470755454,
+   "best_delta_pct": -0.941619585687379,
+   "n_regress_gt3": 0,
+   "n_acc_fail": 0,
+   "total_mismatch": 0,
+   "cases": [
+    {
+     "case": 1,
+     "base_us": 35.04,
+     "cand_us": 34.94,
+     "delta_pct": -0.2854,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 2,
+     "base_us": 42.06,
+     "cand_us": 42.18,
+     "delta_pct": 0.2853,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 3,
+     "base_us": 100.08,
+     "cand_us": 100.28,
+     "delta_pct": 0.1998,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0001220703125,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 4,
+     "base_us": 85.66,
+     "cand_us": 85.14,
+     "delta_pct": -0.6071,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 5,
+     "base_us": 55.34,
+     "cand_us": 55.0,
+     "delta_pct": -0.6144,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 1.52587890625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 6,
+     "base_us": 78.02,
+     "cand_us": 77.64,
+     "delta_pct": -0.4871,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 6.103515625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 7,
+     "base_us": 731.8,
+     "cand_us": 729.68,
+     "delta_pct": -0.2897,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0009765625,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 8,
+     "base_us": 91.92,
+     "cand_us": 91.26,
+     "delta_pct": -0.718,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 6.103515625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 9,
+     "base_us": 86.38,
+     "cand_us": 86.4,
+     "delta_pct": 0.0232,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 3.0517578125e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 10,
+     "base_us": 42.48,
+     "cand_us": 42.08,
+     "delta_pct": -0.9416,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 1.9073486328125e-06,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 11,
+     "base_us": 63.02,
+     "cand_us": 62.58,
+     "delta_pct": -0.6982,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 3.814697265625e-06,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 12,
+     "base_us": 161.7,
+     "cand_us": 161.54,
+     "delta_pct": -0.0989,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 9.5367431640625e-07,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 13,
+     "base_us": 23.5,
+     "cand_us": 23.5,
+     "delta_pct": 0.0,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 4.76837158203125e-07,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 14,
+     "base_us": 37.66,
+     "cand_us": 37.48,
+     "delta_pct": -0.478,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 7.62939453125e-06,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 15,
+     "base_us": 1478.46,
+     "cand_us": 1469.26,
+     "delta_pct": -0.6223,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0029296875,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 16,
+     "base_us": 697.92,
+     "cand_us": 694.94,
+     "delta_pct": -0.427,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.000244140625,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 17,
+     "base_us": 737.32,
+     "cand_us": 736.1,
+     "delta_pct": -0.1655,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.001953125,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 18,
+     "base_us": 652.74,
+     "cand_us": 650.28,
+     "delta_pct": -0.3769,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 1.52587890625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tok_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      }
+     }
+    }
+   ]
+  },
+  "r4_mask_sample": {
+   "base_score": 58.41660977397344,
+   "cand_score": 58.438490262743244,
+   "geomean_elapsed_ratio": 0.9964087499504274,
+   "speedup_pct": 0.36041936100534855,
+   "worst_delta_pct": 0.5483207676490752,
+   "best_delta_pct": -1.5841584158415856,
+   "n_regress_gt3": 0,
+   "n_acc_fail": 0,
+   "total_mismatch": 0,
+   "cases": [
+    {
+     "case": 1,
+     "base_us": 26.18,
+     "cand_us": 26.12,
+     "delta_pct": -0.2292,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 2,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 512,
+       "max_abs_diff": 0,
+       "max_diff": 3.725290298461914e-09,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 2,
+     "base_us": 34.0,
+     "cand_us": 33.88,
+     "delta_pct": -0.3529,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 1,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 4096,
+       "max_abs_diff": 0,
+       "max_diff": 2.3283064365386963e-10,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 3,
+     "base_us": 70.64,
+     "cand_us": 70.58,
+     "delta_pct": -0.0849,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0001220703125,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 131072,
+       "max_abs_diff": 0,
+       "max_diff": 1.1641532182693481e-10,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 4,
+     "base_us": 56.06,
+     "cand_us": 55.76,
+     "delta_pct": -0.5351,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 9.5367431640625e-07,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 65536,
+       "max_abs_diff": 0,
+       "max_diff": 2.9802322387695312e-08,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 5,
+     "base_us": 40.4,
+     "cand_us": 39.76,
+     "delta_pct": -1.5842,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 1.52587890625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 7,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 30863,
+       "max_abs_diff": 0,
+       "max_diff": 4.656612873077393e-10,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 6,
+     "base_us": 55.44,
+     "cand_us": 55.48,
+     "delta_pct": 0.0722,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 6.103515625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 81920,
+       "max_abs_diff": 0,
+       "max_diff": 2.3283064365386963e-10,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 7,
+     "base_us": 463.08,
+     "cand_us": 461.84,
+     "delta_pct": -0.2678,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0009765625,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 608256,
+       "max_abs_diff": 0,
+       "max_diff": 1.4551915228366852e-11,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 8,
+     "base_us": 59.96,
+     "cand_us": 59.56,
+     "delta_pct": -0.6671,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 6.103515625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 65536,
+       "max_abs_diff": 0,
+       "max_diff": 1.1641532182693481e-10,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 9,
+     "base_us": 69.62,
+     "cand_us": 69.48,
+     "delta_pct": -0.2011,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 3.0517578125e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 262144,
+       "max_abs_diff": 0,
+       "max_diff": 4.656612873077393e-10,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 10,
+     "base_us": 34.2,
+     "cand_us": 34.06,
+     "delta_pct": -0.4094,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 4,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 16384,
+       "max_abs_diff": 0,
+       "max_diff": 3.725290298461914e-09,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 11,
+     "base_us": 47.66,
+     "cand_us": 47.14,
+     "delta_pct": -1.0911,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 3.814697265625e-06,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 8,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 65536,
+       "max_abs_diff": 0,
+       "max_diff": 3.725290298461914e-09,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 12,
+     "base_us": 104.06,
+     "cand_us": 103.9,
+     "delta_pct": -0.1538,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 9.5367431640625e-07,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 524288,
+       "max_abs_diff": 0,
+       "max_diff": 1.4901161193847656e-08,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 13,
+     "base_us": 14.78,
+     "cand_us": 14.86,
+     "delta_pct": 0.5413,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 9.5367431640625e-07,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 6,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 13824,
+       "max_abs_diff": 0,
+       "max_diff": 2.9802322387695312e-08,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 14,
+     "base_us": 29.18,
+     "cand_us": 29.34,
+     "delta_pct": 0.5483,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 7.62939453125e-06,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 32,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 32768,
+       "max_abs_diff": 0,
+       "max_diff": 2.7939677238464355e-09,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 15,
+     "base_us": 937.3,
+     "cand_us": 931.34,
+     "delta_pct": -0.6359,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.001953125,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 9732096,
+       "max_abs_diff": 0,
+       "max_diff": 2.9103830456733704e-11,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 16,
+     "base_us": 468.42,
+     "cand_us": 466.26,
+     "delta_pct": -0.4611,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.00048828125,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 128,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 4194304,
+       "max_abs_diff": 0,
+       "max_diff": 1.1641532182693481e-10,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 17,
+     "base_us": 474.1,
+     "cand_us": 472.0,
+     "delta_pct": -0.4429,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.001953125,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 16,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 2438032,
+       "max_abs_diff": 0,
+       "max_diff": 2.9103830456733704e-11,
+       "passed": true
+      }
+     }
+    },
+    {
+     "case": 18,
+     "base_us": 426.12,
+     "cand_us": 424.04,
+     "delta_pct": -0.4881,
+     "acc_passed": true,
+     "mismatch": 0,
+     "max_abs_diff": 0.0,
+     "per_out": {
+      "m_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "s_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 1.52587890625e-05,
+       "passed": true
+      },
+      "tau_out": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "valid": {
+       "mismatch": 0,
+       "total": 64,
+       "max_abs_diff": 0,
+       "max_diff": 0.0,
+       "passed": true
+      },
+      "w_out": {
+       "mismatch": 0,
+       "total": 4194304,
+       "max_abs_diff": 0,
+       "max_diff": 1.862645149230957e-09,
+       "passed": true
+      }
+     }
+    }
+   ]
+  }
+ },
+ "verdicts": {
+  "r4_fused_sampling": {
+   "criterion_a": false,
+   "criterion_b_neutral": true
+  },
+  "r4_mask_sample": {
+   "criterion_a": false,
+   "criterion_b_neutral": true
+  }
+ },
+ "noise_pct": 3.0
+}

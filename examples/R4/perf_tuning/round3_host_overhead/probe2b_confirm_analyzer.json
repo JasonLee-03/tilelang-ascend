@@ -1,0 +1,167 @@
+{
+ "_meta": {
+  "description": "independent re-measurement of the two dominant per-launch primitives",
+  "measurement": "perf_counter_ns, no profiler, host-side only",
+  "iters": 500,
+  "env": {
+   "tilelang": "0.1.4+d75300ed0a88b0f4b2eef8a62b43f1930fdae44b",
+   "tilelang_file": "/home/developer/.local/lib/python3.12/site-packages/tilelang/__init__.py",
+   "torch": "2.7.1+cpu",
+   "torch_npu": "2.7.1.post4",
+   "python": "3.12.9",
+   "device": "Ascend910_9362",
+   "cwd": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead",
+   "PYTHONPATH": "/home/developer/.local/lib/python3.12/site-packages/tilelang/3rdparty/tvm/python:/home/developer/Ascend/cann-9.2.0/python/site-packages:/home/developer/Ascend/cann-9.2.0/opp/built-in/op_impl/ai_core/tbe:",
+   "ACL_OP_INIT_MODE": "1",
+   "LD_LIBRARY_PATH_has_sqlite3": true,
+   "timestamp": "2026-10-11T16:58:27+0800",
+   "delivered_kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117"
+  }
+ },
+ "analyzer_direct": {
+  "n": 500,
+  "min_us": 121.092,
+  "med_us": 122.603,
+  "p90_us": 124.002,
+  "max_us": 150.513,
+  "stdev_us": 3.504
+ },
+ "analyzer_plus_simplify": {
+  "n": 500,
+  "min_us": 140.153,
+  "med_us": 142.128,
+  "p90_us": 144.003,
+  "max_us": 181.283,
+  "stdev_us": 4.962
+ },
+ "simplify_only_us": 19.525,
+ "tvm_ffi": {
+  "tvm.tir.IntImm('int32',5)": {
+   "n": 500,
+   "min_us": 10.631,
+   "med_us": 10.935,
+   "p90_us": 11.11,
+   "max_us": 24.18,
+   "stdev_us": 0.719
+  },
+  "tvm.runtime.convert(5)": {
+   "n": 500,
+   "min_us": 12.821,
+   "med_us": 13.32,
+   "p90_us": 13.57,
+   "max_us": 30.091,
+   "stdev_us": 1.073
+  },
+  "tvm.tir.const(5,'int32')": {
+   "n": 500,
+   "min_us": 11.75,
+   "med_us": 12.09,
+   "p90_us": 12.261,
+   "max_us": 39.161,
+   "stdev_us": 1.245
+  },
+  "Analyzer()": {
+   "n": 500,
+   "min_us": 120.922,
+   "med_us": 122.657,
+   "p90_us": 124.152,
+   "max_us": 151.803,
+   "stdev_us": 3.839
+  }
+ },
+ "torch_npu": {
+  "torch.npu.current_stream().npu_stream": {
+   "n": 500,
+   "min_us": 12.46,
+   "med_us": 12.8,
+   "p90_us": 13.091,
+   "max_us": 20.891,
+   "stdev_us": 0.492
+  },
+  "torch.npu.current_stream()": {
+   "n": 500,
+   "min_us": 11.76,
+   "med_us": 12.11,
+   "p90_us": 12.39,
+   "max_us": 22.18,
+   "stdev_us": 0.681
+  },
+  "torch.npu.current_device()": {
+   "n": 500,
+   "min_us": 0.42,
+   "med_us": 0.44,
+   "p90_us": 0.46,
+   "max_us": 0.62,
+   "stdev_us": 0.019
+  },
+  "torch.empty(2,f32,npu)": {
+   "n": 500,
+   "min_us": 5.45,
+   "med_us": 5.63,
+   "p90_us": 5.76,
+   "max_us": 32.041,
+   "stdev_us": 1.186
+  },
+  "torch.empty(0,) [no dev]": {
+   "n": 500,
+   "min_us": 2.34,
+   "med_us": 2.43,
+   "p90_us": 2.52,
+   "max_us": 11.25,
+   "stdev_us": 0.399
+  }
+ },
+ "model": {
+  "K1_r4_topk_stats(out4)": {
+   "n_alloc": 4,
+   "measured_prep_us": 194.509,
+   "model_prep_us": 157.923,
+   "residual_us": 36.586
+  },
+  "K2m_r4_mask_sample(out1)": {
+   "n_alloc": 1,
+   "measured_prep_us": 171.814,
+   "model_prep_us": 141.033,
+   "residual_us": 30.781
+  },
+  "K2g_r4_gumbel(out1)": {
+   "n_alloc": 1,
+   "measured_prep_us": 170.363,
+   "model_prep_us": 141.033,
+   "residual_us": 29.33
+  },
+  "K1A_split(out0)": {
+   "n_alloc": 0,
+   "measured_prep_us": 152.882,
+   "model_prep_us": 135.403,
+   "residual_us": 17.479
+  },
+  "K1B_split(out4)": {
+   "n_alloc": 4,
+   "measured_prep_us": 196.384,
+   "model_prep_us": 157.923,
+   "residual_us": 38.461
+  },
+  "K2gA_split(out0)": {
+   "n_alloc": 0,
+   "measured_prep_us": 158.177,
+   "model_prep_us": 135.403,
+   "residual_us": 22.774
+  },
+  "K2gB_split(out1)": {
+   "n_alloc": 1,
+   "measured_prep_us": 168.323,
+   "model_prep_us": 141.033,
+   "residual_us": 27.29
+  }
+ },
+ "model_residual_max_us": 38.461,
+ "analyzer_gc_disabled": {
+  "n": 500,
+  "min_us": 118.962,
+  "med_us": 120.352,
+  "p90_us": 121.532,
+  "max_us": 163.823,
+  "stdev_us": 4.49
+ }
+}

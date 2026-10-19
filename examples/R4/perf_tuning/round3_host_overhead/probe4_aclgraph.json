@@ -1,0 +1,646 @@
+{
+ "_meta": {
+  "description": "ACL graph capture feasibility / correctness / replay cost / marginal per-launch cost under capture",
+  "api_evidence": "torch_npu/npu/__init__.py:111-113; npu/graphs.py:327,342,361,372,464,518,532; repo precedent examples/aclgraph/rms_rope_aclgraph.py:270-275",
+  "measurement": "perf_counter_ns for HOST replay cost; torch.npu.Event for device-timeline span. replay_serial is host+device and is NOT a kernel-duration claim.",
+  "iters": 25,
+  "env": {
+   "tilelang": "0.1.4+d75300ed0a88b0f4b2eef8a62b43f1930fdae44b",
+   "tilelang_file": "/home/developer/.local/lib/python3.12/site-packages/tilelang/__init__.py",
+   "torch": "2.7.1+cpu",
+   "torch_npu": "2.7.1.post4",
+   "python": "3.12.9",
+   "device": "Ascend910_9362",
+   "cwd": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/perf_tuning/round3_host_overhead",
+   "PYTHONPATH": "/home/developer/.local/lib/python3.12/site-packages/tilelang/3rdparty/tvm/python:/home/developer/Ascend/cann-9.2.0/python/site-packages:/home/developer/Ascend/cann-9.2.0/opp/built-in/op_impl/ai_core/tbe:",
+   "ACL_OP_INIT_MODE": "1",
+   "LD_LIBRARY_PATH_has_sqlite3": true,
+   "timestamp": "2026-10-11T17:32:51+0800",
+   "delivered_kernel_sha256": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117"
+  }
+ },
+ "api_surface": {
+  "NPUGraph": true,
+  "graph": true,
+  "graph_pool_handle": true,
+  "make_graphed_callables": true
+ },
+ "wrapper_capture": {
+  "1": {
+   "B": 2,
+   "V": 256,
+   "use_split": false,
+   "S": 1,
+   "n_launch": 2,
+   "capture_ok": true,
+   "capture_wall_ms": 5.539,
+   "bitwise_equal_to_eager": true,
+   "per_output_bitwise": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "L0_bare": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 10.62,
+     "med_us": 11.101,
+     "p90_us": 11.541,
+     "max_us": 41.3
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 68.911,
+     "med_us": 70.122,
+     "p90_us": 71.981,
+     "max_us": 75.791
+    },
+    "backtoback_per_replay_us": 43.451,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 48.4,
+     "med_us": 48.92,
+     "p90_us": 49.68,
+     "max_us": 77.58
+    }
+   },
+   "L5_harness": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 12.491,
+     "med_us": 12.88,
+     "p90_us": 13.481,
+     "max_us": 50.781
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 71.052,
+     "med_us": 72.572,
+     "p90_us": 74.581,
+     "max_us": 92.042
+    },
+    "backtoback_per_replay_us": 43.6,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 156.22,
+     "med_us": 160.7,
+     "p90_us": 165.82,
+     "max_us": 195.4
+    }
+   }
+  },
+  "3": {
+   "B": 8,
+   "V": 16384,
+   "use_split": true,
+   "S": 4,
+   "n_launch": 4,
+   "capture_ok": true,
+   "capture_wall_ms": 4.115,
+   "bitwise_equal_to_eager": true,
+   "per_output_bitwise": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "L0_bare": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 10.11,
+     "med_us": 11.26,
+     "p90_us": 13.01,
+     "max_us": 20.981
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 109.262,
+     "med_us": 110.582,
+     "p90_us": 111.982,
+     "max_us": 113.182
+    },
+    "backtoback_per_replay_us": 83.662,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 88.34,
+     "med_us": 89.16,
+     "p90_us": 90.16,
+     "max_us": 97.64
+    }
+   },
+   "L5_harness": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 12.33,
+     "med_us": 13.22,
+     "p90_us": 14.89,
+     "max_us": 57.641
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 110.552,
+     "med_us": 112.302,
+     "p90_us": 114.072,
+     "max_us": 115.392
+    },
+    "backtoback_per_replay_us": 83.882,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 156.74,
+     "med_us": 162.4,
+     "p90_us": 173.38,
+     "max_us": 218.96
+    }
+   }
+  },
+  "13": {
+   "B": 6,
+   "V": 2304,
+   "use_split": false,
+   "S": 2,
+   "n_launch": 2,
+   "capture_ok": true,
+   "capture_wall_ms": 3.527,
+   "bitwise_equal_to_eager": true,
+   "per_output_bitwise": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "L0_bare": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 10.671,
+     "med_us": 11.28,
+     "p90_us": 20.87,
+     "max_us": 32.68
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 64.691,
+     "med_us": 65.541,
+     "p90_us": 66.721,
+     "max_us": 71.352
+    },
+    "backtoback_per_replay_us": 40.419,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 44.48,
+     "med_us": 45.28,
+     "p90_us": 45.7,
+     "max_us": 61.3
+    }
+   },
+   "L5_harness": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 12.4,
+     "med_us": 13.22,
+     "p90_us": 14.93,
+     "max_us": 58.301
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 66.861,
+     "med_us": 68.792,
+     "p90_us": 69.802,
+     "max_us": 85.452
+    },
+    "backtoback_per_replay_us": 39.793,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 155.8,
+     "med_us": 161.42,
+     "p90_us": 167.98,
+     "max_us": 242.06
+    }
+   }
+  },
+  "7": {
+   "B": 4,
+   "V": 152064,
+   "use_split": true,
+   "S": 10,
+   "n_launch": 4,
+   "capture_ok": true,
+   "capture_wall_ms": 3.851,
+   "bitwise_equal_to_eager": true,
+   "per_output_bitwise": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "L0_bare": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 10.771,
+     "med_us": 11.44,
+     "p90_us": 13.22,
+     "max_us": 20.58
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 232.034,
+     "med_us": 236.795,
+     "p90_us": 240.515,
+     "max_us": 244.645
+    },
+    "backtoback_per_replay_us": 206.013,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 209.94,
+     "med_us": 211.84,
+     "p90_us": 213.14,
+     "max_us": 220.0
+    }
+   },
+   "L5_harness": {
+    "replay_host_async": {
+     "n": 25,
+     "min_us": 12.89,
+     "med_us": 13.521,
+     "p90_us": 15.91,
+     "max_us": 60.842
+    },
+    "replay_serial_host_plus_device": {
+     "n": 25,
+     "min_us": 232.764,
+     "med_us": 235.205,
+     "p90_us": 238.394,
+     "max_us": 254.435
+    },
+    "backtoback_per_replay_us": 206.039,
+    "replay_span_events": {
+     "n": 25,
+     "min_us": 265.06,
+     "med_us": 272.96,
+     "p90_us": 277.42,
+     "max_us": 362.88
+    }
+   }
+  }
+ },
+ "marginal": {
+  "3": {
+   "B": 8,
+   "V": 16384,
+   "S": 4,
+   "chain2": {
+    "n_launch": 2,
+    "eager": {
+     "n_launch": 2,
+     "host_async": {
+      "n": 25,
+      "min_us": 387.277,
+      "med_us": 391.977,
+      "p90_us": 414.217,
+      "max_us": 425.128
+     },
+     "serial": {
+      "n": 25,
+      "min_us": 423.428,
+      "med_us": 428.918,
+      "p90_us": 442.578,
+      "max_us": 458.388
+     }
+    },
+    "L0": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 10.71,
+      "med_us": 11.5,
+      "p90_us": 14.41,
+      "max_us": 503.56
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 134.203,
+      "med_us": 135.453,
+      "p90_us": 137.352,
+      "max_us": 141.622
+     },
+     "backtoback_per_replay_us": 109.663,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 114.58,
+      "med_us": 115.1,
+      "p90_us": 126.82,
+      "max_us": 127.96
+     }
+    },
+    "L5": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 12.73,
+      "med_us": 13.561,
+      "p90_us": 15.45,
+      "max_us": 57.211
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 135.753,
+      "med_us": 137.032,
+      "p90_us": 139.282,
+      "max_us": 147.283
+     },
+     "backtoback_per_replay_us": 109.89,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 174.16,
+      "med_us": 177.14,
+      "p90_us": 184.2,
+      "max_us": 229.68
+     }
+    },
+    "ok": true
+   },
+   "chain4": {
+    "n_launch": 4,
+    "eager": {
+     "n_launch": 4,
+     "host_async": {
+      "n": 25,
+      "min_us": 713.903,
+      "med_us": 724.103,
+      "p90_us": 747.614,
+      "max_us": 754.644
+     },
+     "serial": {
+      "n": 25,
+      "min_us": 741.113,
+      "med_us": 748.494,
+      "p90_us": 783.444,
+      "max_us": 807.185
+     }
+    },
+    "L0": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 10.83,
+      "med_us": 11.68,
+      "p90_us": 14.53,
+      "max_us": 557.17
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 108.802,
+      "med_us": 109.882,
+      "p90_us": 111.252,
+      "max_us": 114.042
+     },
+     "backtoback_per_replay_us": 83.256,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 88.22,
+      "med_us": 88.58,
+      "p90_us": 99.14,
+      "max_us": 113.04
+     }
+    },
+    "L5": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 12.52,
+      "med_us": 13.45,
+      "p90_us": 15.231,
+      "max_us": 55.711
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 109.162,
+      "med_us": 110.582,
+      "p90_us": 113.592,
+      "max_us": 115.512
+     },
+     "backtoback_per_replay_us": 83.259,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 154.0,
+      "med_us": 164.06,
+      "p90_us": 180.38,
+      "max_us": 264.78
+     }
+    },
+    "ok": true
+   },
+   "marginal_host_per_extra_launch_L0_us": 0.09,
+   "marginal_serial_per_extra_launch_L0_us": -12.785,
+   "HEAD_TO_HEAD": {
+    "eager_serial_chain2_us": 428.918,
+    "eager_serial_chain4_us": 748.494,
+    "eager_serial_chain4_over_chain2": 1.7451,
+    "captured_serial_chain2_us": 135.453,
+    "captured_serial_chain4_us": 109.882,
+    "captured_serial_chain4_over_chain2": 0.8112,
+    "eager_b2b_chain2_us": 391.977,
+    "eager_b2b_chain4_us": 724.103,
+    "captured_b2b_chain2_us": 109.663,
+    "captured_b2b_chain4_us": 83.256,
+    "captured_b2b_chain4_over_chain2": 0.7592
+   }
+  },
+  "7": {
+   "B": 4,
+   "V": 152064,
+   "S": 10,
+   "chain2": {
+    "n_launch": 2,
+    "eager": {
+     "n_launch": 2,
+     "host_async": {
+      "n": 25,
+      "min_us": 388.827,
+      "med_us": 395.877,
+      "p90_us": 413.558,
+      "max_us": 423.997
+     },
+     "serial": {
+      "n": 25,
+      "min_us": 937.207,
+      "med_us": 942.577,
+      "p90_us": 949.967,
+      "max_us": 962.078
+     }
+    },
+    "L0": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 10.75,
+      "med_us": 12.441,
+      "p90_us": 19.15,
+      "max_us": 512.54
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 755.644,
+      "med_us": 762.834,
+      "p90_us": 766.094,
+      "max_us": 776.884
+     },
+     "backtoback_per_replay_us": 732.114,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 734.72,
+      "med_us": 736.76,
+      "p90_us": 748.02,
+      "max_us": 751.22
+     }
+    },
+    "L5": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 13.121,
+      "med_us": 15.71,
+      "p90_us": 18.941,
+      "max_us": 57.691
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 758.184,
+      "med_us": 761.684,
+      "p90_us": 764.934,
+      "max_us": 792.975
+     },
+     "backtoback_per_replay_us": 730.963,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 789.36,
+      "med_us": 803.84,
+      "p90_us": 805.98,
+      "max_us": 847.28
+     }
+    },
+    "ok": true
+   },
+   "chain4": {
+    "n_launch": 4,
+    "eager": {
+     "n_launch": 4,
+     "host_async": {
+      "n": 25,
+      "min_us": 714.013,
+      "med_us": 722.753,
+      "p90_us": 757.714,
+      "max_us": 776.305
+     },
+     "serial": {
+      "n": 25,
+      "min_us": 742.214,
+      "med_us": 754.804,
+      "p90_us": 782.614,
+      "max_us": 798.645
+     }
+    },
+    "L0": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 10.8,
+      "med_us": 11.421,
+      "p90_us": 13.35,
+      "max_us": 548.68
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 232.014,
+      "med_us": 235.294,
+      "p90_us": 238.554,
+      "max_us": 240.425
+     },
+     "backtoback_per_replay_us": 205.811,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 209.9,
+      "med_us": 211.32,
+      "p90_us": 219.96,
+      "max_us": 223.52
+     }
+    },
+    "L5": {
+     "replay_host_async": {
+      "n": 25,
+      "min_us": 12.85,
+      "med_us": 13.97,
+      "p90_us": 15.54,
+      "max_us": 56.531
+     },
+     "replay_serial_host_plus_device": {
+      "n": 25,
+      "min_us": 232.694,
+      "med_us": 235.754,
+      "p90_us": 239.035,
+      "max_us": 321.946
+     },
+     "backtoback_per_replay_us": 205.714,
+     "replay_span_events": {
+      "n": 25,
+      "min_us": 266.62,
+      "med_us": 274.84,
+      "p90_us": 278.68,
+      "max_us": 357.24
+     }
+    },
+    "ok": true
+   },
+   "marginal_host_per_extra_launch_L0_us": -0.51,
+   "marginal_serial_per_extra_launch_L0_us": -263.77,
+   "HEAD_TO_HEAD": {
+    "eager_serial_chain2_us": 942.577,
+    "eager_serial_chain4_us": 754.804,
+    "eager_serial_chain4_over_chain2": 0.8008,
+    "captured_serial_chain2_us": 762.834,
+    "captured_serial_chain4_us": 235.294,
+    "captured_serial_chain4_over_chain2": 0.3084,
+    "eager_b2b_chain2_us": 395.877,
+    "eager_b2b_chain4_us": 722.753,
+    "captured_b2b_chain2_us": 732.114,
+    "captured_b2b_chain4_us": 205.811,
+    "captured_b2b_chain4_over_chain2": 0.2811
+   }
+  }
+ },
+ "eager_vs_captured": {
+  "1": {
+   "n_launch": 2,
+   "eager_L0_per_launch": 202.919,
+   "cap_L0_per_launch": 5.551,
+   "ratio_L0": 0.0274,
+   "eager_L5_per_launch": 537.365,
+   "cap_L5_per_launch": 6.44,
+   "ratio_L5": 0.012
+  },
+  "3": {
+   "n_launch": 4,
+   "eager_L0_per_launch": 198.104,
+   "cap_L0_per_launch": 2.815,
+   "ratio_L0": 0.0142,
+   "eager_L5_per_launch": 464.046,
+   "cap_L5_per_launch": 3.305,
+   "ratio_L5": 0.0071
+  },
+  "13": {
+   "n_launch": 2,
+   "eager_L0_per_launch": 205.819,
+   "cap_L0_per_launch": 5.64,
+   "ratio_L0": 0.0274,
+   "eager_L5_per_launch": 534.77,
+   "cap_L5_per_launch": 6.61,
+   "ratio_L5": 0.0124
+  },
+  "7": {
+   "n_launch": 4,
+   "eager_L0_per_launch": 196.464,
+   "cap_L0_per_launch": 2.86,
+   "ratio_L0": 0.0146,
+   "eager_L5_per_launch": 464.506,
+   "cap_L5_per_launch": 3.38,
+   "ratio_L5": 0.0073
+  }
+ }
+}

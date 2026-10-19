@@ -1,0 +1,4419 @@
+{
+ "pass_configs": {
+  "r4_topk_stats_splitA": "R4_PASS_CONFIGS",
+  "r4_topk_stats_splitB": "R4_PASS_CONFIGS",
+  "r4_gumbel_sample_splitA": "R4_PASS_CONFIGS",
+  "r4_gumbel_sample_splitB": "R4_PASS_CONFIGS"
+ },
+ "rows": [
+  {
+   "kernel": "K1A",
+   "label": "L0-A1",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "4",
+    "-1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A1",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A1",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "True"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-A1",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "4096",
+    "2",
+    "4"
+   ],
+   "compile_s": 5.3
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-A1",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "2"
+   ],
+   "compile_s": 4.7
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-A2",
+   "ub": 94208,
+   "ub_region": 196352,
+   "ub_pct": 47.98,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    512
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "4",
+    "9"
+   ],
+   "compile_s": 5.4
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A2",
+   "ub": 85604,
+   "ub_region": 196352,
+   "ub_pct": 43.6,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    10,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A2",
+   "ub": 85668,
+   "ub_region": 196352,
+   "ub_pct": 43.63,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    10,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "True"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-A2",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "4096",
+    "10",
+    "4"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-A2",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    10
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "10"
+   ],
+   "compile_s": 4.7
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-A3",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "1",
+    "-1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A3",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A3",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-A3",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "4096",
+    "4",
+    "1"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-A3",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "4"
+   ],
+   "compile_s": 4.9
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-A4",
+   "ub": 45056,
+   "ub_region": 196352,
+   "ub_pct": 22.95,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ],
+    [
+     128,
+     64,
+     2048
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "1",
+    "-1"
+   ],
+   "compile_s": 5.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A4",
+   "ub": 40036,
+   "ub_region": 196352,
+   "ub_pct": 20.39,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    8,
+    128
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "False"
+   ],
+   "compile_s": 5.7
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-A4",
+   "ub": 40100,
+   "ub_region": 196352,
+   "ub_pct": 20.42,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    8,
+    128
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-A4",
+   "ub": 74436,
+   "ub_region": 196352,
+   "ub_pct": 37.91,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "2048",
+    "8",
+    "1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-A4",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    8
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "8"
+   ],
+   "compile_s": 4.6
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-B1",
+   "ub": 92416,
+   "ub_region": 196352,
+   "ub_pct": 47.07,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     9,
+     288
+    ],
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    288
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20737",
+    "256",
+    "4096",
+    "6",
+    "1",
+    "5"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B1",
+   "ub": 82628,
+   "ub_region": 196352,
+   "ub_pct": 42.08,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20737",
+    "256",
+    "4096",
+    "6",
+    "False"
+   ],
+   "compile_s": 5.7
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B1",
+   "ub": 82692,
+   "ub_region": 196352,
+   "ub_pct": 42.11,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20737",
+    "256",
+    "4096",
+    "6",
+    "True"
+   ],
+   "compile_s": 5.7
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-B1",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20737",
+    "4096",
+    "6",
+    "1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-B1",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    6
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "6"
+   ],
+   "compile_s": 4.6
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-B2",
+   "ub": 92672,
+   "ub_region": 196352,
+   "ub_pct": 47.2,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     10,
+     320
+    ],
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    320
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20793",
+    "256",
+    "4096",
+    "6",
+    "1",
+    "5"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B2",
+   "ub": 83300,
+   "ub_region": 196352,
+   "ub_pct": 42.42,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20793",
+    "256",
+    "4096",
+    "6",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B2",
+   "ub": 83364,
+   "ub_region": 196352,
+   "ub_pct": 42.46,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20793",
+    "256",
+    "4096",
+    "6",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-B2",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20793",
+    "4096",
+    "6",
+    "1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-B2",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    6
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "6"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-B3",
+   "ub": 94208,
+   "ub_region": 196352,
+   "ub_pct": 47.98,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    512
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20991",
+    "256",
+    "4096",
+    "6",
+    "1",
+    "5"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B3",
+   "ub": 85604,
+   "ub_region": 196352,
+   "ub_pct": 43.6,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20991",
+    "256",
+    "4096",
+    "6",
+    "False"
+   ],
+   "compile_s": 5.7
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B3",
+   "ub": 85668,
+   "ub_region": 196352,
+   "ub_pct": 43.63,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20991",
+    "256",
+    "4096",
+    "6",
+    "True"
+   ],
+   "compile_s": 5.7
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-B3",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20991",
+    "4096",
+    "6",
+    "1"
+   ],
+   "compile_s": 5.7
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-B3",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    6
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "6"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-B4",
+   "ub": 92416,
+   "ub_region": 196352,
+   "ub_pct": 47.07,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     9,
+     288
+    ],
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    288
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20741",
+    "256",
+    "4096",
+    "6",
+    "1",
+    "5"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B4",
+   "ub": 82628,
+   "ub_region": 196352,
+   "ub_pct": 42.08,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20741",
+    "256",
+    "4096",
+    "6",
+    "False"
+   ],
+   "compile_s": 5.7
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B4",
+   "ub": 82692,
+   "ub_region": 196352,
+   "ub_pct": 42.11,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    5,
+    6,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20741",
+    "256",
+    "4096",
+    "6",
+    "True"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-B4",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "20741",
+    "4096",
+    "6",
+    "1"
+   ],
+   "compile_s": 5.3
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-B4",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    6
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "6"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-B5",
+   "ub": 96768,
+   "ub_region": 196352,
+   "ub_pct": 49.28,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     26,
+     832
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    832
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    19
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "19",
+    "1"
+   ],
+   "compile_s": 5.3
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B5",
+   "ub": 89444,
+   "ub_region": 196352,
+   "ub_pct": 45.55,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-B5",
+   "ub": 89508,
+   "ub_region": 196352,
+   "ub_pct": 45.59,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-B5",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    19
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "4096",
+    "2",
+    "19"
+   ],
+   "compile_s": 5.3
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-B5",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "2"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-C1",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "20",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "4",
+    "-1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-C1",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "20",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-C1",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "20",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-C1",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "20",
+    "32768",
+    "4096",
+    "2",
+    "4"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-C1",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "20",
+    "2"
+   ],
+   "compile_s": 4.7
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-C2",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    8
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "22",
+    "32768",
+    "256",
+    "4096",
+    "1",
+    "8",
+    "-1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-C2",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "22",
+    "32768",
+    "256",
+    "4096",
+    "1",
+    "False"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-C2",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "22",
+    "32768",
+    "256",
+    "4096",
+    "1",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-C2",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    8
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "22",
+    "32768",
+    "4096",
+    "1",
+    "8"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-C2",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "22",
+    "1"
+   ],
+   "compile_s": 4.7
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-C3",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    8
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "40",
+    "32768",
+    "256",
+    "4096",
+    "1",
+    "8",
+    "-1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-C3",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "40",
+    "32768",
+    "256",
+    "4096",
+    "1",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-C3",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "40",
+    "32768",
+    "256",
+    "4096",
+    "1",
+    "True"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-C3",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    8
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "40",
+    "32768",
+    "4096",
+    "1",
+    "8"
+   ],
+   "compile_s": 5.3
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-C3",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "40",
+    "1"
+   ],
+   "compile_s": 4.7
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-E1",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "2",
+    "16384",
+    "256",
+    "4096",
+    "1",
+    "4",
+    "-1"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-E1",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "2",
+    "16384",
+    "256",
+    "4096",
+    "1",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-E1",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "2",
+    "16384",
+    "256",
+    "4096",
+    "1",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-E1",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "2",
+    "16384",
+    "4096",
+    "1",
+    "4"
+   ],
+   "compile_s": 5.4
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-E1",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "2",
+    "1"
+   ],
+   "compile_s": 4.6
+  },
+  {
+   "kernel": "K1A",
+   "label": "L0-F1",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "10",
+    "20480",
+    "256",
+    "4096",
+    "3",
+    "2",
+    "-1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-F1",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    3,
+    5,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "10",
+    "20480",
+    "256",
+    "4096",
+    "3",
+    "False"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K1B",
+   "label": "L0-F1",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    3,
+    5,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "10",
+    "20480",
+    "256",
+    "4096",
+    "3",
+    "True"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K2gA",
+   "label": "L0-F1",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "10",
+    "20480",
+    "4096",
+    "3",
+    "2"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "L0-F1",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    3
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "10",
+    "3"
+   ],
+   "compile_s": 4.5
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb3",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "1",
+    "-1"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb3",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "False"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb3",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "True"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb3",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "16384",
+    "4096",
+    "4",
+    "1"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb3",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "4"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb4",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "1",
+    "-1"
+   ],
+   "compile_s": 4.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb4",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "False"
+   ],
+   "compile_s": 5.6
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb4",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    4,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "True"
+   ],
+   "compile_s": 5.6
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb4",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "4096",
+    "4",
+    "1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb4",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "4"
+   ],
+   "compile_s": 4.5
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb7",
+   "ub": 94208,
+   "ub_region": 196352,
+   "ub_pct": 47.98,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    512
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "4",
+    "9"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb7",
+   "ub": 85604,
+   "ub_region": 196352,
+   "ub_pct": 43.6,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    10,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "False"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb7",
+   "ub": 85668,
+   "ub_region": 196352,
+   "ub_pct": 43.63,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    10,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "True"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb7",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "152064",
+    "4096",
+    "10",
+    "4"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb7",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    10
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "10"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb8",
+   "ub": 45056,
+   "ub_region": 196352,
+   "ub_pct": 22.95,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ],
+    [
+     128,
+     64,
+     2048
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "1",
+    "-1"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb8",
+   "ub": 40036,
+   "ub_region": 196352,
+   "ub_pct": 20.39,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    8,
+    128
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "False"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb8",
+   "ub": 40100,
+   "ub_region": 196352,
+   "ub_pct": 20.42,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    8,
+    128
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "True"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb8",
+   "ub": 74436,
+   "ub_region": 196352,
+   "ub_pct": 37.91,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "16384",
+    "2048",
+    "8",
+    "1"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb8",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    8
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "4",
+    "8"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb12",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "4",
+    "-1"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb12",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb12",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    8,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "True"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb12",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "4096",
+    "2",
+    "4"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb12",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "2"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb17",
+   "ub": 96768,
+   "ub_region": 196352,
+   "ub_pct": 49.28,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     26,
+     832
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    832
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    19
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "19",
+    "1"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb17",
+   "ub": 89444,
+   "ub_region": 196352,
+   "ub_pct": 45.55,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb17",
+   "ub": 89508,
+   "ub_region": 196352,
+   "ub_pct": 45.59,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    37,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "True"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb17",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    19
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "152377",
+    "4096",
+    "2",
+    "19"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb17",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "2"
+   ],
+   "compile_s": 0.0
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb5",
+   "ub": 92672,
+   "ub_region": 196352,
+   "ub_pct": 47.2,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     10,
+     320
+    ],
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    320
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "7",
+    "4409",
+    "256",
+    "4096",
+    "2",
+    "1",
+    "1"
+   ],
+   "compile_s": 5.3
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb5",
+   "ub": 83300,
+   "ub_region": 196352,
+   "ub_pct": 42.42,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    2,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "7",
+    "4409",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb5",
+   "ub": 83364,
+   "ub_region": 196352,
+   "ub_pct": 42.46,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    2,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "7",
+    "4409",
+    "256",
+    "4096",
+    "2",
+    "True"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb5",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "7",
+    "4409",
+    "4096",
+    "2",
+    "1"
+   ],
+   "compile_s": 5.3
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb5",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "7",
+    "2"
+   ],
+   "compile_s": 4.8
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb6",
+   "ub": 106496,
+   "ub_region": 196352,
+   "ub_pct": 54.24,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     64,
+     2048
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    2048
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "10240",
+    "256",
+    "4096",
+    "3",
+    "1",
+    "2"
+   ],
+   "compile_s": 5.5
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb6",
+   "ub": 104036,
+   "ub_region": 196352,
+   "ub_pct": 52.98,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    3,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "10240",
+    "256",
+    "4096",
+    "3",
+    "False"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb6",
+   "ub": 104100,
+   "ub_region": 196352,
+   "ub_pct": 53.02,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    3,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "10240",
+    "256",
+    "4096",
+    "3",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb6",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "10240",
+    "4096",
+    "3",
+    "1"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb6",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    3
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "3"
+   ],
+   "compile_s": 4.7
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb11",
+   "ub": 90112,
+   "ub_region": 196352,
+   "ub_pct": 45.89,
+   "nbuf": 7,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "8192",
+    "256",
+    "4096",
+    "2",
+    "1",
+    "-1"
+   ],
+   "compile_s": 5.1
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb11",
+   "ub": 79460,
+   "ub_region": 196352,
+   "ub_pct": 40.47,
+   "nbuf": 35,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "8192",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "compile_s": 5.9
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb11",
+   "ub": 79524,
+   "ub_region": 196352,
+   "ub_pct": 40.5,
+   "nbuf": 37,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "8192",
+    "256",
+    "4096",
+    "2",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb11",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "8192",
+    "4096",
+    "2",
+    "1"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb11",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "2"
+   ],
+   "compile_s": 4.6
+  },
+  {
+   "kernel": "K1A",
+   "label": "cb13",
+   "ub": 47104,
+   "ub_region": 196352,
+   "ub_pct": 23.99,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ],
+    [
+     128,
+     64,
+     2048
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128,
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "6",
+    "2304",
+    "128",
+    "2048",
+    "2",
+    "1",
+    "1"
+   ],
+   "compile_s": 5.4
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb13",
+   "ub": 43108,
+   "ub_region": 196352,
+   "ub_pct": 21.95,
+   "nbuf": 38,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    2,
+    128
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "6",
+    "2304",
+    "128",
+    "2048",
+    "2",
+    "False"
+   ],
+   "compile_s": 5.8
+  },
+  {
+   "kernel": "K1B",
+   "label": "cb13",
+   "ub": 43172,
+   "ub_region": 196352,
+   "ub_pct": 21.99,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     128,
+     8,
+     256
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    128
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 2,
+   "for_bounds": [
+    2,
+    128
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "6",
+    "2304",
+    "128",
+    "2048",
+    "2",
+    "True"
+   ],
+   "compile_s": 6.0
+  },
+  {
+   "kernel": "K2gA",
+   "label": "cb13",
+   "ub": 74436,
+   "ub_region": 196352,
+   "ub_pct": 37.91,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "6",
+    "2304",
+    "2048",
+    "2",
+    "1"
+   ],
+   "compile_s": 5.2
+  },
+  {
+   "kernel": "K2gB",
+   "label": "cb13",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "6",
+    "2"
+   ],
+   "compile_s": 4.7
+  }
+ ],
+ "fails": [],
+ "worst": {
+  "K1A": {
+   "kernel": "K1A",
+   "label": "cb6",
+   "ub": 106496,
+   "ub_region": 196352,
+   "ub_pct": 54.24,
+   "nbuf": 9,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ],
+    [
+     256,
+     64,
+     2048
+    ],
+    [
+     256,
+     128,
+     4096
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256,
+    2048
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 0,
+   "for_bounds": [],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "10240",
+    "256",
+    "4096",
+    "3",
+    "1",
+    "2"
+   ],
+   "compile_s": 5.5
+  },
+  "K1B": {
+   "kernel": "K1B",
+   "label": "cb6",
+   "ub": 104100,
+   "ub_region": 196352,
+   "ub_pct": 53.02,
+   "nbuf": 40,
+   "ub_ok": true,
+   "topk_calls": [
+    [
+     256,
+     16,
+     512
+    ]
+   ],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [
+    256
+   ],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 3,
+   "for_bounds": [
+    2,
+    3,
+    256
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "8",
+    "10240",
+    "256",
+    "4096",
+    "3",
+    "True"
+   ],
+   "compile_s": 5.8
+  },
+  "K2gA": {
+   "kernel": "K2gA",
+   "label": "L0-A1",
+   "ub": 148420,
+   "ub_region": 196352,
+   "ub_pct": 75.59,
+   "nbuf": 15,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    4
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "32768",
+    "4096",
+    "2",
+    "4"
+   ],
+   "compile_s": 5.3
+  },
+  "K2gB": {
+   "kernel": "K2gB",
+   "label": "L0-A1",
+   "ub": 132,
+   "ub_region": 196352,
+   "ub_pct": 0.07,
+   "nbuf": 5,
+   "ub_ok": true,
+   "topk_calls": [],
+   "pad_all_zero": true,
+   "bad_pad": [],
+   "u2u_counts": [],
+   "u2u_all_32B": true,
+   "bad_u2u": [],
+   "n_for": 1,
+   "for_bounds": [
+    2
+   ],
+   "dyn_bounds": [],
+   "static_ok": true,
+   "args": [
+    "16",
+    "2"
+   ],
+   "compile_s": 4.7
+  }
+ },
+ "verdict": true
+}

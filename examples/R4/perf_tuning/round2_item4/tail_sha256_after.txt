@@ -1,0 +1,8 @@
+file                 : r4_fused_sampling.py
+tail marker at line  : 239  (1-based)
+epilogue marker line : 271  (1-based)
+marker-bounded span  : L239..L270  (32 lines)
+  sha256             : 37f19e3eac4548103ae5d2232075bd057c6ebeb013eb042cc8f95d65ff1618c8
+strict 31-line span  : L239..L269
+  sha256             : 098e4bc131cd81eb183ffbdb45ca8ebee437089f99c22d7ecaebd2d941deb608
+  last line          : '                    T.tile.gather_mask(run_v, m_dst, "P0101")'

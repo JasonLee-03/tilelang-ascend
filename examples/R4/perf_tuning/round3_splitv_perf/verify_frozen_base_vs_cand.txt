@@ -1,0 +1,9 @@
+frozen-kernel byte-identity: history_version/r4_fused_sampling_impl_s2r3_attempt1_base.py
+                          vs r4_fused_sampling.py
+  r4_topk_stats          old L91-364 (16387B) sha256=d39090631598f07d1007917b…
+                         new L91-364 (16387B) sha256=d39090631598f07d1007917b…  BYTE-IDENTICAL
+  r4_mask_sample         old L367-412 (2221B) sha256=f787d1ad05a9fc26913b98de…
+                         new L367-412 (2221B) sha256=f787d1ad05a9fc26913b98de…  BYTE-IDENTICAL
+  r4_gumbel_sample       old L415-555 (10306B) sha256=ca90de8d0f6f4f69f366f380…
+                         new L415-555 (10306B) sha256=ca90de8d0f6f4f69f366f380…  BYTE-IDENTICAL
+RESULT: ALL 3 FROZEN KERNELS BYTE-IDENTICAL

@@ -1,0 +1,369 @@
+{
+ "_meta": {
+  "purpose": "separate disclosure of JIT compile cost for the 4 NEW rev3 split kernels; excluded from every performance number in round 3 (hard constraint 7)",
+  "measurement": "host wall-clock of the tilelang.jit call against a FRESH TILELANG_CACHE_DIR",
+  "fresh_cache_dir": "/tmp/opencode/r4_tl_cache_r3cold",
+  "kernel_sha256_before": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+  "kernel_sha256_after": "a764e117ce150d8677096c2e00bde3db3ebc3ec16aba63e4c613d8dffdfbd117",
+  "kernel_file_unmodified": true,
+  "cube_core_num": 20,
+  "split_cases": [
+   3,
+   4,
+   7,
+   8,
+   12,
+   17
+  ]
+ },
+ "n_distinct_specializations": 23,
+ "n_invocations": 24,
+ "total_cold_compile_s": 117.16,
+ "mean_cold_compile_s": 5.09,
+ "per_kernel_total_s": {
+  "K1A": 30.05,
+  "K1B": 34.23,
+  "K2gA": 30.32,
+  "K2gB": 22.56
+ },
+ "cache_entries_before": 0,
+ "cache_entries_after": 23,
+ "rows": [
+  {
+   "case": 3,
+   "kernel": "K1A",
+   "fn": "r4_topk_stats_splitA",
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "1",
+    "-1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.91
+  },
+  {
+   "case": 3,
+   "kernel": "K1B",
+   "fn": "r4_topk_stats_splitB",
+   "args": [
+    "8",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "False"
+   ],
+   "reused_specialization": false,
+   "compile_s": 6.0
+  },
+  {
+   "case": 3,
+   "kernel": "K2gA",
+   "fn": "r4_gumbel_sample_splitA",
+   "args": [
+    "8",
+    "16384",
+    "4096",
+    "4",
+    "1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.06
+  },
+  {
+   "case": 3,
+   "kernel": "K2gB",
+   "fn": "r4_gumbel_sample_splitB",
+   "args": [
+    "8",
+    "4"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.5
+  },
+  {
+   "case": 4,
+   "kernel": "K1A",
+   "fn": "r4_topk_stats_splitA",
+   "args": [
+    "4",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "1",
+    "-1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.9
+  },
+  {
+   "case": 4,
+   "kernel": "K1B",
+   "fn": "r4_topk_stats_splitB",
+   "args": [
+    "4",
+    "16384",
+    "256",
+    "4096",
+    "4",
+    "False"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.6
+  },
+  {
+   "case": 4,
+   "kernel": "K2gA",
+   "fn": "r4_gumbel_sample_splitA",
+   "args": [
+    "4",
+    "16384",
+    "4096",
+    "4",
+    "1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.02
+  },
+  {
+   "case": 4,
+   "kernel": "K2gB",
+   "fn": "r4_gumbel_sample_splitB",
+   "args": [
+    "4",
+    "4"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.49
+  },
+  {
+   "case": 7,
+   "kernel": "K1A",
+   "fn": "r4_topk_stats_splitA",
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "4",
+    "9"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.2
+  },
+  {
+   "case": 7,
+   "kernel": "K1B",
+   "fn": "r4_topk_stats_splitB",
+   "args": [
+    "4",
+    "152064",
+    "256",
+    "4096",
+    "10",
+    "False"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.69
+  },
+  {
+   "case": 7,
+   "kernel": "K2gA",
+   "fn": "r4_gumbel_sample_splitA",
+   "args": [
+    "4",
+    "152064",
+    "4096",
+    "10",
+    "4"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.06
+  },
+  {
+   "case": 7,
+   "kernel": "K2gB",
+   "fn": "r4_gumbel_sample_splitB",
+   "args": [
+    "4",
+    "10"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.52
+  },
+  {
+   "case": 8,
+   "kernel": "K1A",
+   "fn": "r4_topk_stats_splitA",
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "1",
+    "-1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.9
+  },
+  {
+   "case": 8,
+   "kernel": "K1B",
+   "fn": "r4_topk_stats_splitB",
+   "args": [
+    "4",
+    "16384",
+    "128",
+    "2048",
+    "8",
+    "False"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.6
+  },
+  {
+   "case": 8,
+   "kernel": "K2gA",
+   "fn": "r4_gumbel_sample_splitA",
+   "args": [
+    "4",
+    "16384",
+    "2048",
+    "8",
+    "1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.05
+  },
+  {
+   "case": 8,
+   "kernel": "K2gB",
+   "fn": "r4_gumbel_sample_splitB",
+   "args": [
+    "4",
+    "8"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.52
+  },
+  {
+   "case": 12,
+   "kernel": "K1A",
+   "fn": "r4_topk_stats_splitA",
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "4",
+    "-1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.93
+  },
+  {
+   "case": 12,
+   "kernel": "K1B",
+   "fn": "r4_topk_stats_splitB",
+   "args": [
+    "16",
+    "32768",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.66
+  },
+  {
+   "case": 12,
+   "kernel": "K2gA",
+   "fn": "r4_gumbel_sample_splitA",
+   "args": [
+    "16",
+    "32768",
+    "4096",
+    "2",
+    "4"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.07
+  },
+  {
+   "case": 12,
+   "kernel": "K2gB",
+   "fn": "r4_gumbel_sample_splitB",
+   "args": [
+    "16",
+    "2"
+   ],
+   "reused_specialization": false,
+   "compile_s": 4.53
+  },
+  {
+   "case": 17,
+   "kernel": "K1A",
+   "fn": "r4_topk_stats_splitA",
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "19",
+    "1"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.21
+  },
+  {
+   "case": 17,
+   "kernel": "K1B",
+   "fn": "r4_topk_stats_splitB",
+   "args": [
+    "16",
+    "152377",
+    "256",
+    "4096",
+    "2",
+    "False"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.68
+  },
+  {
+   "case": 17,
+   "kernel": "K2gA",
+   "fn": "r4_gumbel_sample_splitA",
+   "args": [
+    "16",
+    "152377",
+    "4096",
+    "2",
+    "19"
+   ],
+   "reused_specialization": false,
+   "compile_s": 5.06
+  },
+  {
+   "case": 17,
+   "kernel": "K2gB",
+   "fn": "r4_gumbel_sample_splitB",
+   "args": [
+    "16",
+    "2"
+   ],
+   "reused_specialization": true,
+   "compile_s": 0.0
+  }
+ ]
+}

@@ -1,0 +1,628 @@
+{
+ "_meta": {
+  "description": "R4 Stage-3 ROUND-2 performance baseline. Round 2 baseline == round 1 CONVERGED values (kernel sha256 ac8eba47...). elapsed_us / speedup / t_hw_us / baseline_perf_us copied VERBATIM from the round-1 cann-bench msprof performance reports (msprof kernel_details.csv, warmup=3 repeat=5, median-of-sums per step). NO Python/torch timing was used.",
+  "round": 2,
+  "data_source": "reused-round1-converged-msprof-reports",
+  "source_reports": [
+   "cann_performance_eval_20261010_012731.json",
+   "cann_performance_eval_20261010_012928.json"
+  ],
+  "source_report_stage": "cann_performance_eval (result_stage=performance, contains_performance=true)",
+  "kernel_sha256": "ac8eba47f77e11342eabb9c4e30a44531b3e655b481b0dc28fd5a66a2738fc5b",
+  "kernel_sha256_matches_submission_copy": true,
+  "submission_copy_sha256": "ac8eba47f77e11342eabb9c4e30a44531b3e655b481b0dc28fd5a66a2738fc5b",
+  "hardware": "Ascend910_9362 (910b2), cube_core=20 vec_core=40",
+  "software": "CANN 9.2.0 / torch_npu 2.7.1.post4 / python 3.12.9 / tilelang 0.1.4+d75300ed",
+  "measurement": "cann-bench run_evaluation.sh -> msprof kernel_details.csv",
+  "task_composition": {
+   "r4_fused_sampling": "K1 r4_topk_stats + K2g r4_gumbel_sample (FUSE_GUMBEL=True) -> tok_out",
+   "r4_mask_sample": "K1 r4_topk_stats + K2m r4_mask_sample (FUSE_GUMBEL=False) -> w_out"
+  },
+  "noise_threshold_pct": 3.0,
+  "bv_in_effect": "BV is NOT a kernel-internal free parameter: it is supplied per case by case.attrs (cases.yaml/cases.csv) and forwarded by keyword (param_builder.py:203-206 -> evaluator.py:437 -> r4_ops.py:37 BV=BV). 16/18 cases use BV=4096; cases 8 & 13 use BV=2048 (K_MAX=128). The kernel default at r4_fused_sampling.py:545 is dead on every measured path."
+ },
+ "r4_fused_sampling": {
+  "_source_report": "cann_performance_eval_20261010_012731.json",
+  "_eval_code": "cann_performance_eval_20261010_012731",
+  "_timestamp": "2026-10-10T01:27:31.903381",
+  "_torch_baseline_source": "bench/metadata_staging/baseline_raw_910b2_18cases.json (unfused torch/torch_npu composition, same msprof code path)",
+  "n_cases": 18,
+  "passed_cases": 18,
+  "failed_cases": 0,
+  "overall_score": 59.209604047546,
+  "avg_speedup_reported": 0.2572029484880485,
+  "geomean_speedup_vs_torch": 10.3503,
+  "cases": {
+   "1": {
+    "elapsed_us": 35.24,
+    "torch_baseline_us": 215.6,
+    "speedup_vs_torch": 6.118,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.838,
+    "hap_speedup_field": 0.28376844494892167,
+    "perf_score": 0.20814061054579092,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 35.24
+     }
+    }
+   },
+   "2": {
+    "elapsed_us": 42.24,
+    "torch_baseline_us": 393.85,
+    "speedup_vs_torch": 9.3241,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.367,
+    "hap_speedup_field": 0.23674242424242423,
+    "perf_score": 0.17914012738853502,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 42.24
+     }
+    }
+   },
+   "3": {
+    "elapsed_us": 100.16,
+    "torch_baseline_us": 789.37,
+    "speedup_vs_torch": 7.8811,
+    "t_hw_us": 1.06,
+    "roofline_attain_pct": 1.058,
+    "hap_speedup_field": 0.10583067092651757,
+    "perf_score": 0.08781296023564066,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 100.16
+     }
+    }
+   },
+   "4": {
+    "elapsed_us": 85.58,
+    "torch_baseline_us": 651.64,
+    "speedup_vs_torch": 7.6144,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.168,
+    "hap_speedup_field": 0.11684973124561814,
+    "perf_score": 0.09617439623851251,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 85.58
+     }
+    }
+   },
+   "5": {
+    "elapsed_us": 55.28,
+    "torch_baseline_us": 609.25,
+    "speedup_vs_torch": 11.0212,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.809,
+    "hap_speedup_field": 0.1808972503617945,
+    "perf_score": 0.14222503160556257,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 55.28
+     }
+    }
+   },
+   "6": {
+    "elapsed_us": 77.38,
+    "torch_baseline_us": 673.59,
+    "speedup_vs_torch": 8.705,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.292,
+    "hap_speedup_field": 0.12923235978288963,
+    "perf_score": 0.10541110330288124,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 77.38
+     }
+    }
+   },
+   "7": {
+    "elapsed_us": 731.74,
+    "torch_baseline_us": 2465.97,
+    "speedup_vs_torch": 3.37,
+    "t_hw_us": 4.89,
+    "roofline_attain_pct": 0.668,
+    "hap_speedup_field": 0.06682701505999399,
+    "perf_score": 0.05709207897672729,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 731.74
+     }
+    }
+   },
+   "8": {
+    "elapsed_us": 91.8,
+    "torch_baseline_us": 655.82,
+    "speedup_vs_torch": 7.144,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.089,
+    "hap_speedup_field": 0.10893246187363835,
+    "perf_score": 0.09018036072144289,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 91.8
+     }
+    }
+   },
+   "9": {
+    "elapsed_us": 86.14,
+    "torch_baseline_us": 1215.13,
+    "speedup_vs_torch": 14.1065,
+    "t_hw_us": 2.15,
+    "roofline_attain_pct": 2.496,
+    "hap_speedup_field": 0.24959368469932666,
+    "perf_score": 0.18724598413005614,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 86.14
+     }
+    }
+   },
+   "10": {
+    "elapsed_us": 42.24,
+    "torch_baseline_us": 529.45,
+    "speedup_vs_torch": 12.5343,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.367,
+    "hap_speedup_field": 0.23674242424242423,
+    "perf_score": 0.17914012738853502,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 42.24
+     }
+    }
+   },
+   "11": {
+    "elapsed_us": 62.96,
+    "torch_baseline_us": 618.55,
+    "speedup_vs_torch": 9.8245,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.588,
+    "hap_speedup_field": 0.1588310038119441,
+    "perf_score": 0.12683201803833144,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 62.96
+     }
+    }
+   },
+   "12": {
+    "elapsed_us": 161.54,
+    "torch_baseline_us": 1857.15,
+    "speedup_vs_torch": 11.4965,
+    "t_hw_us": 4.23,
+    "roofline_attain_pct": 2.619,
+    "hap_speedup_field": 0.2618546490033428,
+    "perf_score": 0.19485105947384582,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 161.54
+     }
+    }
+   },
+   "13": {
+    "elapsed_us": 23.38,
+    "torch_baseline_us": 423.23,
+    "speedup_vs_torch": 18.1022,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 4.277,
+    "hap_speedup_field": 0.42771599657827203,
+    "perf_score": 0.28680688336520077,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 23.38
+     }
+    }
+   },
+   "14": {
+    "elapsed_us": 37.42,
+    "torch_baseline_us": 512.95,
+    "speedup_vs_torch": 13.7079,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.672,
+    "hap_speedup_field": 0.2672367717797969,
+    "perf_score": 0.19815059445178335,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 37.42
+     }
+    }
+   },
+   "15": {
+    "elapsed_us": 1476.94,
+    "torch_baseline_us": 26369.69,
+    "speedup_vs_torch": 17.8543,
+    "t_hw_us": 78.31,
+    "roofline_attain_pct": 5.302,
+    "hap_speedup_field": 0.5302178829200915,
+    "perf_score": 0.3350686025615426,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 1476.94
+     }
+    }
+   },
+   "16": {
+    "elapsed_us": 697.48,
+    "torch_baseline_us": 11257.14,
+    "speedup_vs_torch": 16.1397,
+    "t_hw_us": 33.81,
+    "roofline_attain_pct": 4.847,
+    "hap_speedup_field": 0.48474508229626656,
+    "perf_score": 0.3143621637257738,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 697.48
+     }
+    }
+   },
+   "17": {
+    "elapsed_us": 737.88,
+    "torch_baseline_us": 7081.27,
+    "speedup_vs_torch": 9.5968,
+    "t_hw_us": 19.62,
+    "roofline_attain_pct": 2.659,
+    "hap_speedup_field": 0.26589689380387055,
+    "perf_score": 0.19733136650127397,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 737.88
+     }
+    }
+   },
+   "18": {
+    "elapsed_us": 652.26,
+    "torch_baseline_us": 11186.86,
+    "speedup_vs_torch": 17.1509,
+    "t_hw_us": 33.77,
+    "roofline_attain_pct": 5.177,
+    "hap_speedup_field": 0.5177383252077392,
+    "perf_score": 0.32949198846512434,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 652.26
+     }
+    }
+   }
+  }
+ },
+ "r4_mask_sample": {
+  "_source_report": "cann_performance_eval_20261010_012928.json",
+  "_eval_code": "cann_performance_eval_20261010_012928",
+  "_timestamp": "2026-10-10T01:29:28.815732",
+  "_torch_baseline_source": "bench/metadata_staging/baseline_raw_910b2_18cases.json (unfused torch/torch_npu composition, same msprof code path)",
+  "n_cases": 18,
+  "passed_cases": 18,
+  "failed_cases": 0,
+  "overall_score": 58.44669365475441,
+  "avg_speedup_reported": 0.23219521981226857,
+  "geomean_speedup_vs_torch": 15.6911,
+  "cases": {
+   "1": {
+    "elapsed_us": 26.06,
+    "torch_baseline_us": 169.86,
+    "speedup_vs_torch": 6.518,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 3.837,
+    "hap_speedup_field": 0.3837298541826554,
+    "perf_score": 0.26423957721667646,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 26.06
+     }
+    }
+   },
+   "2": {
+    "elapsed_us": 34.08,
+    "torch_baseline_us": 386.22,
+    "speedup_vs_torch": 11.3327,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.934,
+    "hap_speedup_field": 0.2934272300469484,
+    "perf_score": 0.21387832699619772,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 34.08
+     }
+    }
+   },
+   "3": {
+    "elapsed_us": 70.4,
+    "torch_baseline_us": 863.49,
+    "speedup_vs_torch": 12.2655,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.42,
+    "hap_speedup_field": 0.14204545454545453,
+    "perf_score": 0.11479591836734693,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 70.4
+     }
+    }
+   },
+   "4": {
+    "elapsed_us": 55.76,
+    "torch_baseline_us": 723.59,
+    "speedup_vs_torch": 12.9769,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.793,
+    "hap_speedup_field": 0.1793400286944046,
+    "perf_score": 0.1411543287327478,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 55.76
+     }
+    }
+   },
+   "5": {
+    "elapsed_us": 39.72,
+    "torch_baseline_us": 531.39,
+    "speedup_vs_torch": 13.3784,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.518,
+    "hap_speedup_field": 0.25176233635448136,
+    "perf_score": 0.18860016764459347,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 39.72
+     }
+    }
+   },
+   "6": {
+    "elapsed_us": 54.62,
+    "torch_baseline_us": 610.67,
+    "speedup_vs_torch": 11.1803,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.831,
+    "hap_speedup_field": 0.18308311973636032,
+    "perf_score": 0.14372404982433729,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 54.62
+     }
+    }
+   },
+   "7": {
+    "elapsed_us": 462.58,
+    "torch_baseline_us": 4546.94,
+    "speedup_vs_torch": 9.8295,
+    "t_hw_us": 1.35,
+    "roofline_attain_pct": 0.292,
+    "hap_speedup_field": 0.029184141121535737,
+    "perf_score": 0.025666483586125315,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 462.58
+     }
+    }
+   },
+   "8": {
+    "elapsed_us": 60.0,
+    "torch_baseline_us": 759.62,
+    "speedup_vs_torch": 12.6603,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.667,
+    "hap_speedup_field": 0.16666666666666666,
+    "perf_score": 0.1323529411764706,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 60.0
+     }
+    }
+   },
+   "9": {
+    "elapsed_us": 69.56,
+    "torch_baseline_us": 880.56,
+    "speedup_vs_torch": 12.659,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 1.438,
+    "hap_speedup_field": 0.1437607820586544,
+    "perf_score": 0.11603919546157813,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 69.56
+     }
+    }
+   },
+   "10": {
+    "elapsed_us": 34.12,
+    "torch_baseline_us": 491.69,
+    "speedup_vs_torch": 14.4106,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.931,
+    "hap_speedup_field": 0.29308323563892147,
+    "perf_score": 0.2136752136752137,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 34.12
+     }
+    }
+   },
+   "11": {
+    "elapsed_us": 47.04,
+    "torch_baseline_us": 553.03,
+    "speedup_vs_torch": 11.7566,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 2.126,
+    "hap_speedup_field": 0.21258503401360546,
+    "perf_score": 0.16351744186046513,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 47.04
+     }
+    }
+   },
+   "12": {
+    "elapsed_us": 104.08,
+    "torch_baseline_us": 1776.52,
+    "speedup_vs_torch": 17.0688,
+    "t_hw_us": 1.17,
+    "roofline_attain_pct": 1.124,
+    "hap_speedup_field": 0.11241352805534204,
+    "perf_score": 0.09282440056417489,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 104.08
+     }
+    }
+   },
+   "13": {
+    "elapsed_us": 14.56,
+    "torch_baseline_us": 366.84,
+    "speedup_vs_torch": 25.1951,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 6.868,
+    "hap_speedup_field": 0.6868131868131868,
+    "perf_score": 0.3989361702127659,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 14.56
+     }
+    }
+   },
+   "14": {
+    "elapsed_us": 29.42,
+    "torch_baseline_us": 384.48,
+    "speedup_vs_torch": 13.0687,
+    "t_hw_us": 1.0,
+    "roofline_attain_pct": 3.399,
+    "hap_speedup_field": 0.3399048266485384,
+    "perf_score": 0.2405130946018172,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 29.42
+     }
+    }
+   },
+   "15": {
+    "elapsed_us": 934.84,
+    "torch_baseline_us": 50735.95,
+    "speedup_vs_torch": 54.2723,
+    "t_hw_us": 21.54,
+    "roofline_attain_pct": 2.304,
+    "hap_speedup_field": 0.23041376064353258,
+    "perf_score": 0.1750966436648723,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 934.84
+     }
+    }
+   },
+   "16": {
+    "elapsed_us": 468.68,
+    "torch_baseline_us": 11259.55,
+    "speedup_vs_torch": 24.024,
+    "t_hw_us": 9.34,
+    "roofline_attain_pct": 1.993,
+    "hap_speedup_field": 0.19928309294187932,
+    "perf_score": 0.1546926757453073,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 468.68
+     }
+    }
+   },
+   "17": {
+    "elapsed_us": 473.58,
+    "torch_baseline_us": 14821.87,
+    "speedup_vs_torch": 31.2975,
+    "t_hw_us": 5.4,
+    "roofline_attain_pct": 1.14,
+    "hap_speedup_field": 0.11402508551881414,
+    "perf_score": 0.09404388714733543,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 473.58
+     }
+    }
+   },
+   "18": {
+    "elapsed_us": 426.62,
+    "torch_baseline_us": 13176.61,
+    "speedup_vs_torch": 30.8861,
+    "t_hw_us": 9.3,
+    "roofline_attain_pct": 2.18,
+    "hap_speedup_field": 0.2179925929398528,
+    "perf_score": 0.16705919923356355,
+    "status": "success",
+    "accuracy_passed": true,
+    "op_times": {
+     "device_kernels": {
+      "main_kernel": 426.62
+     }
+    }
+   }
+  }
+ }
+}

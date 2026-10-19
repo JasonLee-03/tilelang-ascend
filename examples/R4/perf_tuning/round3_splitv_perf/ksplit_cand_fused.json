@@ -1,0 +1,778 @@
+{
+ "label": "cand",
+ "task": "fused",
+ "csv": "/mnt/workspace/cann/20261006_R4_V01/tilelang-ascend/examples/R4/bench/reports/prof_data/_batched/r4_fused_sampling/2620899-1791702429714686482/124c18542182426382010d673204c8fc_2620899_20261011150709816_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+ "has_split_api": true,
+ "cube_core_num": 20,
+ "vec_num": 2,
+ "anomaly_rows": 0,
+ "anomaly_detail": [],
+ "per_case": {
+  "1": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 1,
+   "S_TAIL": 0,
+   "B": 2,
+   "V": 256,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 1,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 24.24,
+    "K2g": 10.28
+   },
+   "total_us": 34.38,
+   "blocks": [
+    1,
+    1
+   ],
+   "blocks_expected": [
+    1,
+    1
+   ],
+   "gaps_us": [
+    357.0
+   ],
+   "gap_sum_us": 357.0,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "2": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 1,
+   "S_TAIL": -1,
+   "B": 1,
+   "V": 4096,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 1,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 31.94,
+    "K2g": 10.14
+   },
+   "total_us": 41.98,
+   "blocks": [
+    1,
+    1
+   ],
+   "blocks_expected": [
+    1,
+    1
+   ],
+   "gaps_us": [
+    354.75
+   ],
+   "gap_sum_us": 354.75,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "3": {
+   "n": 5,
+   "path": "SPLIT",
+   "S": 4,
+   "NBS": 1,
+   "S_TAIL": -1,
+   "B": 8,
+   "V": 16384,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 4,
+   "names": [
+    "K1A",
+    "K1B",
+    "K2gA",
+    "K2gB"
+   ],
+   "per_kernel_us": {
+    "K1A": 11.3,
+    "K1B": 32.94,
+    "K2gA": 11.08,
+    "K2gB": 2.08
+   },
+   "total_us": 57.52,
+   "blocks": [
+    16,
+    4,
+    16,
+    4
+   ],
+   "blocks_expected": [
+    16,
+    4,
+    16,
+    4
+   ],
+   "gaps_us": [
+    577.0,
+    397.25,
+    336.5
+   ],
+   "gap_sum_us": 1310.75,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 4
+  },
+  "4": {
+   "n": 5,
+   "path": "SPLIT",
+   "S": 4,
+   "NBS": 1,
+   "S_TAIL": -1,
+   "B": 4,
+   "V": 16384,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 2,
+   "names": [
+    "K1A",
+    "K1B",
+    "K2gA",
+    "K2gB"
+   ],
+   "per_kernel_us": {
+    "K1A": 10.74,
+    "K1B": 18.94,
+    "K2gA": 10.48,
+    "K2gB": 1.54
+   },
+   "total_us": 41.8,
+   "blocks": [
+    8,
+    2,
+    8,
+    2
+   ],
+   "blocks_expected": [
+    8,
+    2,
+    8,
+    2
+   ],
+   "gaps_us": [
+    574.5,
+    413.75,
+    334.75
+   ],
+   "gap_sum_us": 1323.0,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 4
+  },
+  "5": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 2,
+   "NBS": 1,
+   "S_TAIL": 1,
+   "B": 7,
+   "V": 4409,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 4,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 35.34,
+    "K2g": 18.84
+   },
+   "total_us": 54.08,
+   "blocks": [
+    4,
+    4
+   ],
+   "blocks_expected": [
+    4,
+    4
+   ],
+   "gaps_us": [
+    347.5
+   ],
+   "gap_sum_us": 347.5,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "6": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 3,
+   "NBS": 1,
+   "S_TAIL": 2,
+   "B": 8,
+   "V": 10240,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 4,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 49.98,
+    "K2g": 27.22
+   },
+   "total_us": 77.16,
+   "blocks": [
+    4,
+    4
+   ],
+   "blocks_expected": [
+    4,
+    4
+   ],
+   "gaps_us": [
+    331.5
+   ],
+   "gap_sum_us": 331.5,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "7": {
+   "n": 5,
+   "path": "SPLIT",
+   "S": 10,
+   "NBS": 4,
+   "S_TAIL": 9,
+   "B": 4,
+   "V": 152064,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 2,
+   "names": [
+    "K1A",
+    "K1B",
+    "K2gA",
+    "K2gB"
+   ],
+   "per_kernel_us": {
+    "K1A": 42.44,
+    "K1B": 97.1,
+    "K2gA": 36.64,
+    "K2gB": 2.84
+   },
+   "total_us": 179.06,
+   "blocks": [
+    20,
+    2,
+    20,
+    2
+   ],
+   "blocks_expected": [
+    20,
+    2,
+    20,
+    2
+   ],
+   "gaps_us": [
+    542.5,
+    334.75,
+    304.75
+   ],
+   "gap_sum_us": 1182.0,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 4
+  },
+  "8": {
+   "n": 5,
+   "path": "SPLIT",
+   "S": 8,
+   "NBS": 1,
+   "S_TAIL": -1,
+   "B": 4,
+   "V": 16384,
+   "K_MAX": 128,
+   "BV": 2048,
+   "b_num": 2,
+   "names": [
+    "K1A",
+    "K1B",
+    "K2gA",
+    "K2gB"
+   ],
+   "per_kernel_us": {
+    "K1A": 6.46,
+    "K1B": 26.48,
+    "K2gA": 7.4,
+    "K2gB": 2.58
+   },
+   "total_us": 43.04,
+   "blocks": [
+    16,
+    2,
+    16,
+    2
+   ],
+   "blocks_expected": [
+    16,
+    2,
+    16,
+    2
+   ],
+   "gaps_us": [
+    578.5,
+    410.5,
+    342.0
+   ],
+   "gap_sum_us": 1331.0,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 4
+  },
+  "9": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 1,
+   "S_TAIL": -1,
+   "B": 64,
+   "V": 4096,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 32,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 65.3,
+    "K2g": 20.44
+   },
+   "total_us": 85.66,
+   "blocks": [
+    32,
+    32
+   ],
+   "blocks_expected": [
+    32,
+    32
+   ],
+   "gaps_us": [
+    325.75
+   ],
+   "gap_sum_us": 325.75,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "10": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 1,
+   "S_TAIL": -1,
+   "B": 4,
+   "V": 4096,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 2,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 32.26,
+    "K2g": 9.92
+   },
+   "total_us": 42.18,
+   "blocks": [
+    2,
+    2
+   ],
+   "blocks_expected": [
+    2,
+    2
+   ],
+   "gaps_us": [
+    351.25
+   ],
+   "gap_sum_us": 351.25,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "11": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 2,
+   "NBS": 1,
+   "S_TAIL": -1,
+   "B": 8,
+   "V": 8192,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 4,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 44.22,
+    "K2g": 18.76
+   },
+   "total_us": 62.92,
+   "blocks": [
+    4,
+    4
+   ],
+   "blocks_expected": [
+    4,
+    4
+   ],
+   "gaps_us": [
+    350.75
+   ],
+   "gap_sum_us": 350.75,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "12": {
+   "n": 5,
+   "path": "SPLIT",
+   "S": 2,
+   "NBS": 4,
+   "S_TAIL": -1,
+   "B": 16,
+   "V": 32768,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 8,
+   "names": [
+    "K1A",
+    "K1B",
+    "K2gA",
+    "K2gB"
+   ],
+   "per_kernel_us": {
+    "K1A": 40.7,
+    "K1B": 27.96,
+    "K2gA": 36.26,
+    "K2gB": 2.98
+   },
+   "total_us": 108.18,
+   "blocks": [
+    16,
+    8,
+    16,
+    8
+   ],
+   "blocks_expected": [
+    16,
+    8,
+    16,
+    8
+   ],
+   "gaps_us": [
+    546.0,
+    407.75,
+    308.25
+   ],
+   "gap_sum_us": 1262.0,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 4
+  },
+  "13": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 2,
+   "NBS": 1,
+   "S_TAIL": 1,
+   "B": 6,
+   "V": 2304,
+   "K_MAX": 128,
+   "BV": 2048,
+   "b_num": 3,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 11.88,
+    "K2g": 11.22
+   },
+   "total_us": 23.06,
+   "blocks": [
+    3,
+    3
+   ],
+   "blocks_expected": [
+    3,
+    3
+   ],
+   "gaps_us": [
+    371.75
+   ],
+   "gap_sum_us": 371.75,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "14": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 1,
+   "S_TAIL": 0,
+   "B": 32,
+   "V": 1024,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 16,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 26.24,
+    "K2g": 11.12
+   },
+   "total_us": 37.48,
+   "blocks": [
+    16,
+    16
+   ],
+   "blocks_expected": [
+    16,
+    16
+   ],
+   "gaps_us": [
+    357.25
+   ],
+   "gap_sum_us": 357.25,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "15": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 38,
+   "S_TAIL": 0,
+   "B": 64,
+   "V": 152064,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 32,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 859.4,
+    "K2g": 611.98
+   },
+   "total_us": 1470.76,
+   "blocks": [
+    32,
+    32
+   ],
+   "blocks_expected": [
+    32,
+    32
+   ],
+   "gaps_us": [
+    2.75
+   ],
+   "gap_sum_us": 2.75,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "16": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 8,
+   "S_TAIL": -1,
+   "B": 128,
+   "V": 32768,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 64,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 433.88,
+    "K2g": 262.0
+   },
+   "total_us": 695.66,
+   "blocks": [
+    64,
+    64
+   ],
+   "blocks_expected": [
+    64,
+    64
+   ],
+   "gaps_us": [
+    2.5
+   ],
+   "gap_sum_us": 2.5,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  },
+  "17": {
+   "n": 5,
+   "path": "SPLIT",
+   "S": 2,
+   "NBS": 19,
+   "S_TAIL": 1,
+   "B": 16,
+   "V": 152377,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 8,
+   "names": [
+    "K1A",
+    "K1B",
+    "K2gA",
+    "K2gB"
+   ],
+   "per_kernel_us": {
+    "K1A": 183.84,
+    "K1B": 93.96,
+    "K2gA": 156.8,
+    "K2gB": 3.1
+   },
+   "total_us": 437.94,
+   "blocks": [
+    16,
+    8,
+    16,
+    8
+   ],
+   "blocks_expected": [
+    16,
+    8,
+    16,
+    8
+   ],
+   "gaps_us": [
+    404.25,
+    336.25,
+    184.5
+   ],
+   "gap_sum_us": 925.0,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 4
+  },
+  "18": {
+   "n": 5,
+   "path": "CURRENT",
+   "S": 1,
+   "NBS": 16,
+   "S_TAIL": -1,
+   "B": 64,
+   "V": 65536,
+   "K_MAX": 256,
+   "BV": 4096,
+   "b_num": 32,
+   "names": [
+    "K1",
+    "K2g"
+   ],
+   "per_kernel_us": {
+    "K1": 391.56,
+    "K2g": 258.54
+   },
+   "total_us": 650.0,
+   "blocks": [
+    32,
+    32
+   ],
+   "blocks_expected": [
+    32,
+    32
+   ],
+   "gaps_us": [
+    3.0
+   ],
+   "gap_sum_us": 3.0,
+   "ok_blk": true,
+   "ok_sum": true,
+   "ok_p2": true,
+   "n_launch": 2
+  }
+ },
+ "p2_violations": [],
+ "gate_pass": true,
+ "kernel_name_stats": {
+  "K1": {
+   "n": 60,
+   "min": 11.68,
+   "median": 39.82,
+   "max": 859.74
+  },
+  "K2g": {
+   "n": 60,
+   "min": 9.84,
+   "median": 18.8,
+   "max": 612.56
+  },
+  "K1A": {
+   "n": 30,
+   "min": 6.34,
+   "median": 25.96,
+   "max": 184.58
+  },
+  "K1B": {
+   "n": 30,
+   "min": 18.92,
+   "median": 30.63,
+   "max": 98.02
+  },
+  "K2gA": {
+   "n": 30,
+   "min": 7.32,
+   "median": 23.5,
+   "max": 157.92
+  },
+  "K2gB": {
+   "n": 30,
+   "min": 1.54,
+   "median": 2.74,
+   "max": 3.2
+  }
+ }
+}
