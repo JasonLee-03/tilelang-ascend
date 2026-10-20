@@ -1,0 +1,149 @@
+{
+  "r1": {
+    "domain": "per_head",
+    "e2e_samples": [
+      20.12,
+      19.88
+    ],
+    "e2e_mean": 20.0,
+    "tout_samples": [
+      5.48,
+      5.04
+    ],
+    "tout_mean": 5.26,
+    "tout_blk": "16",
+    "main_samples": [
+      10.16,
+      10.02
+    ],
+    "main_mean": 10.09,
+    "tqkv_mean": 4.65,
+    "tout_share_pct": 26.3
+  },
+  "c5": {
+    "domain": "per_head",
+    "e2e_samples": [
+      76.84,
+      77.36
+    ],
+    "e2e_mean": 77.1,
+    "tout_samples": [
+      7.68,
+      7.64
+    ],
+    "tout_mean": 7.66,
+    "tout_blk": "16",
+    "main_samples": [
+      58.56,
+      59.1
+    ],
+    "main_mean": 58.83,
+    "tqkv_mean": 10.61,
+    "tout_share_pct": 9.9
+  },
+  "c19": {
+    "domain": "prefill_expert",
+    "e2e_samples": [
+      56.98,
+      57.82
+    ],
+    "e2e_mean": 57.4,
+    "tout_samples": [
+      7.58,
+      7.88
+    ],
+    "tout_mean": 7.73,
+    "tout_blk": "16",
+    "main_samples": [
+      33.04,
+      33.3
+    ],
+    "main_mean": 33.17,
+    "tqkv_mean": 16.5,
+    "tout_share_pct": 13.5
+  },
+  "c9": {
+    "domain": "g2stack",
+    "e2e_samples": [
+      658.02,
+      660.32
+    ],
+    "e2e_mean": 659.17,
+    "tout_samples": [
+      59.58,
+      56.64
+    ],
+    "tout_mean": 58.11,
+    "tout_blk": "32",
+    "main_samples": [
+      553.84,
+      559.64
+    ],
+    "main_mean": 556.74,
+    "tqkv_mean": 44.32,
+    "tout_share_pct": 8.8
+  },
+  "c8": {
+    "domain": "g2stack",
+    "e2e_samples": [
+      860.04,
+      856.26
+    ],
+    "e2e_mean": 858.15,
+    "tout_samples": [
+      55.28,
+      55.88
+    ],
+    "tout_mean": 55.58,
+    "tout_blk": "64",
+    "main_samples": [
+      753.5,
+      749.36
+    ],
+    "main_mean": 751.43,
+    "tqkv_mean": 51.14,
+    "tout_share_pct": 6.5
+  },
+  "c10": {
+    "domain": "g2stack",
+    "e2e_samples": [
+      1225.68,
+      1223.66
+    ],
+    "e2e_mean": 1224.67,
+    "tout_samples": [
+      152.28,
+      154.76
+    ],
+    "tout_mean": 153.52,
+    "tout_blk": "64",
+    "main_samples": [
+      984.52,
+      977.8
+    ],
+    "main_mean": 981.16,
+    "tqkv_mean": 89.99,
+    "tout_share_pct": 12.5
+  },
+  "c6": {
+    "domain": "per_head",
+    "e2e_samples": [
+      598.58,
+      598.66
+    ],
+    "e2e_mean": 598.62,
+    "tout_samples": [
+      31.04,
+      30.32
+    ],
+    "tout_mean": 30.68,
+    "tout_blk": "16",
+    "main_samples": [
+      531.02,
+      532.82
+    ],
+    "main_mean": 531.92,
+    "tqkv_mean": 36.02,
+    "tout_share_pct": 5.1
+  }
+}

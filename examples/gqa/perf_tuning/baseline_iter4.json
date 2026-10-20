@@ -1,0 +1,43 @@
+{
+  "iteration": 4,
+  "timestamp": "2026-10-17T22:22:09+08:00",
+  "mode": "implement",
+  "scope": "C1 (flat ws ring ns_flat=4) main arm + C3 (C-step G2-first reorder) independent arm; three-way same-session interleaved A/B (BASE=shipped flat / ARM1=C1 / ARM2=C3)",
+  "shipped_md5": {
+    "gqa.py": "cbce74410fee5f615489d0391b3ea620",
+    "test_gqa.py": "3e2d08881cb7b6f36d5c89b2fd37a146"
+  },
+  "backup_before_iter4": "examples/gqa/perf_tuning/gqa_impl_iter4_before.py",
+  "tuning_config": {
+    "goal_type": "best_effort",
+    "noise_threshold_pct": 3.0,
+    "max_iterations": 10,
+    "current_iteration": 4
+  },
+  "baseline_anchor_iter3_same_session_means_us": {
+    "note": "iter3 session means (reference anchors only; iter4 adoption judged on iter4 same-session BASE arm)",
+    "R3_c3like_flat": {
+      "mean": 61.09,
+      "min": 60.64,
+      "max": 61.84
+    },
+    "R2_c1like_flat": {
+      "mean": 26.13,
+      "min": 25.42,
+      "max": 26.76
+    },
+    "R6_c2like_flat": {
+      "mean": 27.53,
+      "min": 27.4,
+      "max": 27.68
+    }
+  },
+  "shapes": {
+    "R3": "B2 S128 Skv128 Nq128 Nkv8 causal bf16 (mc=13/12, 256 tasks) = bench c3",
+    "R2": "B2 S128 Skv128 Nq32 Nkv8 causal fp16 (mc=4/3, 64 tasks) = bench c1",
+    "R6": "B2 S128 Skv128 Nq48 Nkv4 noncausal fp16 (mc=5/4, 96 tasks) = bench c2"
+  },
+  "test_command_precision": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all",
+  "precision_status_at_start": "pass (inherited: shipped cbce7441 24/24 suite green incl. 2026-10-17 eval 20/20)",
+  "programming_mode": "Expert (flat kernel: manual Scope C/V, manual flags/sems) per DESIGN/iter2"
+}

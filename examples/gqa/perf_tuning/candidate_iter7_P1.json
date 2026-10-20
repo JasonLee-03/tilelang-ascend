@@ -1,0 +1,115 @@
+{
+  "iteration": 7,
+  "arm": "P1",
+  "title": "transpose_out retile — host-only out_plan re-partition filling the vector cores on starved grids",
+  "timestamp_preregistered": "2026-10-19T13:50:00+08:00",
+  "timestamp_finalized": "2026-10-19T15:05:00+08:00",
+  "status": "ADOPTED (rule V2) — primaries R1 +26.81% / R6 +19.90% e2e, all guardrails held, main untouched, Gate 0/3 bit-identical. Rule V1 REJECTED by its own preregistered guardrail (R2 -16.83% regression); V2 = same mechanism with the wave-overhead-calibrated scoring, criteria unchanged (iter5-style implementation fix, NOT a goalpost move).",
+  "shipped_baseline": {
+    "gqa.py_md5_before": "bd470e072d0a48faeac1e786306932e8",
+    "gqa.py_md5_after": "4b4e453e4b8f2922baefbecb85912494",
+    "test_gqa.py_md5_before_and_after": "3e2d08881cb7b6f36d5c89b2fd37a146 (untouched)",
+    "backup": "examples/gqa/history_version/gqa_impl_s3_iter7.py (md5 bd470e072d0a48faeac1e786306932e8)",
+    "rollback_baseline": "examples/gqa/perf_tuning/gqa_impl_iter7_before.py (same md5)"
+  },
+  "mechanism": {
+    "target": "gqa.out_plan + new module-level helper _retile_out_plan (host-side plan rule ONLY; _transpose_v1 kernel body untouched; main kernels untouched)",
+    "pathology_iter6_measured": "transpose_out grid B*ceil(Nq/bm)*ceil(S/bn) = 1..32 tasks vs 40 vector slots on starved prefill shapes (R1: ONE task = 1/40 cores, 42.6 GB/s = 1.2% of L2 roof, tout 12.0us > main 10.6us)",
+    "rule_V1_REJECTED": "score = critical-path byte factor g = waves/blk only (min g, 1.10*g* eligibility, max-area tie-break, 0.8 hysteresis). Selected multi-wave small-box configs: R2 (1,32) 256 tasks/7 waves, R3 (1,128) 7 waves, R6 (1,64) 5 waves.",
+    "rule_V2_ADOPTED": "score = calibrated wall model pred = L + waves * max(W_OH, bytes_per_block/RATE) with L=3.0us (iter3 launch floor), W_OH=2.5us per block-wave (fit of the V1 multi-wave measurements: R2 (1,32) 21.66us/7 waves, R3 (1,128) 21.07/7, R6 (1,64) 15.71/5), RATE=80 GB/s critical-path per-core (family range 68-105 across blk=1..160). Tie-break: (round(pred,1), FEWEST WAVES first, more tasks, larger bn, larger bm) — every measured wave-1 fat-block config in this family fits the model, so ties stay in the empirically-validated regime. Hysteresis 0.8 (>=20% model gain) keeps adequate grids legacy (R4/c6 IDENTICAL). Retile only when legacy total < 40. bn floor keeps read bursts >= 2KB. Deterministic pure-Python; integrated out_plan verified EQUAL to the standalone rule on a 10710-shape sweep (0 mismatches).",
+    "plans_V2": {
+      "R1": "(8,128)->(1,32) tasks 1->32 blk 1->16 wave1",
+      "R2/c1/c7/c18/c19/c20": "(8,128)->(2,128) tasks 8->32 blk 4->16 wave1",
+      "R3/c3": "(16,128)->(8,128) tasks 16->32 blk 8->16 wave1",
+      "R4/c4": "IDENTICAL (16,128) — hysteresis keeps the adequate 32-task grid",
+      "R6/c2": "(16,128)->(4,128) tasks 6->24 blk 3->12 wave1",
+      "c5_D256": "(8,128)->(2,128)",
+      "c6/c8/c9/c10/L1-tails/padded-suites": "IDENTICAL (healthy, at bn floor, or launch-bound)"
+    },
+    "bit_identity_argument": "pure data-movement re-partition: every output element written exactly once with the same source bytes => outputs BIT-IDENTICAL (verified)"
+  },
+  "criteria_PREREGISTERED": {
+    "primary": "R1 AND R6 e2e (sum of ALL kernel-chain TaskDur, B-matrix --launch-count=3) improvement >= 3% vs BASE, same-session interleaved >= 3+3",
+    "guardrail_regression": "ANY workload R1-R6 e2e degraded > 3% => REJECT",
+    "guardrail_main_untouched": "main TaskDur ARM vs BASE within ±3% on every R1-R6 (systematic >3% = leak => REJECT)",
+    "precision": "Gate 0 bit-identity (kernel-level + e2e + plan audit); Gate 3 full suite + out-of-domain bit-identity",
+    "session_health": "BASE reproduces iter6 anchors within ±3%",
+    "noise_threshold_pct": 3.0
+  },
+  "gate0": {
+    "V1": "20/20 PASS (plan audit 9 identical + 7 retiled + None-case; kernel-level bit-identity 10 shapes incl. padded n_pad mode; e2e gqa() bit-identity 9 dispatch domains incl. decode no-tout)",
+    "V2": "20/20 PASS re-run with V2 plans (run_iter7_p1_gate0.py; logs in-session, plan census pinned in prof_gqa_ab_iter7.py asserts — a silent rule change invalidates samples)"
+  },
+  "ab_data": {
+    "session": "2026-10-19 13:57-14:36, single working session, all runs 1650/1650 MHz, rc=0 84/84 (36 V1 + 36 V2 + 12 P5), zero fallbacks, zero AssertionErrors",
+    "base_anchor_check_V2_arm": {
+      "e2e_us": {"r1": [27.40, "iter6 27.29", "+0.4%"], "r2": [50.14, "49.29", "+1.7%"], "r3": [103.88, "103.82", "+0.1%"], "r4": [246.73, "244.79", "+0.8%"], "r5": [145.75, "146.70", "-0.6%"], "r6": [61.25, "60.47", "+1.3%"]},
+      "verdict": "all within ±3% — session healthy"
+    },
+    "V1_REJECTED": {
+      "e2e_mean_us": {
+        "r1": {"base": 27.32, "p1v1": 20.65, "improvement_pct": 24.40, "samples_p1": [21.48, 20.34, 20.14]},
+        "r2": {"base": 50.24, "p1v1": 58.69, "improvement_pct": -16.83, "samples_p1": [59.80, 59.74, 56.54], "note": "GUARDRAIL TRIPPED — tout (1,32)/256 tasks/7 waves 21.66us vs base 13.56us"},
+        "r3": {"base": 105.24, "p1v1": 100.68, "improvement_pct": 4.33},
+        "r4": {"base": 247.61, "p1v1": 246.39, "improvement_pct": 0.49},
+        "r5": {"base": 145.85, "p1v1": 145.99, "improvement_pct": -0.10},
+        "r6": {"base": 60.87, "p1v1": 54.45, "improvement_pct": 10.55}
+      },
+      "disposition": "REJECTED per preregistered guardrail (R2 e2e degraded 16.83% > 3%). Data kept: msprof_op_iter7_P1_* (36 dirs) + matrix_iter7_P1_v1.log. Failure isolated to wave-quantization overhead absent from the V1 scoring model — recalibrated as V2 (mechanism unchanged, criteria unchanged)."
+    },
+    "V2_ADOPTED": {
+      "e2e_mean_us_and_samples": {
+        "r1": {"base": [27.66, 27.14, 27.40], "base_mean": 27.40, "p1": [19.66, 19.96, 20.54], "p1_mean": 20.05, "improvement_pct": 26.81, "distributions": "non-overlapping (base min 27.14 > p1 max 20.54)", "criterion": "PRIMARY >=3% PASS"},
+        "r2": {"base": [51.48, 49.04, 49.90], "base_mean": 50.14, "p1": [42.10, 44.90, 44.10], "p1_mean": 43.70, "improvement_pct": 12.84, "distributions": "non-overlapping", "criterion": "guardrail PASS"},
+        "r3": {"base": [104.54, 103.52, 103.58], "base_mean": 103.88, "p1": [98.20, 97.26, 99.46], "p1_mean": 98.31, "improvement_pct": 5.37, "distributions": "non-overlapping", "criterion": "guardrail PASS"},
+        "r4": {"base": [245.24, 247.68, 247.26], "base_mean": 246.73, "p1": [246.78, 247.38, 245.20], "p1_mean": 246.45, "improvement_pct": 0.11, "note": "plan IDENTICAL — pure noise check", "criterion": "guardrail PASS"},
+        "r5": {"base": [145.64, 146.14, 145.46], "base_mean": 145.75, "p1": [147.06, 146.58, 146.80], "p1_mean": 146.81, "improvement_pct": -0.73, "note": "decode: no transpose_out, path untouched; within noise band", "criterion": "guardrail PASS"},
+        "r6": {"base": [60.90, 60.78, 62.06], "base_mean": 61.25, "p1": [48.92, 49.42, 48.84], "p1_mean": 49.06, "improvement_pct": 19.90, "distributions": "non-overlapping", "criterion": "PRIMARY >=3% PASS"}
+      },
+      "transpose_out_attribution": {
+        "r1": {"base_us": 12.08, "base_blk": 1, "p1_us": 4.86, "p1_blk": 16},
+        "r2": {"base_us": 13.31, "base_blk": 4, "p1_us": 7.67, "p1_blk": 16},
+        "r3": {"base_us": 23.81, "base_blk": 8, "p1_us": 17.63, "p1_blk": 16},
+        "r4": {"base_us": 29.91, "base_blk": 16, "p1_us": 29.58, "p1_blk": 16},
+        "r6": {"base_us": 22.04, "base_blk": 3, "p1_us": 9.69, "p1_blk": 12}
+      },
+      "main_invariance_guardrail": {
+        "delta_pct": {"r1": 0.89, "r2": -2.50, "r3": 0.54, "r4": -0.04, "r5": 0.73, "r6": 2.66},
+        "verdict": "all |delta| <= 3% — main untouched (no leak)"
+      },
+      "model_validation": "V2 predictions vs measured tout: R1 5.50 pred / 4.86 meas; R2 6.28 / 7.67; R3 16.11 / 17.63; R6 9.55 / 9.69; R4 unchanged / unchanged — model error <= +1.6us, ordering exact"
+    }
+  },
+  "integration_GATE3": {
+    "edit": "gqa.py: +76 lines in 3 pure-insertion hunks (constants + _retile_out_plan helper + out_plan docstring/retile call); zero deletions; out_plan contract unchanged",
+    "post_integration_equivalence": "integrated out_plan == standalone out_plan_p1 on 10710 (B,Nq,S,D) combos — 0 mismatches",
+    "full_suite": "test_gqa.py --level all: exit 0, 18 PRECISION_PASS + 6 BOUNDARY_PASS, 0 FAIL/WARN, 0 fallback (/tmp/opencode/iter7_test_all.log)",
+    "self_check": "python3 examples/gqa/gqa.py -> Test Passed!",
+    "bit_identity_pre_post": "13/13 shapes: final outputs AND main-kernel outputs (transpose_out-input hook) bit-identical; chosen specs identical; plans changed exactly on the 7 starved shapes (gate3_iter7_outputs_{pre,post}.pt + gate3_iter7_chosen_{pre,post}.json)",
+    "out_of_domain_spot_checks": "r5_decode_expert + decode_auto (no tout, bit-identical), causal_kv2_g2s + c4like_kv2 + padrow_s100 + l1_s_tail (plan IDENTICAL, main+final bit-identical), d256_perhead (retiled, bit-identical) — >=5 required, 13 delivered",
+    "ruff": "0.15.14 format --check & check: exit 0/0; 0.16.7 (iter5 wheel) format --check & check: exit 0/0",
+    "msprof_bottom_line": "integrated file: R5 main 147.86us (anchor 145.89, +1.35% OK), R2 main 26.18us (today's session band 26.31-27.07 fast side, direction=faster), R1 chain tout blk=16 5.20us + e2e sum 20.86us (retile live in the integrated file, consistent with the A/B arm)",
+    "instrumentation_grep": "T.printf|T.dump_tensor|pdb in gqa.py = 0",
+    "npu_health": "Health OK, zero residual msprof/probe processes after every segment",
+    "new_md5": "4b4e453e4b8f2922baefbecb85912494"
+  },
+  "framework_findings": [
+    "transpose-family wall time on this platform = L + waves * max(W_OH ~= 2.5us, bytes_per_block / ~80GB/s): block-wave dispatch/drain overhead (~2.5us/wave) DOMINATES small-box multi-wave configs — a task-count-only or critical-byte-only scoring model (iter6 P1 card's '>= 40 tasks' heuristic included) mis-ranks configs by up to -16.8% e2e; wave-1 fat-block grids are the empirically safe optimum in the launch-bound-to-mid regime",
+    "per-core effective rate of the transpose family RISES as active blocks fall (blk3: ~105 GB/s, blk16: ~77 GB/s) — L2 contention scaling; conservative constant (80) keeps the rule ordering correct",
+    "out_plan retile is fully host-side: cache keys already carry (bm,bn) so both plans coexist per session with zero cross-contamination (A/B in one process is safe)"
+  ],
+  "antipattern_check": "performance-antipatterns.md re-checked for the new code: host-plan only, no new kernel code; the change REMOVES a parallelism-starvation pattern (1-32 tasks vs 40 slots). Legacy retained item unchanged (per-head AUTO ladder launches by block_num — iter1 §7.2 rationale stands). No new violations.",
+  "artifacts": [
+    "perf_tuning/p1_retile_iter7.py (V2 rule + V1 kept for provenance + offline predictor)",
+    "perf_tuning/run_iter7_p1_gate0.py (Gate 0: 20 checks, V1+V2 runs)",
+    "perf_tuning/prof_gqa_ab_iter7.py (multi-arm probe with pinned plan asserts)",
+    "perf_tuning/run_matrix_iter7.sh (P1/P1V2/P5 segments)",
+    "perf_tuning/parse_iter7_ab.py (aggregator: e2e sum, tout attribution, main invariance, wait-ids, log audit)",
+    "perf_tuning/msprof_op_iter7_P1_* (36 dirs, V1 REJECTED arm data — kept for disclosure)",
+    "perf_tuning/msprof_op_iter7_P1V2_* (36 dirs, ADOPTED arm data)",
+    "perf_tuning/msprof_op_iter7_G3_* (3 dirs, post-integration bottom-line)",
+    "perf_tuning/matrix_iter7_P1_v1.log + /tmp/opencode/iter7_matrix_P1V2.log",
+    "perf_tuning/save_gate3_outputs_iter7.py + gate3_iter7_outputs_{pre,post}.pt + gate3_iter7_chosen_{pre,post}.json",
+    "examples/gqa/history_version/gqa_impl_s3_iter7.py (backup) + perf_tuning/gqa_impl_iter7_before.py"
+  ]
+}

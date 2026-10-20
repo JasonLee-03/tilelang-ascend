@@ -1,0 +1,161 @@
+{
+ "tag": "post",
+ "gqa_py_md5": "606b07ff474ec42b8244f0831327d75b",
+ "chosen": {
+  "mha_g1_prefill_expert": [
+   "prefill_expert"
+  ],
+  "prexpert_g3_kv2": [
+   "prefill_expert"
+  ],
+  "c9like_g2stack_kv4": [
+   "g2stack"
+  ],
+  "causal_kv2_g2s": [
+   "g2stack"
+  ],
+  "g2stack_ns1_stacked20": [
+   "g2stack"
+  ],
+  "r2_flat_kv1": [
+   "g2stack_flat"
+  ],
+  "r4_flat_kv2": [
+   "g2stack_flat_kv2"
+  ],
+  "r1_perhead": [
+   "per_head_bm64"
+  ],
+  "d256_perhead": [
+   "per_head_bm64"
+  ],
+  "padrow_s100_flatkv2": [
+   "g2stack_flat_kv2"
+  ],
+  "s100_g2stack_unaligned": [
+   "g2stack"
+  ],
+  "l1_s_tail_s130_g2stack": [
+   "g2stack"
+  ],
+  "r5_decode_expert": [
+   "dense_expert"
+  ],
+  "decode_auto": [
+   "dense_auto"
+  ]
+ },
+ "plans": {
+  "mha_g1_prefill_expert": [],
+  "prexpert_g3_kv2": [],
+  "c9like_g2stack_kv4": [],
+  "causal_kv2_g2s": [],
+  "g2stack_ns1_stacked20": [],
+  "r2_flat_kv1": [],
+  "r4_flat_kv2": [],
+  "r1_perhead": [
+   [
+    [
+     1,
+     8,
+     128,
+     128
+    ],
+    [
+     1,
+     32
+    ]
+   ]
+  ],
+  "d256_perhead": [
+   [
+    [
+     2,
+     32,
+     128,
+     256
+    ],
+    [
+     2,
+     128
+    ]
+   ]
+  ],
+  "padrow_s100_flatkv2": [
+   [
+    [
+     2,
+     32,
+     100,
+     128
+    ],
+    [
+     8,
+     4
+    ]
+   ]
+  ],
+  "s100_g2stack_unaligned": [
+   [
+    [
+     4,
+     64,
+     100,
+     128
+    ],
+    [
+     16,
+     4
+    ]
+   ]
+  ],
+  "l1_s_tail_s130_g2stack": [
+   [
+    [
+     2,
+     32,
+     130,
+     128
+    ],
+    [
+     8,
+     2
+    ]
+   ]
+  ],
+  "r5_decode_expert": [],
+  "decode_auto": []
+ },
+ "tout_skipped": {
+  "mha_g1_prefill_expert": true,
+  "prexpert_g3_kv2": true,
+  "c9like_g2stack_kv4": true,
+  "causal_kv2_g2s": true,
+  "g2stack_ns1_stacked20": true,
+  "r2_flat_kv1": true,
+  "r4_flat_kv2": true,
+  "r1_perhead": false,
+  "d256_perhead": false,
+  "padrow_s100_flatkv2": false,
+  "s100_g2stack_unaligned": false,
+  "l1_s_tail_s130_g2stack": false,
+  "r5_decode_expert": false,
+  "decode_auto": false
+ },
+ "category": {
+  "mha_g1_prefill_expert": "wave2",
+  "prexpert_g3_kv2": "wave2",
+  "c9like_g2stack_kv4": "wave2",
+  "causal_kv2_g2s": "wave2",
+  "g2stack_ns1_stacked20": "wave2",
+  "r2_flat_kv1": "wave1",
+  "r4_flat_kv2": "wave1",
+  "r1_perhead": "out",
+  "d256_perhead": "out",
+  "padrow_s100_flatkv2": "out",
+  "s100_g2stack_unaligned": "out",
+  "l1_s_tail_s130_g2stack": "out",
+  "r5_decode_expert": "out",
+  "decode_auto": "out"
+ }
+}

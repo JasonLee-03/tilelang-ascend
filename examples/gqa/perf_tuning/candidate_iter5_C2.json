@@ -1,0 +1,91 @@
+{
+  "iteration": 5,
+  "arm": "C2",
+  "title": "flat dual-stream extension to kv_iters==2 uniform-noncausal (u = 2*t + kv flattened stream on the proven kv==1 flat steady state)",
+  "timestamp": "2026-10-18",
+  "status": "ADOPTED — Gate 2 improvement -9.18% (R4 primary) / -7.34% (c7 secondary), both >= 3% threshold; Gate 3 integrated into gqa.py with full evidence chain",
+  "shipped_baseline": {
+    "gqa.py_md5_before": "cbce74410fee5f615489d0391b3ea620",
+    "test_gqa.py_md5_before_and_after": "3e2d08881cb7b6f36d5c89b2fd37a146 (untouched)",
+    "gqa.py_md5_after": "bd470e072d0a48faeac1e786306932e8",
+    "backup": "examples/gqa/history_version/gqa_impl_s3_iter5.py (md5 cbce74410fee5f615489d0391b3ea620)",
+    "rollback_baseline": "examples/gqa/perf_tuning/gqa_impl_iter5_before.py (same md5)"
+  },
+  "phase_a_reestimate": {
+    "verdict": "GO",
+    "method": "existing iter3 msprof data only (msprof_op_iter3_r4_s{1..3}, r6_flat_a{1..3}, r6_g2s_b{1..3}; extractor perf_tuning/phaseA_iter5_extract.py)",
+    "boundary_share_separation": "per-task V exposure 3.48us decomposed structurally: (i) batch-alternation data-ready waits (V-id4-class window-diff share ~2.8us/task = 81%) — the flattening target; (ii) boundary-adjacent (V-id0-class SM<-G1 refill ~0.6us/task + FIN/fill V-stream serialization ~0.5-0.7us/task, INFERENCE); (iii) release-side ~0.08us/task (nothing to remove; pacing untouched by design). Boundary share is resolvable and NOT small: boundary-only reading still ~-11% > 3%.",
+    "corrected_expectation": "-9.5%..-22% wall on R4, center -17.7% (P2 = vec_busy 2.20 measured + flat-form overhead 0.05-0.15 + marginal residual 0.66-0.90 anchored to R6 flat noncausal measured P6=3.35/vec=2.69; fill' 8-11; launch 2.9)",
+    "iter4_correction_applied": "the falsified 'wall = busy + round-trip residual' model was NOT reused: C2 does not touch gating depth (ns=2 slots + single release tokens + G1-first inherited verbatim), it removes BATCH-GRAIN data-dependency idles — the mechanism class empirically adopted twice in this family (iter2 ns1->flat -23.3%; iter3 R6 A/B -14.7%). Break-even would need the flat residual to inflate 1.7x over its measured noncausal value.",
+    "actual_vs_expected": "R4 measured -9.18% landed at the CONSERVATIVE edge of the range (188.1us predicted conservative vs 187.97 measured). Post-hoc attribution: vec busy rose +9.3us (2.20->2.38/kv) in flat form (per-task neg_sm cap refill + AO-head fills + FIN cadence; attribution INFERENCE), consuming ~half of the exposure reduction (89.8->61.4us). The direction and mechanism matched; the vec-overhead term was underestimated."
+  },
+  "design": {
+    "source": "cv_overlap_resurvey_iter3.md §8-C2 (uniform subclass) + iter4 hard constraints (candidate_iter4_C1/C3.json framework_findings)",
+    "design_doc": "perf_tuning/c2_design_iter5.md (Phase A re-estimate + full design: schedule table, per-u state-slot liveness derivation §B.4, flag/sem layout + pending depth §B.3, resource accounting §B.6)",
+    "implementation": "perf_tuning/gqa_flat_kv2_variant.py — arithmetic母体 = shipped _gqa_kernel_prefill_g2stack (op-for-op SM/AO/FIN inheritance, index remap only), structure范本 = shipped _gqa_kernel_prefill_g2stack_flat (macro emission, alloc_var epilogue binding, init/destroy layout). Audit: perf_tuning/audit_flat_kv2_iter5.py (source drift guard + pinned flag-line table + per-mc balance recomputation + 34 op-line provenance pairs vs pinned gqa.py lines); diff vs flat-kv1 template: perf_tuning/diff_iter5_kv2.txt (+215/-176, 14 hunks)",
+    "stream": "u = 2*t + kv (U = 2*mc). C pair-step: G1(t,kv1) -> G2(t,kv0) -> Qload(t+1) -> G1(t+1,kv0) -> G2(t,kv1) (G1-first per iter4). V pair-beat: AO(t,kv0) -> SM(t+1,kv0) -> AO(t,kv1) -> FIN(t) -> SM(t+1,kv1) (kv1-flat AO->FIN->SM(+2) offset generalized; FIN only at task tails; next task's kv0 softmax runs AHEAD of current FIN).",
+    "state_slots_REDERIVED_for_kv2": "acc_o/sumexp: TASK-parity (idx (t%2)*2+h) — the intra-task AO(kv0)->AO(kv1) rescale chain is a REAL value chain and must stay in one slot across 2 u (kv1's u-parity==task-parity degeneracy no longer holds; u-parity would read a stale slot = silent precision corruption). sumexp_is/r_factors: KV-parity (idx (u%2)*2+h == g2stack i*2+h) — SM(u) write -> AO(u) read -> SM(u+2) overwrite window is program-order safe in the V-serial stream. neg_sm: g2stack h*2+cur semantics + WHOLE-BUFFER cap refill at SM(t,kv0) head (exactly g2stack's per-task fill value/position; prv-slot-only refill rejected as unneeded divergence). Per-task acc_o/sumexp fills at AO(t,kv0) head ([S3-iter2-B fix] pattern — fills NEVER removed; NaN discipline). UB/L1/L0/GM-ws footprint: ZERO increment vs flat kv1 (acc_o[4,half,D] etc. same shapes).",
+    "q_protocol": "the ONE new local handshake (q_l1 read by 2 consecutive G1s, reloaded per task): G1(kv0) waits the MTE2->MTE1 full token; G1(kv1) skips the wait (content resident — C-stream serial issue guarantees no intervening Qload) and is the SOLE MTE1->MTE2 free-token setter (SetFlag drains the in-order MTE1 queue => one token implies BOTH reads complete). Qload waits 1 free / sets 1 full; init free x1, destroy x1 — counts and pending depth IDENTICAL to shipped flat kv1. FIRST ATTEMPT used a double set/wait pair (init x2, both G1s set, Qload waits x2) and DEADLOCKED at the prologue Qload (aicore timeout 507014 on the mc2 smoke) — see framework_findings[0].",
+    "gating_inheritance": "cross ids 0-5 unchanged (zero new; 6-10 spare untouched), init tokens unchanged (C: WS2_C2V x1; V: WS1_V2C x1, WS3_V2C x1 — SINGLE-token release pacing, hard constraint 1), per-u set/wait counts mirror kv1-flat with mc->U, FIFO effective gates SM(u)<-G1(u) / G1(u)<-SM(u-1) / SM(u)<-G2(u-1) / G2(u)<-AO(u-1) / AO(u)<-G2(u). Pending depth <= 3 cross, <= 1 local (<= 6 safety bound).",
+    "gate": "use_g2_stack and kv_iters == 2 and not is_causal and stacked_block_num >= 2*P28_NUM_CORES(=40) — covers bench c4 (512 blocks, mc 26/25) and c7 (64 blocks, mc 4/3, shape verified from cann-bench cases.yaml case_id 7: B2 Sq128 Skv256 Nq32 Nkv8 D128 bf16 noncausal). Factory asserts non-causal. causal/variable kv==2 and stacked<40 stay on shipped g2stack with ZERO change; g2stack kept as compile-fallback candidate right after the new spec (iter2 pattern)."
+  },
+  "gates": {
+    "gate0_standalone_precision": "PASS 10/10 (perf_tuning/run_iter5_variant.py, log candidate_iter5_gate0.log): r4_c4like_bf16, c7like_bf16 (both also via the DISPATCH-REDIRECT harness: variant_invoked=True + chosen=['g2stack'] + bit-identical), mc2_edge (stacked=40 exact gate edge, mc=2), mixed_mc32 (mc 3/2 r=8), mixed_mc76 (mc 7/6 r=8), padcol_noncausal (S_kv=200 unaligned, use_mask, mask cols kv-indexed), padrow_noncausal (S=100 pad rows), boundary_sparse_c7like (NaN in q + Inf in v injected into BOTH kv blocks so the real kv0->kv1 rescale chain carries specials: struct-equal — NaN pos / Inf pos+sign / finite bits), iso_causal_kv2 (redirect patch installed, variant NEVER invoked, chosen=['g2stack'], patched-vs-plain bit-identical), iso_smallstack_kv2 (stacked=32 in [20,40): same isolation). ALL finite cases bit_identical=True vs shipped gqa(); golden viol=0, nonfinite=0; ZERO [gqa][fallback] lines (grep=0). FIRST ATTEMPT deadlocked (see design.q_protocol) — located via protocol re-derivation, fixed to single-token form, NOT worked around.",
+    "gate2_performance": "PASS — two-arm same-session INTERLEAVED A/B (perf_tuning/run_matrix_iter5.sh 5 rounds, per-round arm-order rotation; probe prof_gqa_ab_iter5.py asserts variant_invoked + chosen=['g2stack'] on every run — silent compile-fallback impossible; 20/20 samples at rated 1650/1650 MHz; dirs msprof_op_iter5_{r4,c7}_{base,c2}_s{1..5}; parse parse_summary_iter5.txt + telemetry_iter5_compare.txt). R4 (PRIMARY): base 206.96us [204.26-211.08] spread 3.3% -> c2 187.97 [187.02-190.06] spread 1.6% = -9.18%, distributions disjoint (base min 204.26 > c2 max 190.06). c7 (secondary): base 38.34 [37.42-39.18] -> c2 35.52 [35.10-35.84] = -7.34%, disjoint. BASE sanity: R4 206.96 reproduces the iter3 anchor 207.85 within -0.43% (±3% band) — session healthy. Adoption threshold 3% met on BOTH shapes.",
+    "gate3_integration": "PASS — full chain: (1) backup history_version/gqa_impl_s3_iter5.py md5 cbce7441...; (2) gqa.py edited: factory _gqa_kernel_prefill_g2stack_flat_kv2 inserted after the flat-kv1 kernel + dispatch spec 'g2stack_flat_kv2' ahead of g2stack (kept as compile fallback) + iter2 deviation comment updated; (3) user-approved collateral ruff fix of the 3 PRE-EXISTING format deviations (iter4 env observation: 3408 emit_sm ~150-char line + 2 blank-line normalizations in the iter2 hunk) via whole-file `ruff format` — AST EQUIVALENCE PROVEN: ast.dump(pre-format edited) == ast.dump(post-format) byte-for-byte (725521 chars; 2026-09-16 ci_format_fix method); ruff format --check + ruff check EXIT 0 on BOTH ruff 0.15.14 (local) AND 0.16.7 (CI version, downloaded and run); (4) full suite `unset PYTHONPATH; ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all`: rc=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS, 0 FAIL/WARN, 0 fallback (candidate_iter5_test_all.log); (5) self-check `python3 examples/gqa/gqa.py`: Test Passed! rc=0; (6) OUT-OF-GATE bit-identity 8/8 (>=5 required): r1_perhead(per_head_bm64), r2/r3/r6 flat-kv1(g2stack_flat), r5_decode(dense_expert), decode_auto(dense_auto), causal_kv2(g2stack), smallstack_kv2(g2stack) — chosen arms UNCHANGED pre->post (probe-verified via _KERNEL_BUILD_CACHE) and outputs bit-identical (save_gate3_outputs_iter5.py pre/post + gate3_chosen_*.json); (7) IN-GATE spot check 2/2: c4like/c7like outputs bit-identical pre->post while chosen moved g2stack -> g2stack_flat_kv2 (the pure-scheduling invariant at dispatch level); (8) msprof fallback re-check: R1 10.57us [10.54-10.60] vs iter3 anchor 10.83 (-2.4%, band), R3 60.92 [59.50-62.34] vs 61.09 (-0.3%) — no regression (msprof_op_iter5_reg_*); (9) instrumentation grep = 0, npu-smi healthy, 0 residual processes."
+  },
+  "measurements": {
+    "task_duration_us": {
+      "R4_B4_S256_Skv256_Nq64_Nkv8_bf16_noncausal": {"base": [207.68, 211.08, 207.44, 204.36, 204.26], "base_mean": 206.96, "c2": [187.46, 187.86, 187.44, 187.02, 190.06], "c2_mean": 187.97, "delta_pct": -9.18},
+      "c7_B2_S128_Skv256_Nq32_Nkv8_bf16_noncausal": {"base": [38.32, 37.42, 38.46, 38.30, 39.18], "base_mean": 38.34, "c2": [35.60, 35.70, 35.38, 35.84, 35.10], "c2_mean": 35.52, "delta_pct": -7.34}
+    },
+    "wait_id_telemetry_mean_of_5_samples_max_across_rows_us": {
+      "R4_base": {"C_id1": 1.93, "C_id2": 109.81, "C_id5": 49.46, "V_id0": 25.61, "V_id3": 2.14, "V_id4": 106.20, "hot_aiv": 204.18, "hot_vec": 114.40},
+      "R4_c2": {"C_id1": 102.57, "C_id2": 31.02, "C_id5": 54.02, "V_id0": 9.89, "V_id3": 105.14, "V_id4": 30.20, "hot_aiv": 185.12, "hot_vec": 123.69},
+      "c7_base": {"C_id1": 2.23, "C_id2": 18.22, "C_id5": 5.74, "V_id0": 6.64, "V_id3": 2.21, "V_id4": 15.85, "hot_aiv": 35.54, "hot_vec": 17.62},
+      "c7_c2": {"C_id1": 14.93, "C_id2": 6.30, "C_id5": 9.58, "V_id0": 3.55, "V_id3": 15.06, "V_id4": 6.99, "hot_aiv": 32.89, "hot_vec": 19.21}
+    },
+    "mechanism_conclusion": "AS DESIGNED, with the iter4 signature rotation reproduced: the batch-alternation data-ready waits COLLAPSED (R4 C_id2 109.8->31.0 = -72%, V_id4 106.2->30.2 = -72%; c7 same -65%/-56%) and the waits MIGRATED to the release/pacing side (C_id1 +100.6, V_id3 +103.0) — i.e. the kernel is now pacing-bound exactly like the proven kv1 flat (whose signature is C-id1/V-id3 dominant). Boundary exposure did NOT vanish into thin air: exposure/kv fell 1.726 -> 1.181 (R4) while vec busy ROSE 114.4 -> 123.7us (+0.18/kv flat-form overhead: per-task neg_sm cap refill + AO-head fills + per-2u FIN cadence — attribution INFERENCE from busy-time deltas, no instruction trace). Net wall -19.0us = exposure -28.4us + vec +9.3us. The load-bearing pacing gates (single-token id1/id3) were inherited untouched and now carry the residual waits WITHOUT the iter4-style latency inflation — because run-ahead depth is unchanged (unlike the ns4 arm), only the handoff granularity changed.",
+    "data_quality_note": "c7_base_s5 PipeUtilization.csv contained impossible cube rows (aic_time 1178-1296us vs TaskDur 39.18us) — iter4's known profiler artifact class; the sample's C-side telemetry was excluded from aggregation (sanity filter vs TaskDur), its TaskDur (adoption metric, OpBasicInfo) is unaffected and retained. All other 19 samples clean."
+  },
+  "framework_findings": [
+    "(NEW, load-bearing) LOCAL set_flag/wait_flag event ids do NOT reliably stack tokens: the first Q-protocol attempt (init x2 sets + Qload double-wait on one local id) DEADLOCKED at the prologue (aicore timeout 507014), while the identical stacking on CROSS sems was empirically fine (iter4 ns4 arm, 4 tokens). Whether local events are binary or shallow-counting was not isolated; the safe form (now shipped) is strict depth-1 ping-pong: the LAST MTE1 reader of q_l1 (the kv1 G1) is the sole free-token setter — SetFlag drains the in-order MTE1 queue, so ONE token implies both reads completed. Every shipped local protocol in this repo is depth-1; keep it that way.",
+    "(harness) gqa() has TWO dispatch caches: _KERNEL_BUILD_CACHE (spec chain) AND the adapter-level _COMPILED_CACHE (shape -> resolved _run). Monkeypatch probes MUST clear both, else a pre-patch kernel_fn silently survives into the patched run (observed: 'variant factory NEVER invoked' on a shape whose _run was cached).",
+    "(perf principle, measured) Batch-grain -> u-grain handoff conversion is a REAL lever (-9.2%/-7.3%) even with gating depth untouched — it is orthogonal to iter4's falsified ring-depth lever. The gain nets against a +0.18us/kv vec-busy rise from the flat form's per-task state hygiene (refill/fill ops); future kv2-domain work should attack that overhead if more is needed.",
+    "(data quality, reproduced) impossible single-block PipeUtilization rows appear sporadically (iter4: r3_g2first_s2; iter5: c7_base_s5) — always sanity-filter per-core times against TaskDur before aggregation."
+  ],
+  "adoption_evidence": {
+    "gqa.py_new_md5": "bd470e072d0a48faeac1e786306932e8",
+    "ast_equivalence": "ast.dump(pre-format) == ast.dump(post-format), 725521 chars both; functions added vs shipped: exactly ['_gqa_kernel_prefill_g2stack_flat_kv2']; removed: none",
+    "ruff": "format --check + check EXIT 0 on ruff 0.15.14 (local) AND 0.16.7 (CI, downloaded wheel)",
+    "suite": "test_gqa.py --level all: rc=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS, 0 FAIL/WARN, 0 fallback",
+    "self_check": "python3 examples/gqa/gqa.py -> Test Passed! rc=0",
+    "outgate_bit_identity": "8/8 shapes bit-identical + chosen arms unchanged (per_head_bm64, g2stack_flat x3, dense_expert, dense_auto, g2stack x2)",
+    "ingate_bit_identity": "c4like + c7like bit-identical with chosen moved to g2stack_flat_kv2",
+    "regression_msprof": "R1 10.57us (anchor 10.83), R3 60.92us (anchor 61.09) — within band",
+    "health": "instrumentation grep=0; npu-smi OK; residual procs=0"
+  },
+  "artifacts": [
+    "perf_tuning/c2_design_iter5.md (Phase A + design + liveness derivation)",
+    "perf_tuning/gqa_flat_kv2_variant.py + diff_iter5_kv2.txt + audit_flat_kv2_iter5.py",
+    "perf_tuning/phaseA_iter5_extract.py",
+    "perf_tuning/run_iter5_variant.py + candidate_iter5_gate0.log",
+    "perf_tuning/prof_gqa_ab_iter5.py + run_matrix_iter5.sh + msprof_op_iter5_{r4,c7}_{base,c2}_s{1..5} (20 dirs)",
+    "perf_tuning/parse_summary_iter5.txt + telemetry_iter5_compare.py/.txt",
+    "perf_tuning/save_gate3_outputs_iter5.py + gate3_outputs_{pre,post}.pt + gate3_chosen_{pre,post}.json",
+    "perf_tuning/prof_gqa_regress_iter5.py + msprof_op_iter5_reg_{r1,r3}_s{1,2}",
+    "perf_tuning/candidate_iter5_test_all.log",
+    "perf_tuning/diff_iter5_gate3_gqa_py.txt (shipped -> new gqa.py, 6 hunks)",
+    "perf_tuning/baseline_iter5.json + gqa_impl_iter5_before.py",
+    "examples/gqa/history_version/gqa_impl_s3_iter5.py"
+  ],
+  "next_hint_iter6": "C2 domain landed at -9.2%/-7.3%. Remaining levers, in expected-value order: (1) flat-form vec-busy overhead in the kv2 domain (+0.18us/kv measured: per-task neg_sm whole-buffer refill could narrow to the prv slot, AO-head fills are load-bearing per iter2 NaN lesson — expected +1-2% if fully removed, LOW risk but touches NaN discipline, Gate 0 boundary case mandatory); (2) c9 (kv4 uniform noncausal) natural extension of this kernel (ns=4 batch already amortizes boundaries better, so expected gain shrinks — iter3 low-confidence note stands); (3) kv1 flat domain is at a measured local optimum (iter4) — V-side busy compression (vec 2.93us/u = 63% of R3 wall) is the only remaining lever there; (4) F fixed-overhead compression remains not-recommended (iter3 §4). consecutive_no_improvement resets to 0 with this adoption.",
+  "skills_consulted": [
+    ".agents/skills/tilelang-perf-optimization/SKILL.md (workflow, msprof口径, adoption discipline)",
+    ".agents/skills/tilelang-perf-optimization/references/performance-antipatterns.md (variant screened pre/post: ws 6.55MB << L2, per-core allocation, no redundant global sync, no new violations)",
+    "tilelang/language/ascend.py:191-231 (set/wait_cross_flag signature + mode semantics re-verified)",
+    "tvm/script/parser/core/parser.py ScriptMacro.__call__ (macro args bind as Python objects -> literal kvpar/first_kv static specialization verified before use)",
+    ".agents/skills/cann-bench/tasks/level4/gqa/cases.yaml (c7 shape resolution: case_id 7)",
+    "iter2/iter3/iter4 legacy infra: gen_variants_iter4.py (line-assert pattern), run_iter4_variant.py, prof_gqa_ab_iter4.py, parse_msprof_iter3.py, run_matrix_iter4.sh (patterns reused/adapted)"
+  ]
+}

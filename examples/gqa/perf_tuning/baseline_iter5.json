@@ -1,0 +1,45 @@
+{
+  "iteration": 5,
+  "round": 2,
+  "timestamp": "2026-10-18T00:20:00+08:00",
+  "mode": "implement",
+  "scope": "C2 only — flat dual-stream extension to kv_iters==2 uniform-noncausal (user-approved); conditional Gate-3 ruff-format fix of 3 pre-existing deviations approved IFF adopted",
+  "operator_dir": "examples/gqa",
+  "shipped_baseline": {
+    "gqa.py_md5": "cbce74410fee5f615489d0391b3ea620",
+    "test_gqa.py_md5": "3e2d08881cb7b6f36d5c89b2fd37a146",
+    "verified_at_start": true,
+    "backup": "perf_tuning/gqa_impl_iter5_before.py (md5 cbce74410fee5f615489d0391b3ea620)"
+  },
+  "kernel_execution_time": {
+    "note": "cross-session anchors (iter3 same-session means; discipline: A/B comparisons use same-session BASE only)",
+    "R4_c4like_g2stack_ns2_us": 207.85,
+    "R4_range_us": [206.94, 209.24],
+    "R4_hot_core": "26 tasks = 52 kv (512 stacked blocks / 20 cores)",
+    "c7like": "NEVER directly measured (iter3 §7-6) — first measured this iteration as Gate-2 secondary shape",
+    "c7_shape_from_cases_yaml": "B2 Sq128 Skv256 Nq32 Nkv8 D128 bf16 noncausal (case_id 7, note 'cross'); stacked = 2*8*2*2 = 64, mc = 4/3"
+  },
+  "test_shape": {
+    "primary_R4": "B4 S256 Skv256 Nq64 Nkv8 D128 bf16 noncausal (= bench c4)",
+    "secondary_c7like": "B2 S128 Skv256 Nq32 Nkv8 D128 bf16 noncausal (= bench c7)"
+  },
+  "test_command": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all (Gate 3, adoption only); Gate 0: python3 examples/gqa/perf_tuning/run_iter5_variant.py",
+  "precision_status": "pass (inherited — shipped 20/20 PASS 2026-10-17 eval; iter4 touched nothing; md5 re-verified this iteration)",
+  "programming_model": "Expert (manual flags/scopes) — unchanged, matches DESIGN of the operator family",
+  "tuning_config": {
+    "mode": "best_effort",
+    "adoption_threshold_pct": 3.0,
+    "max_iterations": 10,
+    "current_iteration": 5,
+    "consecutive_no_improvement_at_start": 1
+  },
+  "hard_constraints_from_iter4": [
+    "ws slots ns=2, release sems single init token, C step order G1-first — inherited verbatim from shipped flat kv1",
+    "gain source ONLY: deletion of the task-boundary batch drain/refill + batch-grain phase alternation",
+    "uniform noncausal subclass only; causal/variable kv==2 stays on shipped g2stack (zero change outside gate)",
+    "per-task acc_o/sumexp fills kept (iter2 NaN lesson); Gate 0 includes sparse NaN/Inf injection into BOTH kv blocks",
+    "flag-count mirror generated from ONE schedule table; pending depth <= 3 << 6 safety bound",
+    "state-slot liveness re-derived for kv==2 (acc_o/sumexp TASK-parity, sumexp_is/r_factors KV-parity, neg_sm g2stack h*2+cur + per-task prv cap refill) — c2_design_iter5.md §B.4"
+  ],
+  "phase_a_verdict": "GO — corrected expectation -9.5%..-22% (center -17.7%), see c2_design_iter5.md Phase A"
+}

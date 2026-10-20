@@ -1,0 +1,203 @@
+{
+ "tag": "post",
+ "gqa_py_md5": "4b4e453e4b8f2922baefbecb85912494",
+ "chosen": {
+  "r1_perhead": [
+   "per_head_bm64"
+  ],
+  "r2_flat_kv1": [
+   "g2stack_flat"
+  ],
+  "r3_flat_kv1": [
+   "g2stack_flat"
+  ],
+  "r6_flat_kv1": [
+   "g2stack_flat"
+  ],
+  "r5_decode_expert": [
+   "dense_expert"
+  ],
+  "decode_auto": [
+   "dense_auto"
+  ],
+  "causal_kv2_g2s": [
+   "g2stack"
+  ],
+  "smallstack_kv2_g2s": [
+   "g2stack"
+  ],
+  "c4like_kv2": [
+   "g2stack_flat_kv2"
+  ],
+  "c7like_kv2": [
+   "g2stack_flat_kv2"
+  ],
+  "d256_perhead": [
+   "per_head_bm64"
+  ],
+  "padrow_s100": [
+   "g2stack_flat_kv2"
+  ],
+  "l1_s_tail": [
+   "g2stack_flat"
+  ]
+ },
+ "plans": {
+  "r1_perhead": [
+   [
+    [
+     1,
+     8,
+     128,
+     128
+    ],
+    [
+     1,
+     32
+    ]
+   ]
+  ],
+  "r2_flat_kv1": [
+   [
+    [
+     2,
+     32,
+     128,
+     128
+    ],
+    [
+     2,
+     128
+    ]
+   ]
+  ],
+  "r3_flat_kv1": [
+   [
+    [
+     2,
+     128,
+     128,
+     128
+    ],
+    [
+     8,
+     128
+    ]
+   ]
+  ],
+  "r6_flat_kv1": [
+   [
+    [
+     2,
+     48,
+     128,
+     128
+    ],
+    [
+     4,
+     128
+    ]
+   ]
+  ],
+  "r5_decode_expert": [],
+  "decode_auto": [],
+  "causal_kv2_g2s": [
+   [
+    [
+     4,
+     64,
+     256,
+     128
+    ],
+    [
+     16,
+     128
+    ]
+   ]
+  ],
+  "smallstack_kv2_g2s": [
+   [
+    [
+     1,
+     32,
+     128,
+     128
+    ],
+    [
+     1,
+     128
+    ]
+   ]
+  ],
+  "c4like_kv2": [
+   [
+    [
+     4,
+     64,
+     256,
+     128
+    ],
+    [
+     16,
+     128
+    ]
+   ]
+  ],
+  "c7like_kv2": [
+   [
+    [
+     2,
+     32,
+     128,
+     128
+    ],
+    [
+     2,
+     128
+    ]
+   ]
+  ],
+  "d256_perhead": [
+   [
+    [
+     2,
+     32,
+     128,
+     256
+    ],
+    [
+     2,
+     128
+    ]
+   ]
+  ],
+  "padrow_s100": [
+   [
+    [
+     2,
+     32,
+     100,
+     128
+    ],
+    [
+     8,
+     4
+    ]
+   ]
+  ],
+  "l1_s_tail": [
+   [
+    [
+     2,
+     32,
+     124,
+     128
+    ],
+    [
+     8,
+     4
+    ]
+   ]
+  ]
+ }
+}

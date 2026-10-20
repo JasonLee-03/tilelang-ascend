@@ -1,0 +1,51 @@
+{
+  "iteration": 4,
+  "arm": "C3",
+  "title": "flat C-step reorder: G2(t) moved ahead of G1(t+1) in the steady loop",
+  "timestamp": "2026-10-17",
+  "status": "REJECTED at Gate 2 (performance regression on all 3 shapes; well outside the 3% adoption threshold)",
+  "shipped_untouched": {
+    "gqa.py_md5_before_and_after": "cbce74410fee5f615489d0391b3ea620",
+    "test_gqa.py_md5_before_and_after": "3e2d08881cb7b6f36d5c89b2fd37a146",
+    "note": "no Gate 3 was triggered; variant lives only in perf_tuning/gqa_flat_g2first_variant.py"
+  },
+  "design": {
+    "source": "cv_overlap_resurvey_iter3.md §8-C3 (cheap independent probe arm; low-confidence -0..-8%, sign unpredictable on paper)",
+    "implementation": "generated from the shipped flat kernel block by gen_variants_iter4.py; full audit diff perf_tuning/diff_iter4_g2first.txt (1 hunk, +2/-2 lines: the steady-loop body swap + comment). Slots/tokens/counts/ids untouched — pure intra-step issue-order change.",
+    "static_safety_check": "l0*/v_l1 parity of G2(t) (t%2) and G1(t+1) ((t+1)%2) disjoint; q_l1/p_l1 local-flag protocol order-preserving; K/V MTE2 loads of G1(t+1) now queue behind G2(t)'s ws_p read (accepted cost, measured); no new dependency cycle: G2(t)<-AO(t-1)<-G2(t-1)<-...<-init. The shipped epilogue was ALREADY G2-first, so the steady loop became consistent with it."
+  },
+  "gates": {
+    "gate0_standalone_precision": "PASS 10/10 (perf_tuning/run_iter4_variant.py --arm g2first): same case list as C1 (3 in-gate A/B shapes, mc2 edges, mixed mc, padcol S_kv=100, causal S_kv>S, boundary NaN/Inf sparse). ALL finite cases bit_identical=True vs shipped gqa(); boundary struct-equal (NaN pos / Inf pos+sign / finite bits). Zero [gqa][fallback] lines.",
+    "gate1_full_suite_monkeypatch": "NOT RUN — deferred behind Gate 2 per pre-registered plan (arm rejected at Gate 2). Harness retained: perf_tuning/gate1_suite_iter4.py g2first.",
+    "gate2_performance": "FAIL — same-session three-way interleaved A/B (3 samples/arm/shape, all rated 1650/1650 MHz). C3 vs BASE: R3 75.05 vs 60.55 = +24.0% SLOWER; R2 28.69 vs 26.17 = +9.6% SLOWER; R6 30.61 vs 27.62 = +10.8% SLOWER. Rejected. Arm spreads tiny (0.3-3.2%) => verdict unambiguous.",
+    "gate3": "NOT TRIGGERED"
+  },
+  "measurements": {
+    "task_duration_us": {
+      "R3_B2_Nq128_Nkv8_bf16_causal": {"base": [61.44, 59.66, 60.54], "base_mean": 60.55, "g2first": [75.12, 75.14, 74.88], "g2first_mean": 75.05, "delta_pct": 23.95},
+      "R2_B2_Nq32_Nkv8_fp16_causal": {"base": [27.14, 26.22, 25.16], "base_mean": 26.17, "g2first": [28.86, 28.64, 28.58], "g2first_mean": 28.69, "delta_pct": 9.63},
+      "R6_B2_Nq48_Nkv4_fp16_noncausal": {"base": [27.20, 27.84, 27.82], "base_mean": 27.62, "g2first": [30.40, 30.22, 31.20], "g2first_mean": 30.61, "delta_pct": 10.83}
+    },
+    "wait_id_telemetry_mean_of_3_samples_max_across_cores_us": {
+      "R3": {"base": {"C_id1": 33.73, "C_id2": 10.01, "C_id5": 12.27, "V_id0": 8.67, "V_id3": 20.43, "V_id4": 4.96, "hot_aiv": 57.60},
+             "g2first": {"C_id1": 2.34, "C_id2": 15.22, "C_id5": 54.25, "V_id0": 22.29, "V_id3": 21.44, "V_id4": 2.56, "hot_aiv": 71.94}},
+      "R2": {"base": {"C_id1": 8.83, "C_id2": 3.97, "C_id5": 8.97, "V_id0": 5.22, "V_id3": 7.27, "V_id4": 2.78},
+             "g2first": {"C_id1": 2.19, "C_id2": 7.26, "C_id5": 13.47, "V_id0": 7.82, "V_id3": 7.25, "V_id4": 3.35}},
+      "R6": {"base": {"C_id1": 8.97, "C_id2": 4.53, "C_id5": 10.30, "V_id0": 5.17, "V_id3": 9.20, "V_id4": 4.44},
+             "g2first": {"C_id1": 2.35, "C_id2": 7.41, "C_id5": 15.12, "V_id0": 9.60, "V_id3": 8.06, "V_id4": 2.41}}
+    },
+    "data_quality_note": "r3_g2first_s2 PipeUtilization.csv contained one impossible row (block19 aic_time=1395us vs TaskDur 75.14us) — profiler artifact; the row's block was excluded from wait-id/hot-core aggregation (all other samples clean). TaskDur (adoption metric) taken from OpBasicInfo.csv, unaffected."
+  },
+  "mechanism_findings": {
+    "intended_effect_FAILED": "V_id3 (SM waiting for ws_p release — the target) is UNCHANGED on R3 (20.43 -> 21.44us): moving G2(t) to the step head does NOT release SM(x+2) earlier in practice, because C step t itself cannot start until its predecessor drains, and the strict data-ready chain (SM(x)->G2(x)->AO(x)->beat order->SM(x+2)) re-serializes the ring at the same cadence.",
+    "measured_side_effects": "C_id1 nearly vanished (33.73 -> 2.34us: the G1 release-wait finds its token already pending after G2(t)'s chain), BUT (a) C_id5 exploded 12.27 -> 54.25us: G2(t)'s head-of-step WS3_V2C wait (AO(t-1) release) is now EXPOSED instead of hidden behind the old G1 pacing stall; (b) V_id0 rose 8.67 -> 22.29us: ws_s(t+1) FIX write lands later by ~dur(G2(t)) exactly as the resurvey's cost-side warned — and since V is the pacer on R3 (hot_aiv 57.6 -> 71.9us, +25%), delaying its data gate delays the whole kernel.",
+    "conclusion": "The shipped G1-first step order is pacer-feed-first: it prioritizes ws_s production for V and hides G2's AO-release wait under G1's stall. C3's paper 'sign unpredictable' resolved decisively negative. No variant of this reorder is worth pursuing without also addressing the strict data-ready chain."
+  },
+  "rollback_reason": "Gate 2 regression on all 3 shapes (+24.0%/+9.6%/+10.8% vs same-session BASE); variant not adopted, gqa.py untouched. Artifacts retained: gqa_flat_g2first_variant.py, diff_iter4_g2first.txt, msprof_op_iter4_*_g2first_s{1..3}.",
+  "next_hint_iter5": "Do not retry C-step reordering in the flat domain. C2 (kv==2 flat dual-stream): keep shipped step order G1(u+1)->G2(u), ns=2 slots, single release token; gain must come from deleting the g2stack batch-boundary drain/refill only.",
+  "skills_consulted": [
+    ".agents/skills/tilelang-perf-optimization/references/performance-antipatterns.md (redundant-sync / CV-overlap items — reorder screened)",
+    "tilelang/language/ascend.py:191-231 (cross-flag semantics)",
+    "iter3 legacy infra reuse (probe/parse/matrix patterns)"
+  ]
+}

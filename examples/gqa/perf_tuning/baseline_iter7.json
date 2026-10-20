@@ -1,0 +1,40 @@
+{
+  "iteration": 7,
+  "mode": "implement",
+  "timestamp": "2026-10-19T13:49:00+08:00",
+  "operator": "gqa",
+  "scope_user_approved": "P1 (transpose_out retile, implement arm) + P5 (flat_kv2 neg_sm fill narrowing, implement arm) + P3 (FIX->UB direct: Gate-0 feasibility probe ONLY, no adoption, no dispatch integration)",
+  "shipped_baseline": {
+    "gqa.py_md5": "bd470e072d0a48faeac1e786306932e8",
+    "test_gqa.py_md5": "3e2d08881cb7b6f36d5c89b2fd37a146",
+    "verified_at_startup": true,
+    "ruff_status_at_startup": "clean (0.15.14 + 0.16.7 format/check, iter5 Gate 3 evidence)",
+    "precision_status": "pass (inherited: 2026-10-18 cann-bench 20/20 PASS score 68.12 avg_speedup 0.6435; iter5 Gate 3 full suite 18 PRECISION_PASS + 6 BOUNDARY_PASS)",
+    "programming_mode": "hybrid (expert Fixed-Core main kernels P28_EXPERT_PASS_CONFIGS + AUTO transpose/pad aux kernels) — consistent with DESIGN docs and iter2-iter5 records"
+  },
+  "baseline_perf_anchors": {
+    "source": "iter6 same-session anchors (cross-session reference only; this session's BASE arm must reproduce within ±3% or session health is investigated)",
+    "main_TaskDur_us": {"R1": 10.34, "R2": 27.22, "R3": 60.53, "R4": 189.65, "R5": 145.89, "R6": 28.02},
+    "e2e_sum_TaskDur_us_B_matrix": {"R1": 27.29, "R2": 49.29, "R3": 103.82, "R4": 244.79, "R5": 146.70, "R6": 60.47},
+    "transpose_out_us_blk": {"R1": [12.01, 1], "R2": [13.21, 4], "R3": [24.10, 8], "R4": [29.31, 16], "R6": [22.10, 3]},
+    "aux_share_of_e2e_pct": {"R1": 61.1, "R2": 47.1, "R3": 40.9, "R4": 23.3, "R5": 0.0, "R6": 54.5},
+    "c7_main_TaskDur_us": {"iter5_adopted": 35.52, "note": "cross-session reference"}
+  },
+  "test_shape": {
+    "R1": "B1 S128 Skv128 Nq8 Nkv2 D128 causal fp16 (per_head_bm64)",
+    "R2": "B2 S128 Skv128 Nq32 Nkv8 D128 causal fp16 (g2stack_flat, c1-like)",
+    "R3": "B2 S128 Skv128 Nq128 Nkv8 D128 causal bf16 (g2stack_flat, c3-like)",
+    "R4": "B4 S256 Skv256 Nq64 Nkv8 D128 noncausal bf16 (g2stack_flat_kv2, c4-like)",
+    "R5": "B16 S1 Skv2048 Nq32 Nkv8 D128 noncausal fp16 (dense_expert decode, c11-like)",
+    "R6": "B2 S128 Skv128 Nq48 Nkv4 D128 noncausal fp16 (g2stack_flat, c2-like)",
+    "c7": "B2 Sq128 Skv256 Nq32 Nkv8 D128 noncausal bf16 (g2stack_flat_kv2, cross)"
+  },
+  "test_command_precision": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all",
+  "noise_threshold_pct": 3.0,
+  "iteration_budget": {"max": 10, "current": 7, "consecutive_no_improvement_in": 0},
+  "environment_contract": {
+    "cwd": "repo root /mnt/workspace/cann/20260910_gqa_V02/tilelang-ascend",
+    "env": ["unset PYTHONPATH", "export ACL_OP_INIT_MODE=1", "export LD_LIBRARY_PATH=/usr/local/sqlite3/lib:$LD_LIBRARY_PATH (before msprof export)"],
+    "npu_health_at_startup": "Health OK, zero residual processes, npu-smi verified"
+  }
+}

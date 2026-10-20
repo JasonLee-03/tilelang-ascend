@@ -1,0 +1,534 @@
+{
+  "iteration": 9,
+  "arm": "P2-wave2",
+  "title": "P2 wave-2 — extend the iter8-validated BSND direct-write to the remaining transpose_out domains (per-head _gqa_kernel_expert / prefill_expert / g2stack)",
+  "status": "ADOPTED (prefill_expert + g2stack domains) — per-head domain EXCLUDED on a structural correctness finding. Gate 2: all preregistered criteria PASS on both viable domains (c19 +13.15%, c8 +6.78%, c9 +8.00% PRIMARY; c10 +12.97% secondary; all non-overlapping distributions); 5 out-of-domain guardrails inside +/-3%; main-cost guardrail worst +1.65% (limit +5%, c8 main even got faster -0.35%); tout ELIMINATED on all 4 covered shapes; wait-id discriminating gate PASS on all 4 (c19 discloses a noisy V-id3 +20.7% on a 0.36us micro-component, SUM-wait inflation +0.36us is 21x below the eliminated tout, gain 100% of predicted => no downgrade per the preregistered rule). Gate 0: 25/25 bit-identical. Gate 3: 15/15 shapes+census verified, full suite 24/24 exit 0 zero fallback, self-check Test Passed!, ruff 4/4 gates exit 0. Criteria were NOT moved; one comparator harness-shape assertion (the padded main-output shape on non-aligned gate cases) was fixed with the bit-identity criteria verbatim unchanged and is disclosed. gqa.py md5 3aa9cfa2... -> 606b07ff474ec42b8244f0831327d75b.",
+  "timestamp_preregistered": "2026-10-19T22:25:00+08:00",
+  "scope_approved_by_user": "P2 wave-2 ONLY: push the iter8 BSND direct-write mechanism to the remaining transpose_out domains (per-head / prefill_expert / g2stack). Non-aligned S stays EXCLUDED this round (transpose_out(s_real=) retained, P1 retile stays live; the FIN row-level masked-write crop scheme is NOT attempted, archived). After this round the Orchestrator runs cann-bench to bank the gains.",
+  "shipped_baseline": {
+    "gqa.py_md5_at_start": "3aa9cfa2625cdce96a62ce967785fe85",
+    "test_gqa.py_md5_at_start": "3e2d08881cb7b6f36d5c89b2fd37a146",
+    "note": "re-verified identical before any work (task requirement); Gate-3 discipline: gqa.py untouched until Gate 3; serial-only NPU discipline (task #5: two Fixed-Core-20 expert kernels co-resident can deadlock — all collections run one at a time)"
+  },
+  "phase_a": {
+    "method": "BASE-arm B-matrix census (msprof op --launch-count=3, PipeUtilization,Memory,L2Cache), 2 samples per shape, same day, all instances 1650/1650 MHz, 0 artifact rows dropped, 14/14 rc=0 (msprof_op_iter9_PA_*). e2e = SUM of TaskDur over the whole kernel chain (tqkv + main + tout). Dispatch verified by census_iter9_dispatch.py (pure-host predicate replication, 14 line anchors + md5 assert): wave-2 domains = bench c5/c6 (per-head), c19 (prefill_expert), c8/c9/c10 (g2stack) + perf r1; all have aligned S (S%64==0) so the BSND output needs no crop.",
+    "measurements_base": {
+      "r1": {
+        "domain": "per_head",
+        "e2e": [
+          20.12,
+          19.88
+        ],
+        "e2e_mean": 20.0,
+        "tout": [
+          5.48,
+          5.04
+        ],
+        "tout_mean": 5.26,
+        "tout_blk": 16,
+        "main_mean": 10.09,
+        "tqkv_mean": 4.65,
+        "tout_share_pct": 26.3
+      },
+      "c5": {
+        "domain": "per_head",
+        "e2e": [
+          76.84,
+          77.36
+        ],
+        "e2e_mean": 77.1,
+        "tout": [
+          7.68,
+          7.64
+        ],
+        "tout_mean": 7.66,
+        "tout_blk": 16,
+        "main_mean": 58.83,
+        "tqkv_mean": 10.61,
+        "tout_share_pct": 9.9
+      },
+      "c6": {
+        "domain": "per_head",
+        "e2e": [
+          598.58,
+          598.66
+        ],
+        "e2e_mean": 598.62,
+        "tout": [
+          31.04,
+          30.32
+        ],
+        "tout_mean": 30.68,
+        "tout_blk": 16,
+        "main_mean": 531.92,
+        "tqkv_mean": 36.02,
+        "tout_share_pct": 5.1
+      },
+      "c19": {
+        "domain": "prefill_expert",
+        "e2e": [
+          56.98,
+          57.82
+        ],
+        "e2e_mean": 57.4,
+        "tout": [
+          7.58,
+          7.88
+        ],
+        "tout_mean": 7.73,
+        "tout_blk": 16,
+        "main_mean": 33.17,
+        "tqkv_mean": 16.5,
+        "tout_share_pct": 13.5
+      },
+      "c8": {
+        "domain": "g2stack",
+        "e2e": [
+          860.04,
+          856.26
+        ],
+        "e2e_mean": 858.15,
+        "tout": [
+          55.28,
+          55.88
+        ],
+        "tout_mean": 55.58,
+        "tout_blk": 64,
+        "main_mean": 751.43,
+        "tqkv_mean": 51.14,
+        "tout_share_pct": 6.5
+      },
+      "c9": {
+        "domain": "g2stack",
+        "e2e": [
+          658.02,
+          660.32
+        ],
+        "e2e_mean": 659.17,
+        "tout": [
+          59.58,
+          56.64
+        ],
+        "tout_mean": 58.11,
+        "tout_blk": 32,
+        "main_mean": 556.74,
+        "tqkv_mean": 44.32,
+        "tout_share_pct": 8.8
+      },
+      "c10": {
+        "domain": "g2stack",
+        "e2e": [
+          1225.68,
+          1223.66
+        ],
+        "e2e_mean": 1224.67,
+        "tout": [
+          152.28,
+          154.76
+        ],
+        "tout_mean": 153.52,
+        "tout_blk": 64,
+        "main_mean": 981.16,
+        "tqkv_mean": 89.99,
+        "tout_share_pct": 12.5
+      }
+    },
+    "cost_model": "wave-1-calibrated: benefit = the FULL tout TaskDur (the launch floor is already inside TaskDur under this project's e2e metric — no double count, iter8 disclosure); cost = strided FIN MTE3 increment, wave-1 probe band +13..+30ns per [32,128] box (ratio 1.07-1.17x), scaled by boxes/core, AND wave-1 measured 4/5 covered shapes got marginally FASTER main (the eliminated L2 write+read pass of the output tensor offsets the strided cost) — so the cost column below is the pessimistic full-exposure upper bound.",
+    "net_predictions": {
+      "c19": {
+        "benefit_us": -7.73,
+        "cost_upper_us": 0.2,
+        "net_pct_central": -13.1,
+        "net_pct_pessimistic": -12.8,
+        "boxes": "128 tasks x 1 box / 20 cores"
+      },
+      "c8": {
+        "benefit_us": -55.58,
+        "cost_upper_us": 3.1,
+        "net_pct_central": -6.1,
+        "net_pct_pessimistic": -5.7,
+        "boxes": "1024 tasks x 2 boxes / 20 cores"
+      },
+      "c9": {
+        "benefit_us": -58.11,
+        "cost_upper_us": 3.1,
+        "net_pct_central": -8.3,
+        "net_pct_pessimistic": -7.9,
+        "boxes": "1024 tasks x 2 boxes / 20 cores"
+      },
+      "c10": {
+        "benefit_us": -153.52,
+        "cost_upper_us": 6.1,
+        "net_pct_central": -12.0,
+        "net_pct_pessimistic": -11.5,
+        "boxes": "2048 tasks x 2 boxes / 20 cores"
+      },
+      "r1_excluded": {
+        "benefit_us": -5.26,
+        "net_pct_central": -25.4,
+        "note": "economics recorded; domain EXCLUDED by the Phase-B correctness finding below"
+      },
+      "c5_excluded": {
+        "benefit_us": -7.66,
+        "net_pct_central": -9.6,
+        "note": "excluded, same finding"
+      },
+      "c6_excluded": {
+        "benefit_us": -30.68,
+        "net_pct_central": -4.9,
+        "note": "excluded, same finding"
+      }
+    },
+    "verdicts": {
+      "per_head": "PHASE-A ECONOMICS = GO (r1 -25.4% / c5 -9.6% / c6 -4.9% central, all > 3%) — BUT PHASE-B CORRECTNESS = STRUCTURALLY INFEASIBLE with the approved minimal edit; domain EXCLUDED from Gate 0/2/3 (see phase_b_perhead_finding). Not a budget cut, not DESIGN_ERROR: a tilelang AUTO vid-reduction codegen limitation, evidence archived.",
+      "prefill_expert": "GO — c19 central -13.1% (pessimistic -12.8%), 4.4x the 3% threshold; mechanism identical to the adopted wave-1 (expert manual-flag kernel, FIN write inside the shipped SIG_S_HALF pair), bit-identity pre-confirmed (bit_probe_iter9.log c19 BITOK).",
+      "g2stack": "GO — c8 -6.1% / c9 -8.3% / c10 -12.0% central (pessimistic band -5.7%..-11.5%), all > 3% even at full cost exposure; the task book's caution (tout share maybe only 3-7%) is answered by direct measurement: shares are 6.5/8.8/12.5% post-P1. Causal variable-length kv (c8 kv=8, c10 kv=4) does NOT enlarge the edit surface: the FIN output write happens once per task AFTER the kv loop, independent of kv_useful; bit-identity on the causal forms is a preregistered Gate-0 case. Mechanism bit-identity pre-confirmed on c9 (bit_probe_iter9.log BITOK)."
+    },
+    "phase_b_perhead_finding": {
+      "summary": "The per-head AUTO kernel (_gqa_kernel_expert) cannot take the 2-line BSND edit on ANY bench-relevant shape. Root cause (codegen-level, then empirically confirmed): under threads=2 (the serial form — taken by ALL causal shapes, odd-kv shapes and D=256, i.e. every bench per-head case r1/c5/c6), the AUTO vid-reduction pass lowers the contiguous BHSD output write correctly (per-vid blockCount=32, dst offset vid*half*D, dstStride=0) but for the strided BSND box it emits the UNSPLIT blockCount=block_M (=64) WHILE KEEPING the contiguous-layout vid offset (vid*4096): both vids then write overlapping 64-row strided windows 4 rows apart => corruption. The threads=1 pipelined form lowers correctly (single vid, blockCount=64, dstStride=1792B, BITOK) but no bench per-head case lands there: use_pipeline requires non-causal AND D<=128 AND even kv>=2, and such eligible shapes with >=20 instances route to the expert kernels instead — per-head only receives causal / odd-kv / D!=128 / tiny-instance shapes, i.e. threads=2 (or non-bench tiny shapes).",
+      "evidence": [
+        "codegen_audit_iter9.log + codegen_iter9_perhead_{r1,c5,pipe}_{base,w2}.cu: base Output write copy_ub_to_gm<half,128,32>(..., 128, 32, 128) [blockCount=32, dstStride=0] vs w2 (..., 1024, 64, 128) [blockCount=64, dstStride=1792B] with the dst offset retaining vid*4096 — numeric decode: vid0 writes s=[bx*64, bx*64+64), vid1 writes s=[bx*64+4, bx*64+68) at the same head => overlap + cross-block spill",
+        "bit_probe_iter9.log: r1_perhead_causal_t2 BITFAIL maxabsdiff=5.93e+04; c5_perhead_d256_t2 BITFAIL maxabsdiff=NaN; perhead_pipe_t1 (threads=1) BITOK maxabsdiff=0",
+        "contrast — the expert manual-flag kernels lower correctly (blockCount stays 32, vid offset recomputed to vid*half*N_q*D, dstStride=(N_q*D-D)*sizeof): codegen_iter9_{prexpert_c19,g2stack_c9,g2stack_c8}_w2.cu, offsets algebraically re-derived element-by-element in the wave-2 design doc; bit_probe c19/c9 BITOK"
+      ],
+      "alternatives_considered": [
+        "restrict the per-head gate to the threads=1 pipelined form: covers ZERO bench cases (r1/c5/c6 all causal) => no benefit, rejected",
+        "expose vid in the per-head signature and hand-write the vid-split strided box (expert-style): converts the AUTO output stage to manual vid handling while the COMPUTE stage stays AUTO-vid-split — alignment between the AUTO-split cast (copy_ub_to_ub 32 rows/vid) and a manual write split is unproven, this is a kernel restructuring well beyond the approved 2-line edit, rejected for this round",
+        "fix AscendVidReduction in the tilelang compiler: out of operator-tuning scope; recorded as a framework finding for the repo/toolchain owners"
+      ],
+      "disposition": "per-head keeps the shipped BHSD + transpose_out(s_real-capable) path with the P1 retile live (r1 tout already 12.08->5.26us since iter7). No forced change (discipline #9). The wave-2 integration MUST NOT touch _gqa_kernel_expert."
+    },
+    "go_no_go_rule": "corrected central expectation < 3% on a domain's primary workloads => skip the domain. Actual: prefill_expert -13.1%, g2stack -6.1..-12.0% => both GO. per-head: economics passed but the mandatory correctness gate (bit-identity) is structurally unreachable => EXCLUDED."
+  },
+  "criteria_PREREGISTERED": {
+    "locked_at": "2026-10-19T22:25:00+08:00 (BEFORE any Gate-2 A/B measurement; not to be moved. Any candidate-defect fix keeps these criteria VERBATIM and is disclosed — iter7 V1->V2 / iter8 harness-fix precedent)",
+    "primary_prefill_expert": "c19-like (2,128,128,32,32,128,causal,bf16) e2e (sum of ALL kernel-chain TaskDur, B-matrix --launch-count=3) improvement >= 3% vs BASE, same-session interleaved >= 3+3 samples",
+    "primary_g2stack": "c8-like AND c9-like e2e improvement >= 3% vs BASE, same-session interleaved >= 3+3 samples each. BOTH must pass for the g2stack domain to be adopted.",
+    "secondary_covered": "c10-like e2e must not regress > 3% and must be directionally consistent with the Phase-A model (sign + ordering c10 > c9 > c8 by tout share)",
+    "guardrail_out_of_domain": "same-session A/B within +/-3% for: r1 (per-head, untouched — the excluded domain must show ZERO change), r2 (wave-1 shipped BSND domain, untouched), r5 (decode, untouched), s100e + s100g (non-aligned S: variant never invoked, transpose_out(s_real) runs both arms)",
+    "guardrail_main_cost": "main-kernel TaskDur ARM vs BASE on every covered workload (c19, c8, c9, c10): inflation <= +5% (wave-1 probe-calibrated bound <= +0.6% here; +5% is the pacing-damage tripwire) AND the e2e net gain must cover the measured main increment",
+    "waitid_discriminating_gate_MANDATORY": "both covered kernels are manual-flag expert kernels, so the iter4-signature check applies VERBATIM from wave-1: for every covered workload compare wait-id telemetry (C: id1/id2/id5, V: id0/id3/id4) ARM vs BASE. REJECT if (SUM_wait_ARM - SUM_wait_BASE) > the eliminated tout TaskDur. If V-id3 inflates > 20% of its BASE value AND the e2e gain is < 50% of the Phase-A predicted gain => downgrade confidence + disclose (severe migration => REJECT). The per-head AUTO domain would have used the codegen audit instead (no manual protocol) — moot, domain excluded.",
+    "precision_gate0": "BIT-IDENTICAL final output vs the shipped full chain (main + transpose_out) on every covered workload — pure data-path re-partition, zero arithmetic change, tolerance NOT relaxed; raw-bit compare via view(int16) (iter8 finding 3). Plus per domain: NaN/Inf injection (iter5 boundary_sparse set), fullrange +/-65504 fp16 (golden-invariance criterion, iter7/8 precedent), causal variable-length forms (g2stack kv=2 causal, kv=4 causal, ns=1 batch, padcol use_mask), golden viol_arm == viol_base == 0 (f6 policy: NPU golden in the input dtype, atol 1e-3 fp16 / 2e-2 bf16, rtol 1e-2), L2 kernel-level transpose_out(main_pre_BHSD) == main_post_BSND, dispatch isolation (variant factory NEVER invoked outside the covered domains — incl. the per-head r1/c5 cases, decode, wave-1 flat, non-aligned S; chosen identical; tout runs/absent as expected)",
+    "session_health": "BASE reproduces the Phase-A means (this JSON) within +/-3% on c19/c8/c9/c10; r1 within +/-10% (launch-floor-dominated micro-kernel band, preregistered NOW from iter8 framework finding 7 — its tout component alone showed 4.80-5.62us across iter7/iter8 sessions)",
+    "noise_threshold_pct": 3.0,
+    "samples": ">= 3 per arm per workload, same-session interleaved with per-round arm rotation (iter5/7/8 pattern); guards r1/r2/r5 3+3, s100e/s100g 2+2 (their real gate is Gate-0 bit-identity; A/B is sanity only)",
+    "partial_adoption": "per-domain: prefill_expert and g2stack are judged and integrated INDEPENDENTLY (the capability-flag mechanism supports per-kernel on/off); a domain that fails keeps the shipped path and its data is archived. per-head is excluded up front (correctness)."
+  },
+  "gate0": {
+    "runner": "perf_tuning/run_iter9_p2w2_gate0.py (log: candidate_iter9_p2w2_gate0.log)",
+    "result": "25/25 PASS in one clean run (14 covered-domain L1/L2 cases + 11 out-of-domain L3 isolation cases)",
+    "criterion": "BIT-IDENTICAL final output ARM vs BASE through the public gqa() API, raw-bit compared (view(int16), NaN-safe — iter8 finding 3). Pure data-path re-partition, zero arithmetic change => anything but bit-identity is a bug; tolerance NOT relaxed.",
+    "L1_covered": {
+      "prefill_expert": [
+        "c19_mha_g1_ns1 (G=1 MHA degenerate, ns=1, bf16)",
+        "prexpert_g3_kv2_noncausal (G=3 odd => not g2stack, ns=2, fp16)",
+        "prexpert_g3_kv4_causal_varlen (G=3, causal variable-length kv=4, ns=4, bf16)",
+        "prexpert_padcol_skv200 (S aligned, S_kv=200 non-aligned => use_mask, ns=2)",
+        "boundary_sparse_prexpert_bf16 (NaN/Inf injection)",
+        "fullrange_prexpert_g3_fp16 (+-65504)"
+      ],
+      "g2stack": [
+        "c9_like_kv4_noncausal (ns=4, bf16)",
+        "c8_like_kv8_causal_varlen (ns=8, causal variable-length, fp16)",
+        "c10_like_kv4_causal_varlen (ns=4, causal variable-length, bf16)",
+        "g2stack_kv2_causal_varlen (ns=2, causal)",
+        "g2stack_ns1_stacked20 (ns=1 batch form, stacked=20 gate edge)",
+        "g2stack_padcol_skv200_causal (use_mask + causal)",
+        "boundary_sparse_g2stack_kv4causal (NaN/Inf dual kv block)",
+        "fullrange_g2stack_kv4causal (+-65504)"
+      ],
+      "bit_identity": "14/14 raw-bit identical (BASE main+transpose_out vs ARM BSND direct)",
+      "golden": "f6 policy (NPU golden in the input dtype, atol 1e-3 fp16 / 2e-2 bf16, rtol 1e-2): viol_arm == viol_base == 0 on all 10 finite cases; the 2 boundary_sparse cases carry nan_arm == nan_base == nan_ref (275 prexpert / 128 g2stack) with identical Inf positions+signs and identical finite bits; the 2 fullrange cases: fullrange_g2stack golden finite (viol_arm==viol_base==0), fullrange_prexpert golden SATURATED (nan_ref=974848, viol_arm==viol_base==8192) => golden-invariance criterion (iter7/8 precedent), DISCLOSED not dropped",
+      "L2_kernel_level": "transpose_out(main_pre_BHSD) == main_post_BSND raw-bit identical on all 14 covered cases",
+      "dispatch_evidence": "variant factory invoked on all 14; chosen == expected (prefill_expert / g2stack); transpose_out SKIPPED in ARM and RAN in BASE on every case; output shape (B,S,Nq,D) + contiguous"
+    },
+    "L3_out_of_domain": {
+      "cases": [
+        "r1_perhead_bm64 (the EXCLUDED per-head domain — variant factory NEVER patched)",
+        "c5_d256_perhead (excluded domain, D=256)",
+        "odd_kv3_perhead (excluded domain, odd kv fallback)",
+        "r2_flatkv1_wave1 (wave-1 shipped BSND — tout ABSENT both arms)",
+        "r4_flatkv2_wave1 (wave-1 shipped BSND)",
+        "r5_decode_expert (no tout)",
+        "decode_auto_small (no tout)",
+        "s100e_prexpert_unaligned (prefill_expert chosen BUT S=100 non-aligned => gate excludes, tout(s_real) runs)",
+        "s100g_g2stack_unaligned (g2stack chosen BUT S=100 => gate excludes)",
+        "s100p_perhead_unaligned (per-head, S=100)",
+        "l1_s_tail_s130_g2stack (S=130 non-aligned)"
+      ],
+      "result": "11/11: variant factory NEVER invoked, chosen identical to BASE, transpose_out RAN (or ABSENT on wave-1/decode), final output raw-bit identical, golden viol=0. Includes the non-aligned-S gate isolation for BOTH covered domains (s100e prefill_expert, s100g g2stack) and the excluded per-head domain (r1/c5/odd_kv3)."
+    }
+  },
+  "gate2": {
+    "session": "2026-10-19 22:43-22:58, single working session, 50/50 runs rc=0, all 1650/1650 MHz, zero [AB-PROBE] assertion failures, zero tracebacks, 0 impossible PipeUtilization rows dropped, 50/50 msprof dirs present",
+    "mode": "B-matrix: msprof op --launch-count=3 --aic-metrics=PipeUtilization,Memory,L2Cache on the FULL kernel chain; e2e = SUM of TaskDur over all instances; round-robin with per-round arm rotation; 3 samples/arm (covered + r1/r2/r5), 2 samples/arm (s100e/s100g)",
+    "e2e_us": {
+      "c19": {
+        "role": "PRIMARY (prefill_expert)",
+        "base": [
+          56.92,
+          57.66,
+          57.64
+        ],
+        "base_mean": 57.41,
+        "w2": [
+          49.86,
+          49.64,
+          50.08
+        ],
+        "w2_mean": 49.86,
+        "improvement_pct": 13.15,
+        "predicted_pct": 13.1,
+        "distributions": "non-overlapping (base min 56.92 > w2 max 50.08)",
+        "criterion": "PASS >=3%"
+      },
+      "c8": {
+        "role": "PRIMARY (g2stack)",
+        "base": [
+          859.76,
+          849.82,
+          857.5
+        ],
+        "base_mean": 855.69,
+        "w2": [
+          797.54,
+          796.0,
+          799.48
+        ],
+        "w2_mean": 797.67,
+        "improvement_pct": 6.78,
+        "predicted_pct": 6.1,
+        "distributions": "non-overlapping",
+        "criterion": "PASS >=3%"
+      },
+      "c9": {
+        "role": "PRIMARY (g2stack)",
+        "base": [
+          656.88,
+          657.1,
+          659.62
+        ],
+        "base_mean": 657.87,
+        "w2": [
+          608.28,
+          600.58,
+          606.76
+        ],
+        "w2_mean": 605.21,
+        "improvement_pct": 8.0,
+        "predicted_pct": 8.3,
+        "distributions": "non-overlapping",
+        "criterion": "PASS >=3%"
+      },
+      "c10": {
+        "role": "covered-secondary (g2stack)",
+        "base": [
+          1226.22,
+          1238.82,
+          1229.82
+        ],
+        "base_mean": 1231.62,
+        "w2": [
+          1073.34,
+          1072.08,
+          1070.4
+        ],
+        "w2_mean": 1071.94,
+        "improvement_pct": 12.97,
+        "predicted_pct": 12.0,
+        "distributions": "non-overlapping",
+        "criterion": "PASS (no regression)"
+      },
+      "r1": {
+        "role": "out-of-domain guardrail (per-head EXCLUDED, untouched)",
+        "base_mean": 20.67,
+        "w2_mean": 21.01,
+        "improvement_pct": -1.61,
+        "distributions": "overlapping",
+        "criterion": "PASS (|delta| <= 3%)"
+      },
+      "r2": {
+        "role": "out-of-domain guardrail (wave-1 flat, untouched)",
+        "base_mean": 37.55,
+        "w2_mean": 37.13,
+        "improvement_pct": 1.12,
+        "distributions": "overlapping",
+        "criterion": "PASS (|delta| <= 3%)"
+      },
+      "r5": {
+        "role": "out-of-domain guardrail (decode, untouched)",
+        "base_mean": 146.07,
+        "w2_mean": 145.8,
+        "improvement_pct": 0.19,
+        "distributions": "overlapping",
+        "criterion": "PASS (|delta| <= 3%)"
+      },
+      "s100e": {
+        "role": "non-aligned guardrail (prefill_expert chosen, gate excludes)",
+        "base_mean": 235.0,
+        "w2_mean": 235.88,
+        "improvement_pct": -0.37,
+        "distributions": "overlapping",
+        "criterion": "PASS (|delta| <= 3%)"
+      },
+      "s100g": {
+        "role": "non-aligned guardrail (g2stack chosen, gate excludes)",
+        "base_mean": 777.55,
+        "w2_mean": 776.78,
+        "improvement_pct": 0.1,
+        "distributions": "overlapping",
+        "criterion": "PASS (|delta| <= 3%)"
+      }
+    },
+    "tout_elimination_evidence": {
+      "note": "instance census from the msprof dirs: BASE covered runs = kernel_kernel:0 (transpose_qkv) + main_kernel:0 + kernel_kernel:1 (transpose_out); w2-arm covered runs = kernel_kernel:0 + main_kernel:0 ONLY — transpose_out ABSENT (eliminated), not merely faster.",
+      "base_tout_us_blk": {
+        "c19": [
+          7.6,
+          16
+        ],
+        "c8": [
+          55.14,
+          64
+        ],
+        "c9": [
+          57.82,
+          32
+        ],
+        "c10": [
+          159.15,
+          64
+        ]
+      },
+      "w2_tout": {
+        "c19": "ABSENT",
+        "c8": "ABSENT",
+        "c9": "ABSENT",
+        "c10": "ABSENT",
+        "r1": "PRESENT 5.23us blk=16 (per-head excluded, P1 retile live)",
+        "r2": "ABSENT (wave-1 shipped)",
+        "r5": "ABSENT (decode)",
+        "s100e": "PRESENT (non-aligned, s_real path)",
+        "s100g": "PRESENT 80.18us blk=200 (non-aligned, s_real path)"
+      }
+    },
+    "main_cost_guardrail": {
+      "delta_pct": {
+        "c19": 1.65,
+        "c8": -0.35,
+        "c9": 0.69,
+        "c10": 0.09,
+        "r1": -0.25,
+        "r2": -1.46,
+        "r5": -0.19,
+        "s100g": -0.16
+      },
+      "limit_pct": 5.0,
+      "verdict": "ALL PASS. c8's main got marginally FASTER (-0.35%) — the same L2 write+read-pass removal seen in wave-1 (4/5 shapes). Worst covered increment c19 +1.65% (+0.55us), inside the probe-calibrated band. The strided-write cost is negligible against the eliminated tout (c8 55us, c9 58us, c10 159us).",
+      "benefit_coverage_pct_of_tout": {
+        "c19": 99.3,
+        "c8": 105.2,
+        "c9": 91.1,
+        "c10": 100.3
+      }
+    },
+    "waitid_discriminating_gate": {
+      "sum_wait_delta_us": {
+        "c19": 0.36,
+        "c8": 1.06,
+        "c9": 4.02,
+        "c10": 8.35
+      },
+      "eliminated_tout_us": {
+        "c19": 7.6,
+        "c8": 55.14,
+        "c9": 57.82,
+        "c10": 159.15
+      },
+      "v_id3_delta_pct": {
+        "c19": 20.7,
+        "c8": -11.8,
+        "c9": -20.4,
+        "c10": -12.2
+      },
+      "verdict": "PASS on all four covered shapes. The REJECT rule (SUM_wait inflation > eliminated tout) passes by 5x-21x on every shape (largest inflation c10 +8.35us against a 159.15us eliminated tout = 5% of the benefit). c8/c9/c10 are clean (V-id3 FLAT/down -11.8%..-20.4%, C-id2 the pacing pacer flat +0.2%..+0.7%) => no iter4-style migration. c19: V-id3 shows +20.7% BUT on a 0.36->0.43us MICRO-component (+0.07us absolute, 0.14% of the 49.86us e2e); the SUM(wait) inflation is +0.36us = 21x below the eliminated 7.60us tout, and the e2e gain (13.1%) is 100% of the Phase-A prediction — so the preregistered DOWNGRADE branch (V-id3>20% AND gain<50% of predicted) does NOT fire; this is a disclosure of a noise-level single-id move, not a pacing migration (the C-side pacing mirror id2/id5 move +1.0%/+0.5%, V-side id0/id4 -2.0%/+1.4%).",
+      "largest_single_id_move": "c10 aic_id2 +4.70us (+0.7%) and aiv_id0 +2.23us (+2.2%) — both << 1% of the 983us main kernel; c9 aic_id1 +36.4% is on a 0.30->0.41us micro-component"
+    },
+    "session_health": {
+      "base_vs_phaseA_anchors_pct": {
+        "c19": 0.01,
+        "c8": -0.29,
+        "c9": -0.2,
+        "c10": 0.57,
+        "r1": 3.37
+      },
+      "verdict": "ALL PASS. c19/c8/c9/c10 reproduce the Phase-A BASE means within +/-0.6% (band +/-3%); r1 (launch-floor micro-kernel) +3.37% is inside its PREREGISTERED +/-10% band (iter8 finding 7). No session defect."
+    },
+    "disposition": "ADOPT both viable domains — prefill_expert (PRIMARY c19 +13.15%, 4.4x the threshold, non-overlapping) and g2stack (PRIMARY c8 +6.78% AND c9 +8.00%, both non-overlapping; secondary c10 +12.97% non-overlapping). All 5 out-of-domain guardrails inside the noise band; main-cost guardrail passes on every shape (worst +1.65%); the mandatory wait-id gate passes on all 4 covered shapes (c19 disclosed, not downgraded). per-head domain EXCLUDED up front (structural, phase_b_perhead_finding)."
+  },
+  "gate3": {
+    "backup": {
+      "history_version": "examples/gqa/history_version/gqa_impl_s3_iter9.py (md5 3aa9cfa2625cdce96a62ce967785fe85)",
+      "perf_tuning": "examples/gqa/perf_tuning/gqa_impl_iter9_before.py (same md5)"
+    },
+    "integration": {
+      "tool": "perf_tuning/integrate_iter9_p2w2.py — line-anchored, assertion-guarded (18 edit sites, every site's original content asserted before replacement, applied bottom-up, AST-checked + post-condition-counted); diff artifact perf_tuning/diff_iter9_p2w2_integration.txt",
+      "size": "+102 / -27 lines in 16 hunks",
+      "kernel_side": "the prefill_expert + g2stack factories gain `out_bsnd=False`; a host-side `out_shape` variable selects BSND [B,S_padded,N_q,D] vs the shipped BHSD [B,N_q,S_padded,D]; the FIN write becomes `if out_bsnd:` (strided box) `else:` (the shipped contiguous box VERBATIM) => out_bsnd=False traces to byte-identical generated code. Zero changes to flags/SEMs/tokens/slots/ws geometry/C side/task_range/UB-L1-L0 allocation (the invariants the variant generator audited).",
+      "host_side": "gqa_expert's g2stack + prefill_expert spec builders pass `out_bsnd=bsnd_eff` (the wave-1 alignment gate variable, unchanged); `_P2_BSND_KERNELS` grows to 4 entries (g2stack_flat, g2stack_flat_kv2, g2stack, prefill_expert) so the wave-1 capability machinery (`bsnd_eff` gate, chain_key bsnd_eff component, `_run.out_bsnd = bsnd_eff and chosen in _P2_BSND_KERNELS`, `_prefill_run_padded`'s out_bsnd branch, the gqa() adapter's capability check) covers wave-2 UNCHANGED. Comment/docstring accuracy updates at 4 wave-1 sites (adapter, _run.out_bsnd, bsnd_eff gate, gqa_expert docstring) that would otherwise go stale — comment-only, zero code semantics.",
+      "untouched": "the per-head AUTO ladder `_gqa_kernel_expert` (EXCLUDED domain, post-condition-asserted to NOT gain out_bsnd), the g2 last-resort fallback (asserted NOT to gain out_bsnd), transpose_out / out_plan / _retile_out_plan (iter7 P1 — live for every out-of-domain shape), the decode path, test_gqa.py (md5 3e2d08881cb7b6f36d5c89b2fd37a146 unchanged).",
+      "new_md5": "606b07ff474ec42b8244f0831327d75b"
+    },
+    "ruff": "0.15.14 format --check: 'already formatted' rc=0; 0.15.14 check: 'All checks passed!' rc=0; 0.16.7 format --check rc=0; 0.16.7 check rc=0 (4/4 gates; longest line 140 == the repo line-length limit)",
+    "full_suite": "unset PYTHONPATH; ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all -> 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 0 FAIL/WARN, 0 fallback, exit 0 (candidate_iter9_p2w2_test_all.log). The suite's N_q=32 N_kv=32 D=128 case IS the prefill_expert covered domain (G=1 MHA), so the wave-2 BSND path is exercised directly.",
+    "self_check": "python3 examples/gqa/gqa.py -> 'Test Passed!' exit 0; prefill_causal (bench c1) max_diff 3.663e-04 viol=0, decode_noncausal (bench c11) max_diff 2.281e-05 viol=0",
+    "bit_identity_pre_post": {
+      "tool": "perf_tuning/save_gate3_outputs_iter9.py pre|post + compare_gate3_iter9.py (log: candidate_iter9_p2w2_gate3_compare.log)",
+      "result": "15/15 shapes+census verified",
+      "final_outputs": "raw-bit identical pre vs post on ALL 14 shapes (5 wave-2 covered + 2 wave-1 + 5 out-of-domain prefill + 2 decode)",
+      "main_kernel_outputs": "wave-2 covered: transpose_out(main_pre_BHSD) == main_post_BSND raw-bit identical (5/5); out-of-domain prefill (per-head excluded, non-aligned): the BHSD main output is raw-bit identical pre vs post (5/5); wave-1: final==main unchanged (2/2)",
+      "dispatch_census": "chosen spec identical pre vs post on all 14; `_run.out_bsnd` True exactly on the 7 covered shapes (5 wave-2 + 2 wave-1), False on the 5 out-of-domain prefill shapes, absent on decode",
+      "tout_census": "transpose_out skipped post-integration EXACTLY on the 5 wave-2 shapes (newly) + the 2 wave-1 shapes (already); still running on every out-of-domain prefill shape; the newly-skipped set == the wave-2 set (census PASS). out_plan census EMPTY post on covered and IDENTICAL pre vs post on every shape that still runs transpose_out => iter7's P1 retile stays live (r1 per-head blk=16, non-aligned shapes, etc.)",
+      "harness_fix_disclosed": "the comparator's `main_is_bhsd` shape assertion originally compared against the real S; the out-of-domain non-aligned gate cases (padrow_s100 S=100, s100_g2stack S=100, l1_s_tail S=130) carry a PADDED main output [B,Nq,S_padded,D] (S_padded=128/128/192), so the assertion flagged them while the bit-identity criteria (final_bit, main_bit) all PASSED. Fix: the shape assertion now uses S_padded=ceil(S/64)*64. The bit-identity criteria were NOT changed (iter7 V1->V2 / iter8 harness-fix precedent). Re-run: 15/15."
+    },
+    "msprof_bottom_line": {
+      "note": "INTEGRATED file, arm=base, ZERO monkeypatches (msprof_op_iter9_G3_*, 10 dirs, rc=0, 1650/1650 MHz)",
+      "c19_covered_new": "instances = [kernel_kernel:0 (transpose_qkv), main_kernel:0] ONLY — transpose_out ABSENT; e2e 49.06us vs the Gate-2 w2 arm 49.86 = -1.6%",
+      "c9_covered_new": "transpose_out ABSENT; e2e 606.59us vs the Gate-2 w2 arm 605.21 = +0.2%",
+      "r1_excluded_perhead": "transpose_out PRESENT 5.51us blk=16 (the P1 retile live, wave-2 did NOT touch per-head); e2e 21.00us",
+      "r2_wave1": "transpose_out ABSENT (unchanged since iter8); e2e 36.90us",
+      "r5_decode": "main only, 146.88us (anchors 145.89 iter6 / 146.81 iter7 / 145.36 iter8-G3 / 146.07 this-session Phase-A)",
+      "verdict": "ALL EXPECTATIONS MET (parse_iter9_g3.py exit 0)"
+    },
+    "instrumentation_grep": "T.printf|T.dump_tensor|import pdb|pdb.set_trace in gqa.py = 0",
+    "npu_health": "Health OK, AICore 0%, zero residual msprof/probe processes (verified after the Gate-2 matrix, the pre-capture, the test suite, the post-capture, the comparator and the G3 msprof segment); no NPU process holding the device ('No running processes found')"
+  },
+  "framework_findings": [
+    "AUTO-mode (TL_ASCEND_AUTO_CV_COMBINE + AUTO_SYNC) vid-reduction correctly splits a CONTIGUOUS UB->GM box write across threads=2 (each vid: blockCount=half, dst offset vid*half*D, dstStride=0) but MIS-LOWERS a STRIDED BSND box write: it emits the UNSPLIT blockCount=block_M while KEEPING the contiguous-layout vid offset (vid*half*D instead of vid*half*N_q*D). Both vids then write overlapping block_M-row strided windows offset by (half*D)/(N_q*D) rows => corruption (measured: r1 maxabsdiff 5.9e4, c5 NaN). The threads=1 pipelined form is correct (single vid, no split). RULE: strided/BSND GM output writes are safe ONLY in expert-mode manual-flag kernels (where the vid split is explicit in the source and the lowering keeps blockCount=half with a recomputed BSND vid offset) or in AUTO threads=1 forms — NOT in AUTO threads=2 (which every causal / odd-kv / D!=128 per-head shape takes). Evidence: codegen_audit_iter9.log + codegen_iter9_perhead_{r1,c5,pipe}_{base,w2}.cu + bit_probe_iter9.log.",
+    "The wave-1 (iter8) BSND mechanism transfers VERBATIM to the two expert-mode prefill kernels (prefill_expert per-head-tasks, g2stack ns-batched) — same 2-line edit (Output decl + FIN box), same single copy_ub_to_gm/DataCopyPad per box with blockCount=half preserved and only dstStride changed, same bit-identity, same 'main can get faster' L2 effect (c8 main -0.35%). The manual vid protocol (vid*half already in the source row index) is what makes the strided lowering correct here vs the AUTO threads=2 defect above.",
+    "Causal variable-length kv (per-task kv_useful) does NOT interact with the BSND output write: the FIN box is emitted once per task AFTER the kv loop, independent of kv_useful. Bit-identity held on causal kv=2/4/8 g2stack and causal kv=1/4 prefill_expert (Gate 0). The strided-write edit surface is orthogonal to the causal-skip mechanism.",
+    "The Phase-A cost model calibrated in wave-1 (probe ns/box x box-count for the strided increment; benefit = the full eliminated tout TaskDur; main often nets faster from the removed L2 write+read pass) predicts wave-2 e2e within +/-1.0pp on all four covered shapes (c19 +0.05pp, c8 +0.68pp, c9 -0.30pp, c10 +0.97pp) WITHOUT re-running the rate probe — the wave-1 calibration transfers across kernels and shapes. A wave-2-specific rate probe was therefore unnecessary (skipped, budget).",
+    "bench-wall vs B-matrix-kernel-sum口径 gap is shape-size dependent and concentrated in the main kernel of SMALL shapes: c19 bench 42.94us vs B-matrix 57.40us, c5 65.74 vs 77.10 (the msprof --launch-count=3 main is colder than the bench steady-state warm-L2 loop), while LARGE shapes nearly coincide (c8 858 vs 860.68, c9 659 vs 650.60). Since tout is bandwidth-dominated (cold/warm insensitive), the B-matrix improvement % is a CONSERVATIVE estimate of the bench-view gain on small shapes. (Inference-level, disclosed.)",
+    "The capability-flag + chain_key mechanism built in wave-1 scales to N kernels with ZERO host-logic change: extending coverage to g2stack + prefill_expert required only adding the two factory kwargs, passing bsnd_eff in their spec builders, and appending two names to _P2_BSND_KERNELS — the alignment gate (bsnd_eff), the fallback-safe capability derivation (chosen in _P2_BSND_KERNELS), the cache-key layout component, _prefill_run_padded's dim-1 crop branch and the adapter skip are all reused verbatim. A compile fallback to per-head/g2 automatically reverts to BHSD + transpose_out.",
+    "Non-aligned-S gate isolation is robust across ALL THREE covered kernel families post-integration: s100e (prefill_expert, S=100), s100g (g2stack, S=100), padrow_s100_flatkv2 (wave-1 flat, S=100), l1_s_tail_s130 (g2stack, S=130) all keep transpose_out(s_real) with the P1-retiled plan and produce bit-identical output — the `bsnd_eff = out_bsnd and S_padded == S` host gate excludes them and `_run.out_bsnd` reports False, so the adapter never skips the crop-capable transpose."
+  ],
+  "timestamp_finalized": "2026-10-19T23:35:00+08:00",
+  "antipattern_check": "performance-antipatterns.md re-checked against the new code. (1) 'launch core 数需要重点关注': wave-2 REMOVES a kernel launch per call on 4 more bench cases (c8/c9/c10/c19) — strictly positive. The intentionally RETAINED item is unchanged and documented since iter1 §7.2: the per-head AUTO ladder launches by block_num (关注项 A) — this round ADDS a second documented retention: the per-head ladder also KEEPS its transpose_out (BSND conversion structurally blocked by the AUTO threads=2 vid-reduction defect, phase_b_perhead_finding; Fixed-Core-izing or manual-vid-izing it equals a kernel rewrite). (2) 'tile size 过小导致片上内存浪费': FIN boxes stay [half=32, D=128] and the UB/L1/L0/ws footprint is byte-identical (generator audit); the 256B burst strided pattern is the transpose_out production pattern and the wave-1 measured 1.07-1.17x/box band applied (main deltas -0.35%..+1.65%). (3) '纯 AIV memory bound 算子未做流水/双 buffer': strongest form again — the pure-AIV memory-bound transpose_out kernel is eliminated outright on 4 more bench cases (cumulative 11/20). (4) '冗余全局同步': zero sync/flag/sem line changes (byte-identical, asserted by the generator + the integration post-conditions). (5) AIC/AIV workspace & L2: L2 traffic drops by one full output read+write pass per call on the covered domains (c10: -128MB). No new violations.",
+  "artifacts": [
+    "perf_tuning/p2_wave2_design_iter9.md (Phase A/B verdicts, per-head exclusion evidence chain, edit sites, codegen audit incl. per-element offset algebra, host integration plan, risk table)",
+    "perf_tuning/census_iter9_dispatch.py + census_iter9_dispatch.txt (dispatch matrix, 14 line anchors + md5 assert)",
+    "perf_tuning/run_phaseA_iter9.sh + msprof_op_iter9_PA_{r1,c5,c19,c9,c8,c10,c6}_base_s{1,2} (14 dirs) + parse_iter9_phaseA.py + phaseA_iter9_summary.json",
+    "perf_tuning/gen_variant_iter9_p2w2.py + gqa_w2_bsnd_iter9_variant.py + diff_iter9_p2w2.txt (2 hunks/kernel) + diff_iter9_p2w2_with_perhead_pre_verdict.txt (per-head attempted-then-excluded evidence)",
+    "perf_tuning/codegen_audit_iter9.py + codegen_audit_iter9.log + codegen_iter9_{perhead_r1,perhead_c5,perhead_pipe,prexpert_c19,g2stack_c9,g2stack_c8}_{base,w2}.cu (12 sources)",
+    "perf_tuning/bit_probe_iter9.py + bit_probe_iter9.log (per-head t2 BITFAIL / pipe+prexpert+g2stack BITOK)",
+    "perf_tuning/prof_gqa_ab_iter9.py + run_matrix_iter9.sh + parse_iter9_ab.py + msprof_op_iter9_W2_* (50 dirs) + perf_tuning/matrix_iter9_W2.log (copy) + /tmp/opencode/iter9_parse_ab.txt",
+    "perf_tuning/run_iter9_p2w2_gate0.py + candidate_iter9_p2w2_gate0.log (25/25)",
+    "perf_tuning/integrate_iter9_p2w2.py + diff_iter9_p2w2_integration.txt (+102/-27, 16 hunks)",
+    "perf_tuning/save_gate3_outputs_iter9.py + compare_gate3_iter9.py + gate3_iter9_outputs_{pre,post}.pt + gate3_iter9_chosen_{pre,post}.json + candidate_iter9_p2w2_gate3_compare.log (15/15)",
+    "perf_tuning/candidate_iter9_p2w2_test_all.log (24/24 exit 0)",
+    "perf_tuning/run_g3_iter9.sh + parse_iter9_g3.py + msprof_op_iter9_G3_* (10 dirs) + /tmp/opencode/iter9_parse_g3.txt",
+    "examples/gqa/history_version/gqa_impl_s3_iter9.py + perf_tuning/gqa_impl_iter9_before.py (rollback baseline, md5 3aa9cfa2625cdce96a62ce967785fe85)",
+    "perf_tuning/baseline_iter9.json + perf_log.md (iteration 9 entry)",
+    "perf_tuning/matrix_iter9_W2.log + parse_iter9_ab.txt + parse_iter9_g3.txt + g3_msprof_iter9.log + gate3_iter9_{pre,post}_capture.log (archived copies of the /tmp/opencode session logs)"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "iteration": 4,
+  "arm": "C1",
+  "title": "flat ws ring deepening ns_flat=2->4 (slots x%2->x%4 + release-token pre-sets 1->4)",
+  "timestamp": "2026-10-17",
+  "status": "REJECTED at Gate 2 (performance regression on all 3 shapes; well outside the 3% adoption threshold)",
+  "shipped_untouched": {
+    "gqa.py_md5_before_and_after": "cbce74410fee5f615489d0391b3ea620",
+    "test_gqa.py_md5_before_and_after": "3e2d08881cb7b6f36d5c89b2fd37a146",
+    "note": "no Gate 3 was triggered; variant lives only in perf_tuning/gqa_flat_ns4_variant.py"
+  },
+  "design": {
+    "source": "cv_overlap_resurvey_iter3.md §8-C1 (recommended iter4 main item)",
+    "implementation": "generated from the shipped flat kernel block (gqa.py lines 2981-3423) by gen_variants_iter4.py line-scoped edits; full audit diff in perf_tuning/diff_iter4_ns4.txt (12 hunks, +16/-16 lines as difflib-minified; net +21 lines incl. comments — init token lines matched as context where identical)",
+    "changes": [
+      "ws_s/ws_p/ws_o tensor dim1 2->4 (GM ws 6.55MB -> 13.1MB, still << L2 192MB)",
+      "ws slot index decoupled from l0/UB parity: wsl = x%4 for ws_s (G1 FIX / SM MTE2), ws_p (SM MTE3 / G2 MTE2), ws_o (G2 FIX / AO MTE2)",
+      "UNCHANGED: l0a/l0b/l0c parity x%2, k/v_l1 slots x%2, q_l1 single slot, V-side UB task-parity state slots par=x%2, per-u set/wait counts, pipe attributions, cross ids 0-5 (no new ids; 6-10 spare untouched)",
+      "init pre-set tokens of the 3 RELEASE semaphores (WS1_V2C/WS2_C2V/WS3_V2C) 1->4 — LOAD-BEARING, see framework_findings[0]"
+    ],
+    "pending_depth_derivation": "release sems: producer gated by consumer's data-ready chain (SM(x)<-G1(x) FIX; G2(x)<-SM(x) MTE3; AO(x)<-G2(x) FIX), so completed-producer count never exceeds issued-consumer count + ns_flat => max pending = ns_flat + ~1 = 5 <= 6 (iter2 safety bound) << 15 (hw). Data-ready sems: strict 1:1 tokens, producer lead bounded by the release ring => pending <= ~5. EMPIRICAL: 20 Gate-0 runs + 9 msprof runs, zero deadlock/misbehavior."
+  },
+  "gates": {
+    "gate0_standalone_precision": "PASS 10/10 (perf_tuning/run_iter4_variant.py --arm ns4, log archived at perf_tuning/candidate_iter4_gate0.log): r3_c3like_causal_bf16, r2_c1like_causal_fp16, r6_c2like_noncausal_fp16, r2_noncausal_fp16, mc2_edge_causal_fp16, mc2_edge_noncausal_bf16, mixed_mc23_causal_fp16, padcol_noncausal_fp16 (S_kv=100 unaligned), causal_skvgts_fp16 (S_kv>S), boundary_sparse_r2like (NaN/Inf injections per test_gqa plan). ALL finite cases bit_identical=True vs shipped gqa(); boundary case NaN positions/Inf positions+signs/finite entries all exactly equal vs shipped. Zero [gqa][fallback] lines.",
+    "gate1_full_suite_monkeypatch": "NOT RUN — deferred behind Gate 2 per pre-registered plan (Gate 1 is optional-pre; arm rejected at Gate 2, so the full-suite run was spared). Would have used perf_tuning/gate1_suite_iter4.py ns4.",
+    "gate2_performance": "FAIL — three-way same-session interleaved A/B (BASE/ARM1=C1/ARM2=C3, per-round arm rotation, 3 samples/arm/shape, msprof op Task Duration, all 27/27 samples at rated 1650/1650 MHz). C1 vs BASE: R3 66.94 vs 60.55 = +10.6% SLOWER; R2 30.87 vs 26.17 = +18.0% SLOWER; R6 35.83 vs 27.62 = +29.7% SLOWER. Adoption requires >=3% improvement; result is a regression on every shape => rejected. No extra samples: degradation exceeds every observed spread (arm spreads 1.4-6.0%).",
+    "gate3": "NOT TRIGGERED"
+  },
+  "measurements": {
+    "method": "msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization; probe perf_tuning/prof_gqa_ab_iter4.py asserts variant factory invoked AND resolved spec == g2stack_flat (silent compile-fallback impossible); matrix driver run_matrix_iter4.sh; dirs perf_tuning/msprof_op_iter4_{r3,r2,r6}_{base,ns4,g2first}_s{1..3}; parse: parse_msprof_iter3.py -> parse_summary_iter4_rounds123.txt",
+    "task_duration_us": {
+      "R3_B2_Nq128_Nkv8_bf16_causal": {"base": [61.44, 59.66, 60.54], "base_mean": 60.55, "ns4": [67.26, 68.78, 64.78], "ns4_mean": 66.94, "delta_pct": 10.55},
+      "R2_B2_Nq32_Nkv8_fp16_causal": {"base": [27.14, 26.22, 25.16], "base_mean": 26.17, "ns4": [31.04, 30.98, 30.60], "ns4_mean": 30.87, "delta_pct": 17.96},
+      "R6_B2_Nq48_Nkv4_fp16_noncausal": {"base": [27.20, 27.84, 27.82], "base_mean": 27.62, "ns4": [35.46, 35.92, 36.12], "ns4_mean": 35.83, "delta_pct": 29.72}
+    },
+    "base_arm_sanity": "BASE means reproduce iter3 anchors within session drift: R3 60.55 (iter3 61.09), R2 26.17 (26.13), R6 27.62 (27.53)",
+    "wait_id_telemetry_R3_mean_of_3_samples_max_across_cores_us": {
+      "base":  {"C_id1": 33.73, "C_id2": 10.01, "C_id5": 12.27, "V_id0": 8.67, "V_id3": 20.43, "V_id4": 4.96, "hot_aic": 55.99, "hot_aiv": 57.60},
+      "ns4":   {"C_id1": 13.29, "C_id2": 53.83, "C_id5": 5.00, "V_id0": 19.34, "V_id3": 7.51, "V_id4": 19.65, "hot_aic": 62.52, "hot_aiv": 64.13},
+      "note": "same pattern on R2/R6 (see parse_summary_iter4_rounds123.txt + report tables)"
+    },
+    "busy_time_invariance_R3": "aiv_vec busy ~35.7us(base) vs ~36.5us(ns4); aic_mte2 busy ~16.2 vs ~16.3 — pipe BUSY times unchanged; the +6.4us wall is pure wait/latency inflation (derived from ratio x window products)"
+  },
+  "discriminating_experiment": {
+    "design": "cv_overlap_resurvey_iter3.md §3-3: if id3/id1 waits vanish and wall drops ~sum(residual) -> round-trip hypothesis holds; if waits migrate to production gates and wall doesn't drop -> V-side throughput is the floor, redirect to V-side compression",
+    "result": "HYBRID — neither branch cleanly. (a) Release waits DID fall as designed: V_id3 20.43->7.51 (-63%), C_id1 33.73->13.29 (-61%), C_id5 12.27->5.00: the FIFO counting-token mechanism is empirically confirmed and the 2-slot round-trip coupling WAS loosened. (b) But wall ROSE: data-ready (production) waits inflated by more than the release-wait savings — C_id2 +43.8us, V_id0 +10.7us, V_id4 +14.7us (R3). Busy times unchanged => both sides' production LATENCY grew under unpaced operation.",
+    "conclusion": "The shipped 'pacing stall' (G1's WS1_V2C release-wait) is LOAD-BEARING: by throttling C's run-ahead to ~1 step it keeps MTE2/M/FIX hardware-queue residency shallow and the ws L2 hot-set tight (2 active slots). With 4 tokens C issues up to ~4 steps of G1 work ahead; producer/consumer streams spread over a 2x ws footprint and deep queues, so every data-ready handoff (ws_s FIX -> SM, ws_p MTE3 -> G2, ws_o FIX -> AO) lands later despite identical busy work. The iter3 steady-period model 'wall = busy + round-trip residual' is FALSIFIED: the round-trip stall overlaps useful pipe drain; removing it does not convert 1:1 into wall reduction. (Mechanism attribution queue-residency vs L2-hot-set/bandwidth is INFERENCE from wait-id shifts + busy-time invariance; no instruction-level trace, L2 metrics not collected.)"
+  },
+  "framework_findings": [
+    "(NEW, load-bearing) Slot-index deepening ALONE is a semantic NO-OP for this protocol: the 6 cross semaphores are SINGLE counting ids with one set/wait per u, so the k-th wait strictly consumes the k-th set (FIFO) — gates stay pinned at SM(x)<-G2(x-1), G1(x)<-SM(x-1), G2(x)<-AO(x-1) regardless of slot count. Loosening requires raising the init pre-set tokens of the 3 release semaphores to ns_flat (fresh-slot tokens). iter3's C1 write-up ('set/wait counts unchanged' + 'gates become G2(x-4)') implicitly assumed this token change; the iter4 implementation made it explicit (C-scope init 1->4, V-scope init 1->4 x2 sems). Empirical confirmation: release waits fell 61-63% exactly as the token model predicts.",
+    "(iter3 §2.3 off-by-one, corrected) With 1 init token the effective shipped gates are SM(x)<-G2(x-1) / G1(x)<-SM(x-1) / G2(x)<-AO(x-1) — one beat TIGHTER than the slot-exact requirement (G2(x-2)/SM(x-2)/AO(x-2)) quoted in the iter3 report. iter2's own docstring ('G1(x) wait == SM(x-1) consumed') had it right.",
+    "(perf principle, measured) In this kernel family, cross-core ring DEPTH is not a free lever: the release-wait 'stall' doubles as queue-depth pacing. Any future deepening (incl. C2's ws design) must keep the shipped 1-token release gating (ns=2 semantics) unless the production-side latency inflation is separately addressed.",
+    "(data quality) PipeUtilization.csv can contain impossible single-block rows (r3_g2first_s2 block19 aic_time=1395us vs TaskDur 75.14us) — always sanity-filter per-core times against TaskDur before max/mean aggregation. TaskDur (adoption metric) unaffected."
+  ],
+  "rollback_reason": "Gate 2 regression on all 3 shapes (+10.6%/+18.0%/+29.7% vs same-session BASE); variant not adopted, gqa.py untouched. Artifacts retained: gqa_flat_ns4_variant.py, diff_iter4_ns4.txt, msprof_op_iter4_*_ns4_s{1..3}.",
+  "next_hint_iter5": "C2 (kv==2 flat dual-stream) MUST inherit the shipped ns=2 + single-release-token gating (pacing load-bearing); its gain comes from deleting the batch-boundary drain/refill, NOT from ring depth. Flat-domain (kv==1) CV-handoff topology is at a measured local optimum — remaining levers are V-side busy compression (vec ~2.9us/u = 63% of R3 wall) or accept status quo.",
+  "skills_consulted": [
+    ".agents/skills/tilelang-perf-optimization/references/performance-antipatterns.md (ws vs L2 capacity, per-core ws allocation, redundant-sync items — variant pre/post screened)",
+    "tilelang/language/ascend.py:191-231 (set/wait_cross_flag signature+mode semantics re-verified)",
+    "iter2/iter3 legacy infra: gqa_flat_variant.py, run_flat_variant.py, prof_gqa_ab_iter3.py, parse_msprof_iter3.py, run_matrix_iter3.sh (patterns reused)"
+  ]
+}

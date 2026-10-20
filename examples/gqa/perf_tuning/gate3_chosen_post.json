@@ -1,0 +1,35 @@
+{
+ "gqa_py_md5": "bd470e072d0a48faeac1e786306932e8",
+ "chosen": {
+  "r1_perhead": [
+   "per_head_bm64"
+  ],
+  "r2_flat_kv1": [
+   "g2stack_flat"
+  ],
+  "r3_flat_kv1": [
+   "g2stack_flat"
+  ],
+  "r6_flat_kv1": [
+   "g2stack_flat"
+  ],
+  "r5_decode_expert": [
+   "dense_expert"
+  ],
+  "decode_auto": [
+   "dense_auto"
+  ],
+  "causal_kv2_g2s": [
+   "g2stack"
+  ],
+  "smallstack_kv2_g2s": [
+   "g2stack"
+  ],
+  "c4like_kv2": [
+   "g2stack_flat_kv2"
+  ],
+  "c7like_kv2": [
+   "g2stack_flat_kv2"
+  ]
+ }
+}

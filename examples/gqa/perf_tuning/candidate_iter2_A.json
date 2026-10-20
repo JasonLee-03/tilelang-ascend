@@ -1,0 +1,33 @@
+{
+  "iteration": 2,
+  "project": "A",
+  "title": "per-head _gqa_kernel_expert V-load prefetch hoist",
+  "timestamp": "2026-10-17",
+  "status": "ROLLED BACK (gate A2 failed: no improvement, slight regression within noise)",
+  "change": "gqa.py _gqa_kernel_expert: hoist T.copy(V..., v_l1) from post-softmax position (orig L275) to iteration head next to the K copy, guarded to the serial form only (use_pipeline=False); Pipelined form untouched",
+  "gates": {
+    "A1_precision": "PASS — test_gqa.py --level all: 24 PASS / 0 FAIL (candidate_iter2_A1_test_all.log)",
+    "A2_performance": "FAIL — no >3% improvement; candidate slightly slower (see samples)",
+    "A3_spillover": "SKIPPED (A rolled back per A2; moot)"
+  },
+  "measurements": {
+    "method": "msprof op --kernel-name=main_kernel, R1 default shape (B=1 S=128 Skv=128 Nq=8 Nkv=2 D=128 causal fp16), interleaved same-session A/B sampling (session drift control: yesterday's 9.94us baseline NOT comparable — same-session BASE re-measured)",
+    "candidate_A_us": [11.04, 10.88, 10.94, 11.02, 11.12, 10.86, 10.76],
+    "candidate_A_mean_us": 10.95,
+    "base_same_session_us": [10.24, 10.88, 10.36, 10.28, 9.98, 11.06, 10.90],
+    "base_same_session_mean_us": 10.53,
+    "delta_pct_vs_same_session_base": 4.0,
+    "delta_pct_vs_iter1_baseline_9.94": 10.2,
+    "yesterday_baseline_us": 9.94,
+    "note": "run-to-run noise +-5% (BASE range 9.98-11.06); A samples cluster at the upper part of the noise band. Expected gain (~0.24us sim / ~2-5%) is at or below the noise floor; measured direction is negative. Welch t ~2.5 (p~0.03 one-sided) for A slower. Conclusion: NOT the >3% improvement required -> rolled back."
+  },
+  "rollback": {
+    "action": "cp examples/gqa/history_version/gqa_impl_s3_iter2.py examples/gqa/gqa.py (md5 6dab75d373ae71671b53b661b65ee674 verified)",
+    "candidate_preserved_at": "examples/gqa/perf_tuning/gqa_A_candidate.py",
+    "msprof_artifacts": [
+      "perf_tuning/msprof_op_A_r1_{1..7}/",
+      "perf_tuning/msprof_op_BASE_r1_{1..7}/"
+    ]
+  },
+  "hypothesis_postmortem": "The sim-trace evidence (V load 0.237us exposed after the P-ready wait release) was real, but on HW the AUTO-mode codegen appears not to convert the hoist into actual overlap for the single-iteration serial form (possible causes — marked INFERENCE, not verified: earlier MTE2 V fetch contends with the veccore mask load on the GM/L2 path; or the AUTO CV-sync pass re-serializes the copy at the same wait point). A get_kernel_source()/sim diff of the hoisted variant would be needed to explain; not pursued since the measured outcome already fails the gate."
+}

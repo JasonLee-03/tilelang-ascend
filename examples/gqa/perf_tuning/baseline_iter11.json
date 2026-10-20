@@ -1,0 +1,35 @@
+{
+ "iteration": 11,
+ "timestamp": "2026-10-20T12:35:00+08:00",
+ "mode": "implement",
+ "role": "P4 wave-2 baseline record (pre-round; per-kernel baselines re-measured in-session by the Gate-2 BASE arm)",
+ "shipped_kernel": {
+  "file": "examples/gqa/gqa.py",
+  "md5": "f59b561212e60a50b78a51671999ef7c",
+  "state": "iter10 P4 wave-1 adopted (flat kv1/kv2 in_bsnd direct reads; r2 e2e -27.04% / r4 -13.26%; 7/20 bench cases single-kernel chains)",
+  "test_gqa_md5": "3e2d08881cb7b6f36d5c89b2fd37a146"
+ },
+ "baseline_e2e_us_Bmatrix": {
+  "_comment": "most recent same-file measurements (cross-session reference level; Gate-2 BASE arm re-measures in-session and the anchor band check applies)",
+  "c19_prexpert": {"e2e": [49.86, 50.14], "tqkv": 16.50, "main": 33.60, "src": "iter9 W2 arm / iter10 guard base"},
+  "c8_g2stack": {"e2e": [797.67, 800.61], "tqkv": 51.14, "main": 746.66, "src": "iter9 W2 arm / iter10 guard base"},
+  "c9_g2stack": {"e2e": [605.21], "tqkv": 44.32, "main": 559.73, "src": "iter9 W2 arm"},
+  "c10_g2stack": {"e2e": [1071.94], "tqkv": 89.99, "main": 983.60, "src": "iter9 W2 arm"},
+  "r2_flat_wave1_guard": {"e2e": [26.35, 26.91], "src": "iter10 Gate2 p4 arm / iter10 G3 fallback (current shipped chain = main only)"},
+  "r1_perhead_guard": {"e2e": [20.17, 20.39, 20.67], "src": "iter10 gate2 both arms / iter9"},
+  "r5_decode_guard": {"e2e": [146.07, 146.50, 146.51], "src": "iter9/iter10"}
+ },
+ "test_shapes": {
+  "c19": "B2 S128 S_kv128 Nq32 Nkv32 D128 bf16 causal (bench case 19, MHA degenerate, prefill_expert ns=1)",
+  "c8": "B4 S1024 S_kv1024 Nq32 Nkv8 D128 fp16 causal (bench case 8, g2stack ns=8)",
+  "c9": "B4 S512 S_kv512 Nq64 Nkv8 D128 bf16 noncausal (bench case 9, g2stack ns=4, use_mask=False)",
+  "c10": "B4 S512 S_kv512 Nq128 Nkv8 D128 bf16 causal (bench case 10, g2stack ns=4)"
+ },
+ "test_command": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all  (Gate 3; expected 24/24 exit 0 zero fallback)",
+ "precision_status": "pass (inherited: iter10 Gate-3 full suite 24/24 = 18 PRECISION_PASS + 6 BOUNDARY_PASS, exit 0, zero fallback; self-check Test Passed!)",
+ "programming_mode": "Expert (manual-flag, P28_EXPERT_PASS_CONFIGS) for both target kernels — consistent with DESIGN.md / all Stage-3 iterations",
+ "noise_threshold_pct": 3.0,
+ "adoption_threshold_pct": 3.0,
+ "consecutive_no_improvement_at_start": 0,
+ "budget": "iteration 11 of max 11 (user-approved extension; closing round of round 3)"
+}

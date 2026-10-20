@@ -1,0 +1,166 @@
+{
+ "module_md5": "9aa645dcd318ff7d5eabba910b56125f",
+ "shapes": {
+  "c19_prexpert_mha": {
+   "chosen": [
+    "prefill_expert"
+   ],
+   "cat": "p4w2",
+   "tqkv_calls": []
+  },
+  "g3_prexpert_kv2_causal": {
+   "chosen": [
+    "prefill_expert"
+   ],
+   "cat": "p4w2",
+   "tqkv_calls": []
+  },
+  "c8_g2stack_kv8_causal": {
+   "chosen": [
+    "g2stack"
+   ],
+   "cat": "p4w2",
+   "tqkv_calls": []
+  },
+  "c9_g2stack_kv4": {
+   "chosen": [
+    "g2stack"
+   ],
+   "cat": "p4w2",
+   "tqkv_calls": []
+  },
+  "c10_g2stack_nq128": {
+   "chosen": [
+    "g2stack"
+   ],
+   "cat": "p4w2",
+   "tqkv_calls": []
+  },
+  "kv2_causal_g2stack": {
+   "chosen": [
+    "g2stack"
+   ],
+   "cat": "p4w2",
+   "tqkv_calls": []
+  },
+  "r2_flat_wave1": {
+   "chosen": [
+    "g2stack_flat"
+   ],
+   "cat": "out",
+   "tqkv_calls": []
+  },
+  "r4_flatkv2_wave1": {
+   "chosen": [
+    "g2stack_flat_kv2"
+   ],
+   "cat": "out",
+   "tqkv_calls": []
+  },
+  "r1_perhead": {
+   "chosen": [
+    "per_head_bm64"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(1, 128, 8, 128)",
+     "128",
+     "128"
+    ]
+   ]
+  },
+  "d256_perhead": {
+   "chosen": [
+    "per_head_bm64"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 128, 32, 256)",
+     "128",
+     "128"
+    ]
+   ]
+  },
+  "padrow_s100_flatkv1": {
+   "chosen": [
+    "g2stack_flat"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 100, 32, 128)",
+     "128",
+     "128"
+    ]
+   ]
+  },
+  "padcol_skv200_flatkv2": {
+   "chosen": [
+    "g2stack_flat_kv2"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 128, 32, 128)",
+     "128",
+     "256"
+    ]
+   ]
+  },
+  "s130_g2stack_unaligned": {
+   "chosen": [
+    "g2stack"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 130, 32, 128)",
+     "192",
+     "256"
+    ]
+   ]
+  },
+  "padcol_skv400_g2stack": {
+   "chosen": [
+    "g2stack"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 256, 32, 128)",
+     "256",
+     "512"
+    ]
+   ]
+  },
+  "s100e_prexpert_unaligned": {
+   "chosen": [
+    "prefill_expert"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 100, 32, 128)",
+     "128",
+     "128"
+    ]
+   ]
+  },
+  "r5_decode_expert": {
+   "chosen": [
+    "dense_expert"
+   ],
+   "cat": "out",
+   "tqkv_calls": []
+  },
+  "decode_auto": {
+   "chosen": [
+    "dense_auto"
+   ],
+   "cat": "out",
+   "tqkv_calls": []
+  }
+ }
+}

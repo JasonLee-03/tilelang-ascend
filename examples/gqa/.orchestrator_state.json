@@ -1,0 +1,965 @@
+{
+  "operator_name": "gqa",
+  "env_check_passed": true,
+  "current_stage": 3,
+  "stage_status": {
+    "1": "completed",
+    "2": "completed",
+    "3": "completed"
+  },
+  "stage_retry_count": {
+    "1": 0,
+    "2": 2,
+    "3": 0
+  },
+  "stage2_failure_breakdown": {
+    "runtime_fail": 2,
+    "precision_fail": 0
+  },
+  "design_revision_count": 0,
+  "perf_tuning_requested": "yes - ROUND2 COMPLETED 2026-10-18 (user: CV 核空闲等待并行掩盖; best_effort/10-round cap/3% noise). Outcome: iter3 resurvey (wait-id telemetry located CV coupling per domain) + iter4 C1(ns4)/C3(G2-first) REJECTED by same-session A/B (+9.6..+29.7% regressions; high-value finding: pacing stall load-bearing, kv1-flat handoff topology at measured local optimum) + iter5 C2 (kv==2 flat dual-stream uniform-noncausal) ADOPTED: R4 -9.18% / c7 -7.34%, Gate0 10/10 bitwise incl NaN/Inf, suite 24/24 (orchestrator re-run green), gate-outside 8/8 bitwise, ruff 3-spot bundle fix AST-equivalent dual-version gated; gqa.py cbce7441 -> bd470e072d0a48faeac1e786306932e8, backup history_version/gqa_impl_s3_iter5.py. ROUND1 history: iter1 analysis + iter2 flat kv==1 adopted (R3 -23.3%/R2 -8.1%), A rolled back",
+  "perf_iteration": {
+    "count": 11,
+    "last_improvement": -33.41,
+    "consecutive_no_improvement": 0
+  },
+  "task_mode": "stage3_perf_tuning_round3 CLOSED (iter6 roofline analysis + iter7 P1 + iter8 P2w1 + iter9 P2w2 + iter10 P4w1 + iter11 P4w2 + 2 consolidation evals)",
+  "final_state": "SUCCESS (stage3 round3 closed 2026-10-20: budget 11/11 exhausted incl. user-approved extension; consolidation eval confirmed score 70.73)",
+  "eval_context": {
+    "eval_code_history": [
+      "cann_final_eval_20260909_102400 (51/80, score 47.48)",
+      "cann_final_eval_20260910_071341 (55/80, score 51.10)",
+      "cann_final_eval_20260910_173445 (56/80, score 51.93)",
+      "cann_final_eval_20260913_231913 (20/20, score 67.87, avg speedup 0.63x)"
+    ],
+    "attempt3_failures_addressed": {
+      "compile_cudart_inf": [
+        "gqa_68"
+      ],
+      "viewcopy_561103": [
+        "gqa_71",
+        "gqa_72",
+        "gqa_73",
+        "gqa_81",
+        "gqa_82"
+      ],
+      "nan_mismatch": [
+        "gqa_67 (structurally: trigger surface removed)"
+      ],
+      "subprocess_sigsegv": [
+        "gqa_84-100 (structurally: d2d race surface removed)"
+      ]
+    }
+  },
+  "ci_format_fix": {
+    "date": "2026-09-16",
+    "trigger": "GitHub Actions ci_ascend.yml ruff 0.16.7: `format --check` failed on examples/gqa/gqa.py; `check` (lint) had 12 errors",
+    "result": "BOTH_GATES_PASS",
+    "changes": {
+      "format": "whole-file ruff format; proven AST-identical via ast.dump comparison",
+      "SIM300_x3": "assert D == block_N -> assert block_N == D (ruff safe fix; == symmetric, host-side trace-time assert)",
+      "F841_x1": "removed unused n_rep = S * G_inner; comment made self-contained ([S * G_inner, M_tile))",
+      "SIM102_x8": "`# noqa: SIM102` + rationale; ruff's merge autofix REJECTED (4 transpose-pad sites mix a trace-time Python guard with a runtime TIR predicate; 4 scatter sites' real defect is cross-frame s_f, not nesting)"
+    },
+    "verification": {
+      "ruff_gates": "format --check exit 0; check exit 0 (ruff 0.16.7 == CI version)",
+      "ab_bitwise": "12/12 shapes bitwise-identical vs the delivered module (max_diff 0.000e+00), dispatched kernel names unchanged",
+      "test_suite": "examples/gqa/test_gqa.py --level all -> 15 PRECISION_PASS + 4 BOUNDARY_PASS = 19/19, 'Test Passed!', exit 0",
+      "device_health": "npu-smi both chips OK after the hang incident; trivial matmul verified"
+    },
+    "baseline_md5": "ea3281e13f2b93a8d53ef06633833f8d",
+    "baseline_copy": "/tmp/opencode/gqa_ci_clean_baseline.py",
+    "pr_scope_decision": "user: PR contains examples/gqa/gqa.py ONLY (test_gqa.py / debug_log.md / history_version/ / eval_fix_verify/ stay out; 31 aux files would otherwise fail CI with 60 lint errors)"
+  },
+  "deadlock_task": {
+    "opened": "2026-09-16",
+    "status": "completed",
+    "attempt": 4,
+    "result": "PRECISION_PASS",
+    "executor": "@tilelang-op-developer",
+    "backup": "examples/gqa/history_version/gqa_impl_s2_attempt4.py (byte-identical to the CI-clean baseline, md5 ea3281e13f2b93a8d53ef06633833f8d -- orchestrator verified with cmp)",
+    "defect": "dense_expert / dense_expert_d256 `if len(segs) > 2:` output-scatter branch was dead: it failed to compile, so those shapes silently fell back to dense_auto",
+    "scope": "50 (D,S,G) combos: decode S in {3,4} with G_inner <= 2 (e.g. MHA G=1 S=4, G=2 S=3/4), all D in {64,128,256,512}. NONE of the 20 cann-bench cases reach it (c16 S=2/G_inner=4 -> segs 2; c17 S=4/G_inner=16 -> segs 2)",
+    "root_cause_compile": "TVMScript scopes branch-body assignments to the branch frame: s_f/h_f are bound in the SIBLING `if len(segs) >= 1:` frame and are unresolvable in the `> 2` frame -> 'Undefined variable: s_f'. s_l resolves (parent frame), which is why the error names only s_f. `for s in range(S)` inside a prim_func is a TIR loop (s is a Var), NOT a trace-time Python loop (tvm/script/parser/tir/parser.py visit_for requires a ForFrame; visit_if folds Python-bool conditions at trace time)",
+    "root_cause_hang": "attempt-3 made the branch compile but the kernel hung at launch: runtime-conditional MTE3 scatters inside the manual-flag pipeline break the SIG_S_HALF handshake (instruction-level mechanism not isolated; avoided structurally)",
+    "fix": "direction A -- replaced the dead runtime loop with two STATIC trace-time slots: `if len(segs) > 2:` emits segs[1], `if len(segs) > 3:` emits segs[2], both as unconditional static-slice T.copy (structurally identical to the already-verified segs[0]/segs[-1] emission, so no runtime-conditional MTE3 remains). Plus factory-level `assert S <= 4` in both dense-expert kernels (len(segs) <= S, so 2 extra slots are exhaustive; a loud compile-time failure -> dense_auto instead of silently dropped rows). 4 scatter sites + 2 asserts; AST diff vs baseline = 62 lines, nothing else touched",
+    "orchestrator_attempts_before_dispatch": [
+      {
+        "n": 1,
+        "change": "ruff SIM102 merge (`if s > s_f and s < s_l`)",
+        "result": "same 'Undefined variable: s_f'; proved the delivered file fails identically -> pre-existing defect"
+      },
+      {
+        "n": 2,
+        "change": "uniform trace-time loop `for si in range(len(segs)): segs[si]`",
+        "result": "REGRESSION - `list indices must be integers or slices, not Var`; dense_expert stopped compiling even for segs<=2 bench shapes (caught by asserting the dispatched kernel name in A/B); reverted"
+      },
+      {
+        "n": 3,
+        "change": "minimal fix: re-derive s_first/h_first/s_last from `segs`",
+        "result": "COMPILES but HANGS at launch (70-min timeout); reverted to delivered logic + documenting comment"
+      }
+    ],
+    "orchestrator_independent_verification": {
+      "static": "md5 ec21d36f1af4d81ca32aad9bd8ab1d26; backup cmp-identical to baseline; ruff 0.16.7 format exit 0 + check exit 0; zero leftover instrumentation (T.printf/T.dump_tensor/pdb = 0); AST diff confined to 4 scatter sites + 2 asserts; slot-coverage logic hand-checked for len(segs) = 1/2/3/4",
+      "groupB_segs_le_2": "14 shapes: 13/14 fully OK; the 1 flagged case (decode Skv=300) is bitwise=True with the SAME kernel name -> see open_issue_decode_pad_mask (pre-existing, not a regression). Kernel names unchanged on all 14 (dense_expert / dense_expert_d256 / g2stack / prefill_expert / per_head_bm64 / dense_auto)",
+      "groupA_segs_gt_2": "8/8 OK: all now dispatch dense_expert / dense_expert_d256 (baseline: dense_auto after a failed compile), zero hangs, max_diff vs golden 6.104e-05 (fp16) / 4.883e-04 (bf16), tolviol=0; 6/8 even bitwise-identical to the old fallback output",
+      "test_suite": "examples/gqa/test_gqa.py --level all -> 15 PRECISION_PASS + 4 BOUNDARY_PASS = 19/19, 'Test Passed!', exit 0, ZERO fallback/compile-failure lines",
+      "harness": "/tmp/opencode/orch_verify_att4.py (independent of the developer's scripts; asserts dispatched kernel names via _KERNEL_BUILD_CACHE)"
+    },
+    "residual_risks": [
+      "the instruction-level mechanism of the attempt-3 hang was never isolated -- the fix avoids it structurally; do NOT reintroduce runtime-conditional MTE3 inside the expert kernels' flag region",
+      "the 2 static slots are bound to S <= 4 by a factory assert; widening the decode guard requires adding slots first",
+      "performance gain on the 50 recovered shapes is UNMEASURED (Stage-3 scope)"
+    ],
+    "orchestrator_note": "closed; PR_gqa.md 文件说明 table trimmed to gqa.py only per user decision"
+  },
+  "open_issue_decode_pad_mask": {
+    "found": "2026-09-16",
+    "found_by": "orchestrator, while verifying attempt-4 (group-B accuracy assertion)",
+    "status": "RESOLVED by attempt 5 (see pad_mask_fix)",
+    "severity": "correctness (higher class than the perf-only deadlock)",
+    "pre_existing": true,
+    "pre_existing_evidence": "3-way bitwise identical on every probed shape: delivered eval-passed file (/tmp/opencode/gqa_pre_ruff.py) == CI-clean baseline == attempt4 -> NOT introduced by the ruff fix nor by attempt-4",
+    "defect": "decode (S<=4) + is_causal=False + S_kv not 128-aligned: the host mask branch builds an ALL-ZEROS mask and never masks the padded S_kv columns, so zero-filled K/V pad columns enter the softmax with score 0 and inflate the denominator",
+    "root_cause_location": "gqa_expert decode _run, the `else:` (non-causal) mask branch -- `mask_cpu = torch.zeros(B, M_tile, S_kv_padded)` with no `mask_cpu[:, :, S_kv:] = _BIG_NEG`; the CAUSAL branch does have it (`if S_kv < S_kv_padded: mask_cpu[:, row_idx, S_kv:] = _BIG_NEG`), and the prefill path is correct (_prefill_run_padded fills Mask_full with _BIG_NEG then pastes the real mask)",
+    "measurements": "decode B2/S1/Nq32/Nkv8/D128 fp16 non-causal: Skv=100 (pad 21.9%) maxdiff 5.518e-02 / 7702 tolviol; Skv=132 (pad 48.4%) 8.917e-02 / 7911; Skv=300 (pad 21.9%) 2.612e-02 / 7285; Skv=380 (pad 1.0%) 1.038e-03 / 0; Skv=2044 (pad 0.2%) 9.155e-05 / 0; Skv=512 (pad 0) 6.104e-05 / 0. SAME shapes causal: 0 violations everywhere (discriminating evidence)",
+    "why_never_caught": "the 20 cann-bench decode cases all use 128-aligned S_kv (2048/512/1024) -> use_mask False or no pad; test_gqa.py L1 decode tail uses Skv=2044 (0.2% pad) which stays inside tolerance; the 68-case local variant eval used the same tiny-pad decode tails",
+    "suggested_fix": "one host-side line in the non-causal branch, mirroring the causal one: `if S_kv < S_kv_padded: mask_cpu[:, :, S_kv:] = _BIG_NEG` (no kernel change; aligned shapes unaffected because use_mask is False there). Needs its own A/B + suite verification and a large-pad-fraction decode case added to test_gqa.py L1",
+    "next_step": "user decision: fix now / separate task / document only",
+    "attempt": 5,
+    "approved_scope": "fix gqa.py non-causal decode mask branch + add large-pad-fraction L1 cases to test_gqa.py (test_gqa.py stays OUT of the PR per the user's gqa.py-only decision)",
+    "resolution": "fixed + independently verified; 20 cann-bench cases unaffected (all decode S_kv are 128-aligned -> bitwise identical)"
+  },
+  "fix_summary": {
+    "attempt": 3,
+    "mode": "precision_fix",
+    "result": "PRECISION_PASS",
+    "backup": "examples/gqa/history_version/gqa_impl_eval_fix_attempt3.py",
+    "root_causes_and_fixes": {
+      "H1_cudart_inf": "T.reduce_max clear=True -> eval tilelang build generates undefined CUDART_INF; H1-R final: clear=True kept on perf-sensitive kernels (finite sentinel fill pre-loop, correct under both clear semantics) + clear=False retained ONLY in dormant g2 fallback kernel (compiles on eval build, covers case-68 via dispatch fallback chain)",
+      "H2_viewcopy": "all fp16/bf16 NPU-side data movement folded into custom kernels: transpose_qkv emits padded BHSD directly (Sq_out/Skv_out + in-kernel zero fill), _pad_kv 2-in-1 decode pad kernel, _transpose_v1 n_pad + transpose_out(s_real=) removes crop materialization; dispatch-hook guard proves zero dangerous torch ops",
+      "H3_nan67": "not reproducible in 1620-cell same-source matrix (nan/inf/fullrange x dtype x G x causal x aligned/unaligned x prefill/decode, x10 seeds); trigger surface (fp16/bf16 d2d) structurally removed by H2",
+      "H4_crash84": "fallback-degraded forms x unaligned+special-value x repeat100: zero crashes locally; hypothesized fixed via H2 (d2d race surface removal)"
+    },
+    "local_bench": {
+      "report": ".agents/skills/cann-bench/reports/cann_correctness_eval_20260911_143057.json",
+      "cases": "68 (20 public + 31 R2 variants + 17 H3 matrix representatives)",
+      "result": "68/68 PASS, 0 crash, orchestrator independently verified JSON + re-ran h2_kernel_pad (11/11 + 7/7 bit-exact)",
+      "regressions": "f4 6/6, f3 9/9, f12 10/10, g1 8/8, g2 24/24, g123 14/14, g3c 4/4",
+      "perf": "case8 main_kernel 1.003, case10 0.997, unaligned e2e 0.966 (faster) vs attempt2 baseline"
+    },
+    "residual_risks": [
+      "H1-R relies on unverified assumption: g2 (clear=False) compiles on eval build for case-68 shape (round-3 evidence: only case-68 chain failed under clear=True; 56/80 compiled fine)",
+      "gqa_67/84-100 fixes are structural (trigger-surface removal), not direct repro-verify on eval machine"
+    ],
+    "next_step": "submit to online eval retest"
+  },
+  "journal": [
+    ".agents/skill-journal/gqa-20260910-140253.md",
+    ".agents/skill-journal/gqa-20260910-190540.md",
+    ".agents/skill-journal/gqa-20260911-144137.md",
+    ".agents/skill-journal/gqa-20260912-204641.md",
+    ".agents/skill-journal/gqa-20260916-072500.md",
+    ".agents/skill-journal/gqa-20261017-111546.md",
+    ".agents/skill-journal/gqa-20261018-110623.md",
+    ".agents/skill-journal/gqa-20261020-150553.md"
+  ],
+  "last_updated": "2026-10-20T07:08:54Z",
+  "pad_mask_fix": {
+    "attempt": 5,
+    "date": "2026-09-16",
+    "executor": "@tilelang-op-developer",
+    "result": "PRECISION_PASS",
+    "backup": "examples/gqa/history_version/gqa_impl_s2_attempt5.py (md5 ec21d36f1af4d81ca32aad9bd8ab1d26 == pre-fix baseline, orchestrator cmp-verified)",
+    "post_fix_md5": "fc7a36b906c4ae1a70403d7bcce29f1b",
+    "fix": "gqa_expert decode _run non-causal column-pad branch: added `if S_kv < S_kv_padded: mask_cpu[:, :, S_kv:] = _BIG_NEG` (2 code lines, mirrors the causal branch). Host-side only; CPU-built mask + single .to(device) H2D preserved (no NPU torch op, 561103-safe, anti-cheat 1-aclrtMemcpy budget intact)",
+    "mask_site_audit": "6 points audited: #1 _prefill_run_padded Mask_full(_BIG_NEG) correct; #2 decode causal branch correct; #3 decode non-causal branch WAS THE DEFECT (fixed); #4 _build_causal_mask correct; #5 wrapper non-causal unaligned prefill correct (real-S_kv zeros -> expanded with _BIG_NEG by #1); #6 decode ROW pad needs no mask (pad acc rows never scattered - source + empirical)",
+    "orchestrator_independent_verification": {
+      "static": "all 7 _gqa_kernel_* factories AST-IDENTICAL vs baseline (ast.dump per function); only gqa_expert changed; AST diff = exactly the 2 added lines; 4x noqa: SIM102 preserved; zero instrumentation",
+      "groupF_fixed": "10/10: non-causal unaligned decode tolviol 176..45903 -> 0 (fp16 maxdiff <=1.221e-04, bf16 <=9.766e-04); effective across dense_auto / dense_expert / dense_expert_d256; kernel names unchanged",
+      "groupU_unchanged": "15/15 truly-invariant shapes bitwise=True + same kernel name (aligned decode x5 incl. D256, CAUSAL unaligned decode x3, prefill x7 incl. g2stack/prefill_expert/per_head_bm64/non-aligned pad/cross/MHA/MQA). 1 harness mis-grouping: decode Skv=2044 tail is non-causal+unaligned so it legitimately changed (1.221e-04 -> 3.052e-05, i.e. CLOSER to golden, viol=0 both, same kernel) - not a regression",
+      "groupS_special": "3/3 vs fp64 oracle: fullrange(+/-65504) maxdiff 0.000e+00; sparse NaN/Inf (incl. Inf at the LAST real column) nan_pos_match=True, tolviol=0",
+      "test_suite": "test_gqa.py --level all -> 18 PRECISION_PASS (9 L0 + 9 L1 incl. 3 new large-pad cases skv100=2.441e-04 / skv132 fp16=1.221e-04 / skv132 bf16=9.766e-04) + 6 BOUNDARY_PASS = 24/24, 'Test Passed!', exit 0, ZERO fallback lines",
+      "ruff_gates": "format --check + check exit 0 on BOTH gqa.py and test_gqa.py (ruff 0.16.7 absolute path)",
+      "compile_failures": "0 across all runs",
+      "device_health": "npu-smi Health OK after every batch, zero residual processes",
+      "harness": "/tmp/opencode/orch_verify_att5.py (independent of the developer's scripts)"
+    },
+    "test_suite_change": "test_gqa.py +3 L1 large-pad decode cases +2 boundary special-value decode cases (19 -> 24 cases); LOCAL ONLY - PR carries gqa.py per the user's decision",
+    "residual_risks": [
+      "data-dependent ~2.7-2.8e-3 golden-fp16 rounding tail on SOME unaligned-Skv decode seeds (torch fp16 matmul vs kernel fp32 accumulate) is a SEPARATE still-open artifact, not this defect; the new L1 seeds do not hit it",
+      "fix is host-side: any future decode path that feeds the kernel a mask built outside _run's use_mask branch must replicate the pad-column _BIG_NEG masking",
+      "perf on the 50 shapes recovered by attempt-4 is still UNMEASURED (Stage-3 scope)"
+    ]
+  },
+  "perf_eval": {
+    "date": "2026-10-17",
+    "requested_by": "user (进行 cann-bench 评测, 新版评测仓 .agents/skills/cann-bench)",
+    "eval_code": "cann_final_eval_20261017_114305",
+    "reports": [
+      ".agents/skills/cann-bench/reports/cann_correctness_eval_20261017_113926.{json,md,html}",
+      ".agents/skills/cann-bench/reports/cann_performance_eval_20261017_114305.{json,md,html}",
+      ".agents/skills/cann-bench/reports/cann_final_eval_20261017_114305.{json,md,html}"
+    ],
+    "subject_md5": "cbce74410fee5f615489d0391b3ea620 (gqa.py after Stage-3 iter2 flat integration)",
+    "submission": "/tmp/opencode/gqa_submission (wheel rebuilt from current gqa.py; cann_bench/gqa.py md5 verified == repo file; old fc7a36b9 kernel archived at /tmp/opencode/gqa_submission_cann_bench_gqa_old_fc7a36b9.py)",
+    "command": "cd .agents/skills/cann-bench && export LD_LIBRARY_PATH=/usr/local/sqlite3/lib:$LD_LIBRARY_PATH && ./scripts/run_evaluation.sh --bench-name cann --task-dir tasks/level4 --operator GQA --source-dir /tmp/opencode/gqa_submission --device-id 0 --no-perf-batch-cases  (warmup 3 / repeat 5 / Level1 defaults verified same as old harness; --no-perf-batch-cases restores the 2026-09 per-case Profiler methodology)",
+    "env": "npu:0 Ascend910_9362, CANN 9.2.0, torch 2.7.1 + torch_npu 2.7.1.post4, python 3.12.9, container; framework V1.0.0, tasks-v1.1.2 (gqa task files + metadata/910b2.json anchors byte-identical to tasks-v1.0.0 -> scores comparable)",
+    "result": {
+      "cases": "20/20 PASS",
+      "pass_rate": 1.0,
+      "score": 67.88,
+      "compilation_score": 20.0,
+      "function_score": 30.0,
+      "performance_score": 17.88,
+      "avg_speedup": 0.6333
+    },
+    "vs_20260916_213834": {
+      "score": "67.84 -> 67.88 (+0.04)",
+      "avg_speedup": "0.6313 -> 0.6333",
+      "perf_score": "17.84 -> 17.88",
+      "accuracy": "mere/mare/max_diff IDENTICAL for all 20 cases (case8 mere differs only in JSON float serialization)",
+      "flat_gate_effect_main_kernel": "in-gate improvements: c1 -7.5%, c3 -17.3%, c18(MQA) -14.7%, c20 -8.5%, c12 -3.1%; CONSISTENT with iter2 same-session A/B (R2 -8.1%, R3 -23.3%)",
+      "regression_flag": "c2 (G12 noncausal, in-gate per probe) main_kernel +9.5% (29.06->31.82us) — iter2 gates measured R3/R2 perf only, c2-like perf never A/B'd; NOT yet confirmed same-session (cross-session numbers, journal-e2 caveat applies)",
+      "aux_kernel_drift": "kernel_kernel (transpose, code UNCHANGED) cross-session +6..+22% on medium/large shapes (c2,c3,c4,c6,c8,c9,c10) while out-gate large main_kernels stay +/-2% and small-shape aux stay -4..0% — unexplained cross-session drift, ate most of the in-gate main-kernel gains in total elapsed (+0.7%); same-session A/B required before attributing",
+      "total_elapsed_us": "6554.48 -> 6600.02 (+0.7%)"
+    },
+    "open_items": [
+      "c2-like (G12 noncausal in-gate) same-session A/B flat vs g2stack — if regression confirmed, narrow the flat dispatch gate",
+      "aux kernel_kernel cross-session uplift root cause (unchanged code; suspect session/frequency or profiler variance)"
+    ]
+  },
+  "comment_cleanup": {
+    "attempt": 6,
+    "date": "2026-09-17",
+    "executor": "@tilelang-op-developer",
+    "result": "PRECISION_PASS",
+    "trigger": "user request: 检查代码是否存在注释冗余或含开发记录等多余信息 -> 3 subagents 逐行审查全 4486 行 + orchestrator 逐条取证",
+    "scope_approved": "P0 ONLY (22 items). P1 dedup explicitly excluded by user. P2 red lines preserved",
+    "backup": "examples/gqa/history_version/gqa_impl_s2_attempt6.py (md5 fc7a36b906c4ae1a70403d7bcce29f1b == pre-change, orchestrator-verified)",
+    "md5": "fc7a36b906c4ae1a70403d7bcce29f1b -> c04e788883a0839e2d9082e73f9ab33c",
+    "lines": "4486 -> 4524 (+38: added clarifications for the UB-pool semantics, _pad_along risk note, expanded dispatch guards)",
+    "p0_findings_fixed": {
+      "stale_contradictions": 13,
+      "dangling_refs": 1,
+      "process_narrative": "5 attempt-ids + 6 anti-cheat/aclrtMemcpy + 4x cann_bench recursion note -> 1 + 5 cann-bench naming + 10 verification records + 10 bench-context rewrites",
+      "viewcopy_contradiction": "RESOLVED BY MEASUREMENT: 25/25 probes OK on local CANN 9.2.0 (incl. gqa._pad_along fp16/bf16, slice-assign d2d valid+pad, crop .contiguous(), permuted transpose, zeros/full/cat/copy_); debug_log:267-268 records the 561103 failures were on the EVAL SoC CANN 9.1.0 and 'does NOT reproduce locally'. Wording unified to environment-conditional; the other 5 (accurate) statements untouched; risk note added to _pad_along"
+    },
+    "orchestrator_independent_verification": {
+      "ast_equivalence": "docstrings stripped -> ast.dump IDENTICAL (len 512492 == 512492) => mathematically zero executable-statement change; separately confirmed all 184 changed non-docstring lines are `#` comment lines",
+      "ruff_gates": "format --check + check exit 0 (ruff 0.16.7, absolute path)",
+      "zero_grep": "anti-cheat/aclrtMemcpy/attempt-4/attempt 3/cann-bench/cann_bench/test_gqa/debug_log/eval_fix_verify/history_version/eval harness/harness/bench/dormant/D2H egress/H2D budget/196,6 all = 0; 2^30 only 2 (the _BIG_NEG=-1e30 derivation whitelist)",
+      "p2_redlines_intact": "65536 x2, 131072 x3, zero margin x2, 196608 x3, 196,352 x2, 524,032, 262144 x2, AscendVidReduction x2, 2.2-7.9x, SIG_S_HALF x49, 'Undefined variable', noqa SIM102 x4, 561103 x19, 1e-30 x10, neg_sm_cap x10, kv_useful x15; deadlock constraint kept in PRESENT TENSE as one authoritative note + 3 cross-refs; attempt-5 pad-column constraint kept and expanded with the denominator-inflation mechanism",
+      "ab_bitwise": "16/16 shapes bitwise-identical vs the attempt-6 backup AND identical dispatched kernel names (dense_expert / dense_expert_d256 / dense_auto / g2stack / prefill_expert / per_head_bm64)",
+      "test_suite": "test_gqa.py --level all -> 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 'Test Passed!', exit 0, ZERO fallback lines",
+      "device": "npu-smi 2 chips Health OK, no lingering processes"
+    },
+    "residuals_found_by_orchestrator": [
+      "line ~4323: `value_range [-1,1]` is an eval data-generator term that survived (A-class, 1 line)",
+      "`golden` appears 5x (144/287/534/654/2386) referring to the reference implementation in the NON-shipped test_gqa.py -> should read `the reference`"
+    ],
+    "deferred_needs_approval": [
+      "assert message \"A64: D=256, BN=64\" (~line 1536) leaks an internal variant id, but it is inside an EXECUTABLE statement -> excluded by the comments-only constraint",
+      "UB pool numbers 196,352B (g2 docstring) vs _UB_BYTES=196608 (transpose budget) differ by 256B; both now carry a clarifying sentence, but which is the real shared.ub limit needs author confirmation",
+      "P1 dedup not done (user decision): 19x 561103 explanations, SEM/SIG trailing notes, 15 CJK decorative headers, separator style, restating comments (~135-160 lines reducible)"
+    ],
+    "attempt7_residuals": {
+      "date": "2026-09-17",
+      "executor": "@tilelang-op-developer",
+      "result": "PRECISION_PASS",
+      "approved_by_user": "yes (含 1 项可执行语句内字符串常量改动)",
+      "backup": "examples/gqa/history_version/gqa_impl_s2_attempt7.py (md5 c04e788883a0839e2d9082e73f9ab33c == pre-change)",
+      "md5": "c04e788883a0839e2d9082e73f9ab33c -> 9d77b310be490f8c04b68ab9d6efec69",
+      "lines": "4524 (unchanged)",
+      "changes_7_sites": {
+        "value_range_1": "`value_range [-1,1]` -> `unit-range` (eval data-generator term); the whitelisted -(2^30) magnitude comparison in the same _BIG_NEG derivation block left untouched",
+        "golden_5": "`golden` -> `the reference` at 5 sites (dangling reference to the NON-shipped test_gqa.py)",
+        "assert_msg_1": "line 1551 assert message \"A64: D=256, BN=64\" (internal variant id) -> \"dense_expert_d256 requires D=256, block_N=64\"; condition expression untouched"
+      },
+      "orchestrator_independent_verification": {
+        "ast_node_diff": "29301 nodes both, identical key set, EXACTLY 1 differing Constant: root.body[11].body[0].msg (line 1551, the assert message). 6/7 _gqa_kernel_* factories ast.dump-identical; _gqa_kernel_dense_expert_d256 differs only by that message",
+        "grep": "golden=0 (was 5), value_range=0 (was 1), \"A64=0 (was 1); red lines unchanged vs backup: 2^30=2, noqa SIM102=4, 561103=19, 65536=2, 131072=3, 196608=3, 196,352=2, 524,032=1, 262144=2, AscendVidReduction=2, 2.2-7.9x=1, 1e-30=10, neg_sm_cap=10, kv_useful=15, anti-cheat=0, bench=0",
+        "ruff_gates": "format --check + check exit 0 (ruff 0.16.7)",
+        "ab_bitwise": "8/8 bitwise-identical + same dispatched kernel, incl. 3 D256 decode shapes exercising dense_expert_d256 (the only AST-changed kernel)",
+        "test_suite": "--level all -> 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 'Test Passed!', DIRECT_EXIT_CODE=0 (captured by the orchestrator, closing the developer's indirectly-inferred exit code), 0 fallback lines, 0 errors",
+        "device": "npu-smi 2 chips Health OK, zero residual processes"
+      },
+      "residuals_now": "none known - the file is PR-ready for the gqa.py-only submission"
+    },
+    "md5_final": "9d77b310be490f8c04b68ab9d6efec69"
+  },
+  "ci_bench_test_fix": {
+    "attempt": 8,
+    "date": "2026-09-17",
+    "executor": "@tilelang-op-developer",
+    "result": "PRECISION_PASS",
+    "ci_failure": "ci_cd.yml `test` job -> examples/bench_test.sh --dirs gqa reported `[FAILED] ./gqa/gqa.py (Exit: 0)`, Test exit code 1",
+    "root_cause": "bench_test.sh:485-500 requires exit_code==0 AND output matching (case-insensitive) `KERNEL OUTPUT MATCH` or `TEST PASSED!`. gqa.py was a pure kernel library with NO __main__ block -> silent exit 0, no marker -> FAILED. Repo convention confirmed: examples/gqa_fwd_varlen/gqa_fwd_varlen.py and examples/lightning_indexer/*.py all end with a self-check main printing 'Test Passed!'",
+    "fix": "appended 129 lines at EOF ONLY: a private inline golden `_ref_gqa` (self-contained, no import of the non-shipped test_gqa.py) + `if __name__ == \"__main__\":` self-verification running 2 bench-proven shapes (c1 prefill B2/S128/Nq32/Nkv8/D128 causal fp16; c11 decode B16/S1/Skv2048 non-causal fp16), fp16 mixed tolerance atol=1e-3/rtol=1e-2 with zero violations allowed, sys.exit(1) on failure, `print(\"Test Passed!\")` last",
+    "md5": "9d77b310be490f8c04b68ab9d6efec69 -> 6dab75d373ae71671b53b661b65ee674",
+    "lines": "4524 -> 4653 (+129, pure append)",
+    "orchestrator_independent_verification": {
+      "byte_identity": "head -4524 of the new file | md5sum == backup md5 == the attempt-7 verified state -> the module's import-time content is BYTE-IDENTICAL; diff = 0 deletions / 129 additions",
+      "ast": "52 existing top-level nodes: 0 changed, 0 removed; added only _ref_gqa + the __main__ If node",
+      "harness_judgment_replicated": "copied bench_test.sh:475-500 verbatim -> `[PASSED] ./gqa/gqa.py`, exit_code=0, last line 'Test Passed!', 0 fallback lines, 0 tracebacks; max_diff c1=3.663e-04 / c11=2.281e-05, viol=0",
+      "real_bench_test_sandbox": "sandbox containing ONLY the PR content (examples/bench_test.sh + examples/gqa/gqa.py + scripts/ci/resolve_operator_tests.py + ci/operator_test_manifest.yaml): `Collected scripts from gqa: 1 files` (matches the CI log) -> [PASSED] -> Total 1 | Passed 1 | Failed 0 | Pass rate 100% | BENCH_TEST_EXIT=0",
+      "manifest_check": "ci/operator_test_manifest.yaml has NO examples/gqa/gqa.py entry and `resolve_operator_tests.py list-tests --dirs gqa` returns empty (exit 0) -> CI will not try to run the non-shipped test_gqa.py",
+      "ruff_gates": "format --check + check exit 0 (ruff 0.16.7)",
+      "test_suite": "--level all -> 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 'Test Passed!', DIRECT_EXIT=0, 0 fallback lines",
+      "device": "npu-smi Health OK, no residual processes"
+    },
+    "local_workspace_finding": "running the real bench_test.sh --dirs gqa in the FULL local workspace collects 38 files (eval_fix_verify/ 21 + history_version/ 7 + gqa.py + test_gqa.py + ...) and 36 FAIL: every debug script and historical backup lacks the marker. gqa.py and test_gqa.py both PASSED. This is hard evidence that eval_fix_verify/ and history_version/ must NEVER be committed - the user's 'PR contains gqa.py only' decision avoids all 36 failures (CI collects 1 file because the runner checks out only the PR content)",
+    "unverified_risk": "CI toolchain differs and cannot be reproduced locally: x86_64 / python 3.11 / CANN 9.0.0-beta.2 / torch_npu 2.7.1.post2 / docker tilelang_x1 / tilelang built by install_ascend.sh + source set_env.sh, vs local aarch64 / py3.12.9 / CANN 9.2.0 / pip tilelang. Mitigations: both self-test shapes are bench-proven on two CANN versions (9.1.0 eval + 9.2.0 local), and gqa_expert keeps the compile-fallback chain (a candidate failing on beta.2 prints [gqa][fallback] and falls through; only all-candidates-fail exits non-zero). Cold-compile budget measured locally: 15.0s prefill + 6.0s decode = 21.4s (well inside timeout-minutes 60)"
+  },
+  "ci_network_fragility": {
+    "date": "2026-09-17",
+    "status": "PATCH APPLIED (re-run proven ineffective)",
+    "symptom_1": "actions/checkout@v4 (ci_cd.yml test job) failed: git fetch ... +<sha>:refs/remotes/pull/1808/merge -> 'Failed to connect to github.com port 443 after ~130s', 3 internal retries, exit 128",
+    "symptom_2": "next run got PAST checkout but failed in step 'Check if skip pytest' (ci_cd.yml:505 `git fetch origin $BASE_REF`) with the same 443 timeout, exit 128",
+    "diagnosis": "runner egress to github.com:443 is INTERMITTENT (proof: in the same run, checkout's much larger full-history fetch succeeded minutes before the small redundant fetch timed out). DNS resolves fine, so it is a TCP/route/egress issue, not name resolution",
+    "real_defect_found": "ci_cd.yml:505 (and :192) do a REDUNDANT `git fetch origin $BASE_REF`: checkout@v4 already runs with fetch-depth: 0 which fetches +refs/heads/*:refs/remotes/origin/* so origin/$BASE_REF is already local. The step shell is `/usr/bin/bash -e {0}`, so the timeout aborts the whole job even though the data git diff needs is on disk. In-repo precedent for the correct pattern: ci_ascend.yml:10-20 uses fetch-depth: 0 and diffs origin/$BASE_REF with NO fetch at all (and that workflow ran fine)",
+    "patch_ready_not_applied": "guard with `git rev-parse --verify --quiet origin/$BASE_REF` + 3x retry using `if git fetch ...; then` (set -e safe) + loud ::error:: if genuinely unavailable; same for line 192 (which must also keep working for the issue_comment ref: refs/pull/N/head path)",
+    "why_not_applied": "it is shared CI infra affecting every PR, and the user scoped PR #1808 to examples/gqa/gqa.py only -> user decision 2026-09-17: re-run first (zero risk), keep the patch in reserve",
+    "rerun_watch_points": [
+      "fails again at the same step with a 443 timeout -> network is persistently broken: escalate to the runner admin (egress/proxy for github.com:443) or apply the reserved patch as a SEPARATE PR",
+      "passes 'Check if skip pytest' -> next watch point is bench_test.sh: expect `Collected scripts from gqa: 1 files`, `[PASSED] ./gqa/gqa.py`, `Total: 1 | Passed: 1 | Failed: 0`, `Test exit code: 0`",
+      "if the bench output contains `[gqa][fallback]` -> a kernel candidate failed to COMPILE on CI's CANN 9.0.0-beta.2 (the locally-unverifiable risk); the fallback chain should still let it pass, but report it",
+      "if bench_test.sh marks FAILED again -> check whether `Test Passed!` was printed at all (marker regex is bench_test.sh:485-500)"
+    ],
+    "rerun_result": "user re-ran the job: FAILED at the identical step (ci_cd.yml 'Check if skip pytest') with the same 'Failed to connect to github.com port 443 after 130952 ms' + exit 128 -> NOT transient",
+    "why_checkout_survives_but_this_step_dies": "actions/checkout@v4 retries internally (the first log shows 'Waiting 10 seconds before trying again' x2), while the bare `git fetch origin $BASE_REF` gets ONE attempt; under the step shell `/usr/bin/bash -e {0}` that single timeout aborts the whole job",
+    "patch_applied": {
+      "file": ".github/workflows/ci_cd.yml",
+      "stat": "41 insertions, 2 deletions (2 hunks)",
+      "sites": [
+        "detect_changes step (check_changes job, was line 192, kept --depth=1 in the fallback fetch)",
+        "check_skip_pytest step (test job, was line 505)"
+      ],
+      "logic": "fetch only when `git rev-parse --verify --quiet origin/$BASE_REF` fails; then 3 attempts using `if git fetch ...; then` (set -e safe) with ::warning:: between them; if still unavailable -> ::error:: + exit 1 (loud, never silently diffs against a missing ref)",
+      "verification": {
+        "yaml": "yaml.safe_load OK; jobs check_changes/test/notify intact; both steps has_guard=True, bare_fetch=False",
+        "bash_syntax": "bash -n OK on the extracted run script of both steps",
+        "functional_3_cases": "Case A (ref local + remote unreachable = the CI situation): exit 0 in 0 SECONDS -> proves zero network access, changed_files computed correctly. Case B (ref missing + remote unreachable): exactly 3 retries + ::warning::, then ::error:: and exit 1. Case C (ref missing + remote reachable): fetches and proceeds. Tested on a real scratch git repo with set -e",
+        "no_bare_fetch_left": "grep 'git fetch' ci_cd.yml -> only inside guarded `if git fetch ...; then` or in comment/warning strings"
+      },
+      "not_verified": "GitHub Actions itself cannot be run locally; the final proof is the next CI run. The guard logic is functionally tested, the workflow wiring is only statically validated (YAML parse + bash -n)"
+    },
+    "scope_implication": "PR #1808 is no longer gqa.py-only if this is committed there: git status now shows `M .github/workflows/ci_cd.yml`. Shared CI infra affecting every PR -> maintainer review likely; alternative is a separate branch/PR. gqa.py itself untouched this round (md5 still 6dab75d373ae71671b53b661b65ee674)",
+    "root_cause_still_open": "the runner's intermittent egress to github.com:443 is NOT fixed by this patch - it only removes a redundant single-attempt network call. If egress degrades further, actions/checkout itself can still fail (it did, on the first run). Runner admin should still check egress/proxy for github.com:443"
+  },
+  "perf_eval_20260916": {
+    "date": "2026-09-16",
+    "requested_by": "user (对当前算子进行 cann-bench 性能评测)",
+    "eval_code": "cann_final_eval_20260916_213834",
+    "reports": [
+      "reports/cann_correctness_eval_20260916_212*.json",
+      "reports/cann_performance_eval_20260916_213834.json",
+      "reports/cann_final_eval_20260916_213834.{json,md,html}"
+    ],
+    "subject_md5": "fc7a36b906c4ae1a70403d7bcce29f1b (gqa.py after attempt4 deadlock fix + attempt5 pad-mask fix)",
+    "submission": "/tmp/opencode/gqa_submission (cann_bench wheel rebuilt from the current gqa.py; cann_bench/gqa.py md5 verified == repo file)",
+    "command": "./scripts/run_evaluation.sh --bench-name cann --task-dir tasks/level4 --operator GQA --source-dir /tmp/opencode/gqa_submission --device-id 0  (warmup 3 / repeat 5 / Level1 / seed 0 == the 2026-09-13 methodology)",
+    "env": "npu:0 Ascend910_9362, CANN 9.2.0, torch 2.7.1 + torch_npu 2.7.1.post4, python 3.12.9",
+    "result": {
+      "cases": "20/20 PASS",
+      "pass_rate": 1.0,
+      "score": 67.84,
+      "compilation_score": 20.0,
+      "function_score": 30.0,
+      "performance_score": 17.84,
+      "avg_speedup": 0.6313
+    },
+    "vs_20260913_231913": {
+      "score": "67.87 -> 67.84",
+      "avg_speedup": "0.6326 -> 0.6313",
+      "perf_score": "17.87 -> 17.84",
+      "mean_per_case_elapsed_delta": "+0.32% (range -3.9% .. +3.3%)",
+      "accuracy": "mere/max_diff IDENTICAL for all 20 cases",
+      "conclusion": "no regression from attempt-4/attempt-5 - consistent with the bitwise-identical A/B verification (all 20 bench decode cases use 128-aligned S_kv, so neither fix is exercised)"
+    },
+    "breakdown": {
+      "decode_c11_c17": {
+        "avg_speedup": 0.964,
+        "range": "0.81-1.07",
+        "aux_kernels": 0.0,
+        "note": "single main kernel (BSND direct supply)"
+      },
+      "prefill_rest": {
+        "avg_speedup": 0.452,
+        "range": "0.30-0.68",
+        "note": "main kernel + transpose/pad aux kernels (aux = 13.7-285.1us)"
+      }
+    },
+    "first_run_failure": {
+      "eval_code": "cann_final_eval_20260916_193058",
+      "symptom": "all 20 cases elapsed_us=0.00, speedup N/A, perf_score 0.00, score 50.00; 9 profiler parser tasks failed per case (CANNTimelineParser/OperatorViewParser/KernelViewParser/DbParser/...); ASCEND_PROFILER_OUTPUT contained only analyse.done, no CSVs",
+      "root_cause": "msprof export aborted with `ImportError: libsqlite3.so: cannot open shared object file` -> no summary/DB -> the view parsers had nothing to parse. libsqlite3.so exists at /usr/local/sqlite3/lib but that dir is NOT in LD_LIBRARY_PATH (/usr/lib/aarch64-linux-gnu only ships libsqlite3.so.0, no plain .so symlink)",
+      "diagnosis_path": "raw device data was intact (260K/55 files, all_file.complete) -> host-side analysis at fault -> manual `msprof --export=on` on a copy reproduced the ImportError -> adding /usr/local/sqlite3/lib to LD_LIBRARY_PATH made CSVs appear",
+      "fix": "export LD_LIBRARY_PATH=/usr/local/sqlite3/lib:$LD_LIBRARY_PATH before run_evaluation.sh; retry produced 0 profiler errors and normal timings",
+      "note": "environment issue only, NOT an operator defect; the same 0.00x symptom also hit cann_final_eval_20260913_230825 (its 23:19 re-run succeeded), so this failure mode is easy to misread as an operator regression"
+    }
+  },
+  "stage3_round2": {
+    "opened": "2026-10-17",
+    "trigger": "user request: 重新梳理 gqa 优化 — CV 核之间空闲等待太多，能否 CV 并行掩盖提升整体性能",
+    "config": {
+      "goal_type": "best_effort",
+      "max_iterations": 10,
+      "noise_threshold_pct": 3,
+      "scope": "analysis-first (iter3), implementation after user confirms priority list"
+    },
+    "baseline_md5": "cbce74410fee5f615489d0391b3ea620 (orchestrator-verified before dispatch; == iter2 shipped == 20261017 eval subject)",
+    "iteration_in_progress": null,
+    "candidate_directions_from_iter2_next_hint": [
+      "flat residual ~1us/task handoff (offset-2 / C-side G2 moved earlier / ci granularity)",
+      "F~10.3us fixed overhead decomposition (shallow-task R2-like workloads)",
+      "kv==2 gate extension (flat dual-stream + causal variable-length; c4/c7-like still on shipped ns=2)",
+      "small-shape per-head kernel: 3 exposed C<->V handoffs ~= 20% of wall (flat N/A, needs its own masking)",
+      "decode dense_expert path: iter1 judged 'no need' by inference only, never re-measured"
+    ],
+    "eval_open_items_to_fold_in": [
+      "c2-like (G12 noncausal in-gate) main_kernel +9.5% cross-session regression flag - needs same-session A/B flat vs g2stack; if confirmed, narrow the flat gate",
+      "aux kernel_kernel (transpose, code unchanged) cross-session +6..22% drift - unexplained; same-session A/B required before attributing"
+    ],
+    "iter3_result": {
+      "mode": "analysis_only",
+      "completed": "2026-10-17",
+      "executor": "@tilelang-op-perf-tuner",
+      "verdict": "CV parallel masking space exists, concentrated in two domains: (1) flat domain residual = 2-slot ws ring round-trip coupling (V-id3 1.67-2.06us/u + C-id1 1.76-2.81us/u) -> ns_flat=4 expected -5..-15%/shape (model extrapolation); (2) g2stack kv==2 domain (c4/c7, BOTH noncausal -> uniform kv_useful==2, no variable-length mechanism needed) = largest shipped CV serial region (C-id2 53% <-> V-id4 49% mutual exclusion) -> flat dual-stream expected R4 -13..-21% (central -17%). decode EXCLUDED by measurement (aic_mte2 81-96% bandwidth wall, iter1 inference upgraded to evidence). R1 small-shape lever weak (launch floor 31-35%).",
+      "c2_regression_flag": "RESOLVED-NOT-A-REGRESSION: same-session alternating A/B flat 27.53 vs g2stack 32.27 (flat faster 14.7%); eval iteration band 27.46-32.24 covers both cross-session numbers -> variance; gate NOT narrowed",
+      "F_decomposition": "F~10.6us = off-kernel launch 2.5-3.8us (framework floor) + in-kernel fill/drain ~7.8us; P_ss=3.88us/u causal / ~3.35 noncausal",
+      "candidates_prioritized": {
+        "C1_ns_flat_4": "flat ws ring 2->4 slots, ~30 lines, low-mid risk, covers bench c1/c2/c3/c18/c20, expected R3 -7..-15% / R2 -4..-8% / R6 -4..-9%, built-in discriminating experiment (id3/id1 zeroing)",
+        "C2_flat_kv2_uniform": "new kernel, HIGH risk (rescale chain + task-boundary state flip), high effort (~one full iteration), R4 -11..-21%; ws slot depth design takes C1 conclusion as input -> sequenced iter5",
+        "C3_g2_move_earlier": "~10-line cheap probe, low confidence -0..-8%, optional independent arm in iter4 three-way alternating A/B",
+        "not_pursued": "C4 task balance (already optimal), C5 R1 expert-ization (ceiling ~17% + net-negative precedent), C6 decode (bandwidth wall), F compression (1-3us vs flag-protocol risk), ci coarsening (R6 A/B refuted)"
+      },
+      "recommended_iter4": "C1 main + optional C3 independent arm; C2 -> iter5 (serial dependency on C1 slot-depth conclusion)",
+      "artifacts": [
+        "examples/gqa/perf_tuning/cv_overlap_resurvey_iter3.md",
+        "examples/gqa/perf_tuning/perf_log.md (iter3 entry)",
+        "examples/gqa/perf_tuning/baseline_iter3.json",
+        "examples/gqa/perf_tuning/msprof_op_iter3_* (24 dirs) + parse_summary_iter3.txt",
+        "examples/gqa/perf_tuning/{prof_gqa_ab_iter3.py, probe_dispatch_iter3.py, parse_msprof_iter3.py, run_matrix_iter3.sh}"
+      ],
+      "integrity": "same-session A/B (R6 strict alternating 3+3, spread <=1.3%, dispatch arm verified); env contract obeyed (unset PYTHONPATH, ACL_OP_INIT_MODE=1, sqlite3 LD_LIBRARY_PATH); no camodel (iter1 ban); 21/21 runs at rated 1650MHz; gqa.py/test_gqa.py md5 unchanged (orchestrator re-verified); state file untouched; npu-smi healthy; one honest incident: matrix script interrupted after 9 runs by tool-timeout nohup kill, restarted in SAME session, 12 remaining runs completed 21:04-21:14",
+      "gate_check_by_orchestrator": "PASS (md5 re-verified, report+log+baseline+raw data exist, perf_log iter3 entry format-aligned)"
+    },
+    "iter4_scope_user_approved": {
+      "date": "2026-10-17",
+      "arms": {
+        "C1": "flat ws ring ns_flat 2->4 slots (~30 lines, protocol topology untouched: l0 parity / UB task-parity state / per-u set-wait counts preserved); expected R3 -7..-15% / R2 -4..-8% / R6 -4..-9% (model extrapolation); built-in discriminating experiment on V-id3/C-id1 waits",
+        "C3": "C-step reorder G2 moved earlier (~10 lines, targets V-id3 directly); low confidence -0..-8%"
+      },
+      "method": "three-way same-session alternating A/B (BASE=shipped flat / ARM1=C1 / ARM2=C3), >=3 samples/arm/shape, adoption threshold >=3% (user noise threshold); optional combined arm only if both individually pass",
+      "gates": "iter2 Gate 0-3 pattern: variant-level compile+precision (bitwise-identical target vs shipped flat) -> same-session perf A/B -> adoption into gqa.py dispatch -> full test_gqa --level all green + gate-outside bitwise invariance + ruff gates + backup to history_version/gqa_impl_s3_iter4.py"
+    },
+    "iter4_result": {
+      "mode": "implement (C1 ns_flat=4 + C3 G2-first, two independent arms, user-approved)",
+      "completed": "2026-10-17",
+      "executor": "@tilelang-op-perf-tuner",
+      "result": "BOTH ARMS REJECTED at Gate 2 (performance), NOT adopted, gqa.py untouched (md5 cbce7441 re-verified by orchestrator)",
+      "gate0_precision": "both arms 10/10 PASS, bitwise-identical vs shipped flat incl. NaN/Inf boundary; zero deadlocks in 29 device runs",
+      "gate2_ab": "three-way same-session alternating (27/27 runs rated 1650MHz, BASE reproduced iter3 anchors within +-1%): C1 R3 +10.6% / R2 +18.0% / R6 +29.7% WORSE; C3 R3 +24.0% / R2 +9.6% / R6 +10.8% WORSE (all beyond 3% threshold and beyond spread)",
+      "mechanism_finding": "HIGH-VALUE: shipped flat pacing stall is LOAD-BEARING - release-waits double as queue-depth throttle; ns4 freed the throttle (V-id3 -63%, C-id1 -61%, C-id5 -59% as designed) but producer-gate waits EXPLODED (C-id2 +43.8us, V-id0 +10.7, V-id4 +14.7) with busy unchanged -> all data-ready handoffs got later; 'wall = busy + round-trip residual' model FALSIFIED. C3: C-id1 zeroed but C-id5 exposed at step head (+42), attack target V-id3 unmoved (20.4->21.4) - strict data chain SM(x)->G2(x)->AO(x)->SM(x+2) re-serializes at same beat; G1-first = pacer-feed-first is the optimal step order. CONCLUSION: flat-domain (kv==1) CV handoff topology is at MEASURED LOCAL OPTIMUM",
+      "iter5_design_input": "C2 (kv==2 flat dual-stream, uniform subclass first) MUST inherit shipped ns=2 + single release token + G1-first step order; C2 gain source narrows to removing batch-boundary drain/refill itself (task-boundary share of R4 ~1.76us/kv exposure); iter3 off-by-one gate attribution corrected, iter3 gain model for C1 voided",
+      "issues_disclosed": {
+        "ruff_format_drift": "shipped gqa.py fails `ruff format --check` (3 spots inside iter2-inserted hunk: 1 line ~150>140 + 2 blank-line); lint `ruff check` passes; ORCHESTRATOR CORRECTION to subagent's claim: ci.yml format-check is disabled (if: false) BUT ci_ascend.yml format-check is ACTIVE (ruff format --check on PR-changed .py; orchestrator verified workflow + local ruff 0.15.14 reproduces). Currently local-only: examples/gqa/ is UNTRACKED on branch ascendc_pto (git status ??), gqa.py never committed - becomes a real CI blocker only on a future PR",
+        "profiler_artifact": "r3_g2first_s2 block19 aic_time=1395us bogus row filtered from aggregation; TaskDur adoption metric unaffected"
+      },
+      "artifacts": [
+        "examples/gqa/perf_tuning/gqa_flat_ns4_variant.py + diff_iter4_ns4.txt (12 hunks)",
+        "examples/gqa/perf_tuning/gqa_flat_g2first_variant.py + diff_iter4_g2first.txt (1 hunk)",
+        "examples/gqa/perf_tuning/{gen_variants_iter4.py, run_iter4_variant.py, prof_gqa_ab_iter4.py, gate1_suite_iter4.py, run_matrix_iter4.sh}",
+        "examples/gqa/perf_tuning/msprof_op_iter4_* (27 dirs) + parse_summary_iter4_rounds123.txt",
+        "examples/gqa/perf_tuning/{baseline_iter4.json, candidate_iter4_C1.json, candidate_iter4_C3.json, candidate_iter4_gate0.log, candidate_iter4_matrix.log}",
+        "examples/gqa/perf_tuning/perf_log.md (iter4 entry)"
+      ],
+      "gate_check_by_orchestrator": "PASS: gqa.py/test_gqa.py md5 unchanged re-verified; all artifacts exist; perf_log iter4 entry present; no history_version backup (correct, nothing adopted); ruff claim independently reproduced; ci workflow status corrected (ci_ascend.yml format-check ACTIVE, not disabled)"
+    },
+    "iter5_scope_user_approved": {
+      "date": "2026-10-17",
+      "candidate": "C2: extend flat dual-stream pipeline to kv_iters==2 uniform-noncausal subclass (c4/c7 domain, shipped g2stack ns=2 = largest remaining CV serial region: C-id2 53% wall <-> V-id4 49% mutual exclusion, R4 207.85us)",
+      "design_constraints_from_iter4": [
+        "MUST inherit shipped ns=2 ws slot depth + single release token + G1-first step order (pacing stall load-bearing, measured)",
+        "gain source narrowed to removing task-boundary drain/refill; NO ring-depth or step-order changes stacked on top",
+        "iter3 R4 -13..-21% estimate partially voided (off-by-one gate attribution corrected in iter4) -> Phase A re-estimation with go/no-go checkpoint REQUIRED before building"
+      ],
+      "ruff_bundle_decision": "if C2 adopted at Gate 3: mechanically fix the 3 pre-existing ruff-format spots (iter2 hunk) with AST-equivalence proof + bitwise A/B + dual ruff gates; if not adopted: gqa.py untouched",
+      "risk_class": "HIGH (new kernel variant + real rescale chain + task-boundary state flip = family's highest-risk bug class); Gate 0/2 failure -> zero-change exit"
+    },
+    "iter5_result": {
+      "mode": "implement (C2 kv==2 flat dual-stream uniform-noncausal, user-approved; ruff bundle fix included per user decision)",
+      "completed": "2026-10-17",
+      "executor": "@tilelang-op-perf-tuner",
+      "result": "ADOPTED (Gate 0/2/3 all PASS)",
+      "phase_a": "GO - boundary share resolvable and non-trivial (~-11% from boundary terms alone); revised estimate -9.5..-22% central -17.7% (method: structural decomposition of per-task V exposure from existing iter3 telemetry, zero new collection)",
+      "gate0": "10/10 PASS bitwise-identical vs shipped g2stack incl. dual-kv-block NaN/Inf injection (real kv0->kv1 rescale chain carrying specials), mc=2 gate boundary, mixed mc, padcol/padrow, gate-isolation cases (causal-kv2 + stacked=32 NOT dispatched to variant, bitwise unchanged); one deadlock during development (first-version Q local protocol double-token, aicore timeout 507014) root-caused to LOCAL EVENTS DO NOT STACK TOKENS (cross-sem count depth not extrapolable) -> redesigned single-token, not a bypass",
+      "gate2": "same-session two-arm alternating 5+5, 20/20 rated 1650MHz, probe double-assertions per run: R4 c4-like 206.96->187.97us = -9.18% (primary); c7-like (FIRST-EVER measurement, shape verified from cases.yaml case_id 7: B2 Sq128 Skv256 Nq32 Nkv8 bf16 noncausal) 38.34->35.52us = -7.34% (secondary); both >=3%, arm distributions non-overlapping; BASE reproduced iter3 R4 anchor within -0.43%",
+      "telemetry": "batch mutual-exclusion waits collapsed as designed: R4 C-id2 109.8->31.0us (-72%), V-id4 106.2->30.2us (-72%); waits MOVED to release/pacing side (C-id1 +100.6, V-id3 +103.0) -> kernel now in same pacing-bound steady state as shipped kv1-flat, WITHOUT iter4-style producer-gate inflation (lookahead depth unchanged, only handoff granularity changed); net wall -19.0us = exposure -28.4 + vec busy +9.3us (2.20->2.38us/kv, flat-form per-task cap refill/AO-head fill/FIN beat overhead, marked inference)",
+      "gate3": "backup history_version/gqa_impl_s3_iter5.py (md5 cbce7441 verified); gqa.py cbce7441 -> bd470e072d0a48faeac1e786306932e8; new factory _gqa_kernel_prefill_g2stack_flat_kv2 dispatched at gate kv==2&noncausal&stacked>=2*NUM_CORES ahead of shipped g2stack (kept as compile fallback); ruff bundle fix: 3 pre-existing format spots mechanically reformatted, AST equivalence PROVEN (ast.dump byte-identical 725521 chars), ruff 0.15.14 + 0.16.7 (CI version wheel actually downloaded and run) dual-version format-check & check = 4 gates exit 0; gate-outside 8/8 bitwise unchanged with dispatch-arm probe verification (per_head_bm64 / g2stack_flat x3 / dense_expert / dense_auto / g2stack x2); in-gate 2/2 bitwise + chosen migration g2stack->g2stack_flat_kv2; msprof spot R1 10.57 (anchor 10.83) / R3 60.92 (anchor 61.09) no regression; instrumentation grep=0; npu-smi healthy",
+      "orchestrator_independent_verification": {
+        "static": "gqa.py md5 bd470e07 re-verified; backup md5 == cbce7441 pre-change baseline; test_gqa.py md5 3e2d0888 unchanged; all artifacts exist (c2_design_iter5.md, candidate_iter5_C2.json, variant+diff+audit, 24 msprof dirs, perf_log iter5 entry); instrumentation grep=0; ruff format --check 'already formatted' + check 'All checks passed' (orchestrator's own ruff 0.15.14 run)",
+        "test_suite": "orchestrator-run: unset PYTHONPATH + ACL_OP_INIT_MODE=1 + python3 examples/gqa/test_gqa.py --level all -> SUITE_EXIT=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 0 FAIL/WARN, 0 fallback lines, 'Test Passed!' (/tmp/opencode/orch_iter5_suite.log)",
+        "selftest": "orchestrator-run: python3 examples/gqa/gqa.py -> SELFTEST_EXIT=0, prefill_causal max_diff 3.663e-04 viol=0 + decode_noncausal 2.281e-05 viol=0, 'Test Passed!' CI marker, 0 fallback (/tmp/opencode/orch_iter5_selftest.log)",
+        "device": "npu-smi 2 chips Health OK, zero residual processes",
+        "verdict": "ALL GREEN - adoption confirmed"
+      },
+      "artifacts": [
+        "examples/gqa/gqa.py (bd470e072d0a48faeac1e786306932e8)",
+        "examples/gqa/history_version/gqa_impl_s3_iter5.py (pre-change backup)",
+        "examples/gqa/perf_tuning/c2_design_iter5.md (Phase A + design + per-u liveness + results backfill)",
+        "examples/gqa/perf_tuning/gqa_flat_kv2_variant.py + diff_iter5_kv2.txt + audit_flat_kv2_iter5.py",
+        "examples/gqa/perf_tuning/{candidate_iter5_C2.json, baseline_iter5.json, candidate_iter5_gate0.log, candidate_iter5_test_all.log}",
+        "examples/gqa/perf_tuning/msprof_op_iter5_* (24 dirs) + parse_summary_iter5.txt + telemetry_iter5_compare.txt",
+        "examples/gqa/perf_tuning/perf_log.md (iter5 entry)"
+      ],
+      "unverified": [
+        "local-event 'no token stacking' precise semantics (binary vs shallow-count) not isolation-tested; single-token fix safe under both, recorded as 'depth 1 = only safe form'",
+        "vec busy +0.18us/kv composition attribution is inference (no instruction-level trace, camodel ban maintained)",
+        "c7_base_s5 PipeUtilization impossible-value profiler artifact (known iter4 class): C-side telemetry excluded for that sample, TaskDur adoption metric retained",
+        "Phase A boundary-share FIN/fill serial-slot magnitude was model inference"
+      ],
+      "next_hint_iter6": [
+        "kv2-domain flat-form vec busy compression (neg_sm full-buffer refill narrowed to prv slot, expected +1-2%, low risk but touches NaN discipline - boundary cases mandatory)",
+        "c9 (kv4 uniform) natural extension (diminishing expected)",
+        "kv1 flat domain remains at measured local optimum; only remaining lever = V-side busy compression",
+        "F compression remains not-pursued"
+      ]
+    },
+    "ruff_format_drift_status": "RESOLVED in iter5 Gate 3 (user-approved bundle): AST-equivalent reformat, dual-version ruff 4-gate exit 0, orchestrator re-verified",
+    "closed": {
+      "date": "2026-10-18",
+      "stop_reason": "user chose to finish after iter5 adoption (best_effort goal substantially achieved: both CV-maskable domains adopted, both non-maskable domains excluded by measurement; remaining candidates marginal: kv2 vec-busy compression +1-2%, c9/kv4 extension diminishing, kv1 V-side busy compression out of CV-overlap scope, F compression not-pursued)",
+      "round2_net_effect": "CV parallel masking question ANSWERED with measurements: kv==1 prefill domain already masked (iter2) and proven at local optimum (iter4 negative results); kv==2 prefill domain masked this round (iter5 C2, R4 206.96->187.97us -9.18%, c7-like 38.34->35.52us -7.34%); decode excluded (MTE2 81-96% bandwidth wall); small-shape per-head excluded (launch floor 31-35%)",
+      "shipped_md5": "bd470e072d0a48faeac1e786306932e8",
+      "not_yet_measured": "MEASURED 2026-10-18: cann_final_eval_20261018_113143 score 68.12 (prev 67.88), avg_speedup 0.6435 (prev 0.6333); C2 in-gate gqa_4 -9.5% / gqa_7 -4.2% e2e, all accuracy identical",
+      "journal": ".agents/skill-journal/gqa-20261018-110623.md (5 entries: pacing-load-bearing antipattern, wait-id telemetry workflow, local-event no-token-stacking, ruff adoption gate, profiler artifact filtering)"
+    }
+  },
+  "perf_eval_20261018": {
+    "date": "2026-10-18",
+    "requested_by": "user (对当前算子进行 cann-bench 性能评测, 路径 .agents/skills/cann-bench)",
+    "executor": "orchestrator direct (measurement task, precedent: perf_eval 2026-10-17)",
+    "eval_code": "cann_final_eval_20261018_113143",
+    "reports": [
+      ".agents/skills/cann-bench/reports/cann_performance_eval_20261018_113143.{json,md,html}",
+      ".agents/skills/cann-bench/reports/cann_final_eval_20261018_113143.{json,md,html}"
+    ],
+    "subject_md5": "bd470e072d0a48faeac1e786306932e8 (gqa.py after Stage-3 iter5 C2 adoption + ruff bundle fix)",
+    "submission": "/tmp/opencode/gqa_submission (wheel rebuilt from current gqa.py; cann_bench/gqa.py + wheel-content md5 both verified == repo file bd470e07; old cbce7441 kernel archived at /tmp/opencode/gqa_submission_cann_bench_gqa_old_cbce7441.py)",
+    "command": "cd .agents/skills/cann-bench && env LD_LIBRARY_PATH=/usr/local/sqlite3/lib:... ./scripts/run_evaluation.sh --bench-name cann --task-dir tasks/level4 --operator GQA --source-dir /tmp/opencode/gqa_submission --device-id 0 --no-perf-batch-cases (methodology identical to 2026-10-17: warmup 3 / repeat 5 / Level1 / seed 0; setsid-detached, survived tool timeout; full log /tmp/opencode/eval_run_20261018.log; stage-3 wall 207s)",
+    "task_files_unchanged": "cases.yaml/golden.py mtime 2026-10-16 (pre-dates both evals) -> scores directly comparable",
+    "result": {
+      "cases": "20/20 PASS",
+      "pass_rate": 1.0,
+      "score": 68.12,
+      "compilation_score": 20.0,
+      "function_score": 30.0,
+      "performance_score": 18.12,
+      "avg_speedup": 0.6435
+    },
+    "vs_20261017_114305": {
+      "score": "67.88 -> 68.12 (+0.24)",
+      "avg_speedup": "0.6333 -> 0.6435 (+0.0102)",
+      "perf_score": "17.88 -> 18.12 (+0.235)",
+      "accuracy": "精度误差 column IDENTICAL for all 20 cases (consistent with C2 bitwise-identity vs shipped g2stack)",
+      "c2_in_gate_cases": "gqa_4 (c4, bf16): 250.86 -> 227.02us = -9.5% (speedup 0.41 -> 0.46), matches iter5 same-session main-kernel -9.18% almost exactly (main kernel dominates this shape's e2e); gqa_7 (c7, bf16): 51.30 -> 49.16us = -4.2% (speedup 0.59 -> 0.62), iter5 main-kernel -7.34% diluted by aux kernels as predicted",
+      "other_notable": "gqa_3: 106.16 -> 98.28 (-7.4%) - flat-kv1 in-gate BUT flat was already in the prev eval subject (cbce7441), so NOT attributable to C2; cross-session variance (same class as the c2-flag resolved in iter4; direction favorable this time). All remaining 17 cases within +-3.1% (cross-session noise band; the +6..22% aux drift seen between 09-16 and 10-17 evals did NOT recur)",
+      "decode_cases_11_17": "avg speedup ~0.96 (1.01/1.00/0.99/0.98/1.07/0.81/0.90) stable vs prev (0.98/1.00/1.01/0.97/1.06/0.82/0.89) - C2 correctly did not touch decode"
+    },
+    "benign_warning_documented": "aggregate_eq4 'profiler 采集功能异常/缺 baseline 锚点' warnings at end of stage 2 are premature (stage 3 collects perf later) - byte-identical in both evals, both produced normal final reports; journaled as e6 (low) to cann-bench",
+    "conclusion": "C2 (iter5) end-to-end effect CONFIRMED at bench level: both in-gate cases improved in the predicted direction/magnitude, zero accuracy change, zero out-of-domain disturbance; round-2 CV-masking work net +0.24 score"
+  },
+  "stage3_round3": {
+    "opened": "2026-10-18",
+    "trigger": "user request: 采集相应的流水数据，通过 roofline 分析访存瓶颈，细化到具体管线，根据具体管线的空闲率分析主要访存瓶颈导致原因，制定下一步优化方案",
+    "config": {
+      "mode": "analysis_only (no gqa.py/test_gqa.py modification this iteration)",
+      "goal_type": "best_effort (carried from round2)",
+      "max_iterations": 10,
+      "noise_threshold_pct": 3,
+      "deliverable": "roofline + per-pipe idle-rate attribution + prioritized optimization plan for user confirmation"
+    },
+    "baseline_md5": "bd470e072d0a48faeac1e786306932e8 (post-iter5 C2 + ruff fix; eval-confirmed score 68.12 / avg_speedup 0.6435)",
+    "iteration_in_progress": null,
+    "iter6_result": {
+      "mode": "analysis_only (roofline memory-bottleneck analysis, user task book)",
+      "completed": "2026-10-19",
+      "executor": "@tilelang-op-perf-tuner (resumed session: predecessor aborted after collection, this session verified+reused 36 dirs, re-collected 4, fixed 2 tool bugs)",
+      "phase0": "40 legacy dirs verified: A-matrix 18 REUSED (rc=0, CSVs non-zero, dispatch per-run verified incl r4=g2stack_flat_kv2/r5=dense_expert/r1=per_head_bm64, TaskDur anchors within 4.7%, artifact-filter 0 rows, all 1650MHz); B-matrix 12 REUSED (full 3-kernel chains, grids match source formulas); C-microbench: torch_gemm/vec/gemm REUSED; copy/copyl2 s1-s2 DISCARDED (microbench src[base,:] slice bug moved only 256B/iter -> impossible 8TB/s), s3+s4 re-collected same-session spread <1%; parse tool None-bug fixed (vec group had no output before)",
+      "verdict": "main memory bottleneck is NOT HBM (sole exception decode at 87-94% of roof) - prefill's real bottlenecks: (1) expert CV-split ws GM(L2) round-trip tax (62-77% of L2-side traffic, 3.3x byte amplification per u, paced through C-id1/V-id3 single-token chain; R4 mutual waits ~104us each = 55% wall; aic_scalar 83.7% busiest pipe) + (2) aux pure-movement tax (23-61% of e2e; transpose_out grid-starved to 1-32 tasks vs 40 vec cores, R1 single-core 42.6 GB/s = 1.2% of L2 roof). Recoverable: aux fix e2e -4..-44% (model), main structural FIX->UB low-confidence -10..-18%, decode residual 6-13% NOT recoverable",
+      "roofline": "roofs all sourced (ini spec + C microbench): cube 240.1 TFLOPS empirical (torch_gemm 4096^3, 92.7% busy) / 270.3 theoretical; HBM 1.307 TB/s L2-side mix / ~0.98 HBM-side; L2-resident 3.578 TB/s; vec ~4.39 TFLOPS. Positioning: R1 latency/launch-bound (far from both roofs); R2/R6 F=10.6us(38-39%)+pacing; R3 vec 62.4% pacer; R4 scalar 83.7%+pacing (L2 64.5% of roof); R5 decode AT ROOF (87% spec MTE2 / 94% empirical HBM, physical K/V stream 920 GB/s). Analytic model reconciled <=0.2% on 15/18 path x workload combos (3 caliber diffs disclosed)",
+      "root_causes": "(a) ws round-trip CONFIRMED as prefill main root cause - tax form = L2 bandwidth occupancy + 2-hop latency inside pacing chain, NOT HBM bytes (L2 hit 85-92% absorbs; HBM side only 234-514 GB/s) [measured+model]; (b) K/V reload: stacked domain 8-16x but L2-absorbed -> not a bottleneck; decode zero-reload but 134.2MB first-touch stream = HBM wall body, doubly closed [measured]; (c) aux tax = LARGEST single recoverable e2e pool - lesion = transpose_out grid starvation + launch floor; absorbable by main (decode BSND precedent + strided MTE3 rates 0.28-1.15 TB/s evidenced) [measured+code fact]; (d) mask fp32 64KB/u = 33% of causal-domain GM->UB (secondary); Output path healthy [measured+model]; (e) L2 tiering clean; decode '61% hit' = counting artifact (physical 920 GB/s caliber independent of that interpretation) [measured+inference]",
+      "aux_e2e_share": "R1 61.1% / R2 47.1% / R3 40.9% / R4 23.3% / R5 0% (BSND direct-feed confirmed) / R6 54.5% (eval cross-session lower-bound caliber 18.6-46.2% same direction)",
+      "optimization_plan_for_iter7": {
+        "P1_transpose_out_retile": "host-only ~15 lines, LOW risk, bitwise-identical target; e2e R1 -31%/R6 -21%/R2 -13%/R3 -8%/R4 -4% (mid-high confidence) - TUNER-RECOMMENDED iter7 main",
+        "P2_bsnd_direct_write": "main kernel writes BSND directly, eliminates transpose_out; MEDIUM risk (V-side FIN touches pacing -> wait-id discriminating gate mandatory); e2e -9..-44%",
+        "P3_fix_to_ub_probe": "eliminates ws_s/ws_o round-trip = direct attack on root cause (a); expert-mode feasibility UNVERIFIED -> iter7 would run Gate-0 probe only; main low-confidence -10..-18%",
+        "P4_transpose_qkv_elimination": "strided->Nz L1 unverified, sequenced after P2",
+        "P5_kv2_negsm_fill_narrowing": "+1-2%, NaN discipline gate, orthogonal same-round arm with P1",
+        "P6_causal_mask_in_kernel_regen": "-0..-4% low confidence, deferred",
+        "not_doable_list": "decode body (87-94% of roof, residual 6-13%), F launch floor (framework 2.5-3.8us), kv1 ring-depth/step-order (iter4 falsified), R1 main expert-ization, ci coarsening (iter3 falsified), ALL cube-compute directions (<=18.2% busy)"
+      },
+      "artifacts": [
+        "examples/gqa/perf_tuning/roofline_analysis_iter6.md (609 lines, 11 sections)",
+        "examples/gqa/perf_tuning/baseline_iter6.json",
+        "examples/gqa/perf_tuning/model_roofline_iter6.py",
+        "examples/gqa/perf_tuning/perf_log.md (iter6 entry)",
+        "examples/gqa/perf_tuning/msprof_op_iter6_* (44 dirs: 40 legacy + 4 re-collected)",
+        "/tmp/opencode/iter6_parse_{A,B,C}.txt + iter6_model_out.txt (parse snapshots)"
+      ],
+      "integrity": "gqa.py/test_gqa.py md5 unchanged start/end (orchestrator re-verified bd470e07/3e2d0888); state file untouched; re-collection same-session with existing naming, no overwrite; npu-smi healthy, zero residual processes; all runs 1650MHz; artifact filter armed but 0 rows hit in A/B; tool fixes confined to perf_tuning/ analysis scripts",
+      "unverified_count": "11 items in report §8 (P1-P6 gains all model extrapolations; P3/P4 feasibility unverified probe-first; 3 counter-caliber inferences; scalar_ratio wait-inclusion ambiguity continues; B-matrix aux = metrics-injection upper-bound caliber; pad kernel tax untested (all 6 workloads aligned); 2 RAG queries returned empty)",
+      "gate_check_by_orchestrator": "PASS (md5 re-verified, report 609 lines/11 sections covering all 5 task-book deliverables, perf_log entry format-aligned, baseline+tools+44 data dirs exist)"
+    },
+    "iter7_scope_user_approved": {
+      "date": "2026-10-19",
+      "arms": {
+        "P1": "transpose_out host-side tile retiling (~15 lines, targets grid starvation: R1 1-task-1-core 42.6 GB/s = 1.2% of L2 roof, 12us > main body); expected e2e R1 -31%/R6 -21%/R2 -13%/R3 -8%/R4 -4% (model); LOW risk; bitwise-identical output target",
+        "P5": "flat_kv2 neg_sm full-buffer refill narrowed to prv slot (+1-2% expected, iter5 next_hint); NaN discipline gate MANDATORY (iter2 fill-free lesson)",
+        "P3_probe": "FIX->UB direct path feasibility probe ONLY (attacks root cause (a): ws_s/ws_o round-trip); expert-mode expressibility UNVERIFIED; Gate 0 probe output = feasibility verdict + cost sketch; NO adoption NO dispatch integration this round"
+      },
+      "decision_criteria": "pre-registered per-arm before measurement; P1 primary = R1/R6 e2e >=3% improvement with no workload worse >3%; P5 = R4/c7-like main TaskDur >=3%; arms structurally orthogonal (aux vs main kernel) - if both pass, joint suite + joint e2e spot re-verification before final adoption",
+      "gate3_extras": "backup history_version/gqa_impl_s3_iter7.py; ruff dual gates must stay green (file currently clean post-iter5); full suite 24/24 + self-test + gate-outside bitwise invariance"
+    },
+    "shipped_md5": "9aa645dcd318ff7d5eabba910b56125f (post-iter11 P4-wave-2 adoption)",
+    "iter7_result": {
+      "mode": "implement (P1 transpose_out retile + P5 kv2 neg_sm narrowing independent arms + P3 FIX->UB Gate-0-only probe, user-approved)",
+      "completed": "2026-10-19",
+      "executor": "@tilelang-op-perf-tuner",
+      "result": "P1-V2 ADOPTED; P5 REJECTED (honest, below threshold); P3 probe INFEASIBLE (platform-level evidence closure)",
+      "p1": {
+        "adopted": true,
+        "v1_v2_governance": "V1 (original config-selection rule) REJECTED by pre-registered guardrail: R2 e2e -16.83% regression (multi-wave small-box configs hit unmodeled ~2.5us/wave block-wave overhead). V2 = same mechanism, config-selection rule fixed (session-calibrated wall model wall ~= L + waves*max(W_OH, bpb/RATE) + wave-first tie-break + 20% hysteresis), ADOPTION CRITERIA VERBATIM UNCHANGED (pre-registered, not moved). Orchestrator assessment: legitimate candidate-bug-fix pattern (iter5 deadlock-fix precedent), V2 passed on own merits; V1 data retained and disclosed (36 msprof dirs)",
+        "gate0": "V1/V2 each 20/20 PASS (kernel-level 10 shapes bitwise + e2e 9 dispatch domains bitwise + plan audit); integrated-vs-standalone rule 10710 shapes 0 mismatch",
+        "gate2": "same-session alternating 3+3, 87/87 runs rc=0 rated 1650MHz, BASE reproduced iter6 anchors within +-1.7%: e2e R1 27.40->20.05us = -26.81% (primary), R6 61.25->49.06 = -19.90% (primary), R2 50.14->43.70 = -12.84%, R3 103.88->98.31 = -5.37%, R4 +0.11% (plan IDENTICAL), R5 -0.73% (decode has no transpose_out, noise band); tout single-kernel: R1 12.08->4.86us (blk 1->16), R2 13.31->7.67 (4->16), R3 23.81->17.63 (8->16), R6 22.04->9.69 (3->12), R4 29.91->29.58 (16->16 unchanged); main-TaskDur-invariance guardrail: all 6 workloads |delta|<=2.7% PASS",
+        "gate3": "backup history_version/gqa_impl_s3_iter7.py (md5 bd470e07 verified); gqa.py bd470e07 -> 4b4e453e4b8f2922baefbecb85912494; 3 pure-insertion hunks +76/-0 (host-side retile model constants + _retile_out_plan + docstring; healthy grids keep legacy plan byte-identical); domain-outside 13/13 shapes bitwise unchanged (final + main dual-hook); ruff 0.15.14 + 0.16.7 four gates exit 0; msprof spot: integrated R5 main 147.86 (anchor +1.35%), R2 main 26.18 in-band, R1 chain tout blk16 5.20us retile active; instrumentation grep=0; npu-smi OK; zero residual processes"
+      },
+      "p5": {
+        "adopted": false,
+        "gate0": "11/11 PASS (7 finite cases dual-layer bitwise + iter5-style NaN/Inf dual-kv-block injection + fullrange +-65504 structural equality + golden viol=0 + 2 gate-isolation cases)",
+        "gate2": "REJECTED: R4 main +0.75% / c7 +1.15% - below pre-registered 3% threshold, distributions overlapping; wait-id telemetry zero migration (flag protocol untouched as designed)",
+        "note": "gqa.py NOT modified by this arm; kv2 vec-busy micro-ops class added to not-doable list (~1% < threshold, now calibrated)"
+      },
+      "p3_probe": {
+        "verdict": "INFEASIBLE on this platform (A3/arch2201 + ascendc backend + expert config)",
+        "evidence_closure": "3-layer: (1) CANN 9.2 asc_copy_l0c2ub implemented ONLY for npu_arch_3510 (A5); 2201 fixpipe exposes GM/L1 only (ini l0_c_to_ub_rate=256 is microarch spec, not programmable); (2) ascendc backend has no tl::ascend::copy_l0c_to_ub template; pipe ops (TPUSH/TPOP) PTO-codegen only - E2 generated-source proof: T.copy(l0c,ub) materializes as HIDDEN GM ws round-trip (isomorphic to shipped = zero gain); (3) expert-mode inserted vid-reduction conflicts with manual protocol (E2 numeric FAIL 9.82 vs E2b control PASS 1.4e-06). E1 correction: per-head AUTO precedent ALSO generates ws GM round-trip - iter6's 'path existence evidence' claim voided",
+        "consequence": "root-cause-(a) ws round-trip ELIMINATION class archived to not-doable on this platform; A5 target or framework extension (tilelang-ascend-tile-api) are the only carriers; details probe_iter7_P3.md §3-4"
+      },
+      "orchestrator_independent_verification": {
+        "static": "new md5 4b4e453e verified; backup == bd470e07 pre-change baseline; test_gqa.py 3e2d0888 unchanged; diff = exactly 3 insertion hunks +76/-0; P5 absent from diff (grep neg_sm/flat_kv2 = 0); ruff format+check pass (own run); instrumentation grep=0; all artifacts exist (candidate JSONs, probe md, retile tool, 87 msprof dirs, perf_log iter7 entry)",
+        "content_spot_check": "inserted code = host-side retile rule as claimed (calibrated wave/byte model + wave-first tie-break + 20% hysteresis; legacy plan byte-identical for healthy grids; V1 regression lesson data-documented in comments)",
+        "test_suite": "orchestrator-run: --level all -> SUITE_EXIT=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 0 FAIL/WARN, 0 fallback, 'Test Passed!' (/tmp/opencode/orch_iter7_suite.log)",
+        "selftest": "orchestrator-run: gqa.py -> SELFTEST_EXIT=0, prefill 3.663e-04 viol=0 + decode 2.281e-05 viol=0, 'Test Passed!', 0 fallback (/tmp/opencode/orch_iter7_selftest.log)",
+        "device": "npu-smi 2 chips OK, zero residual processes",
+        "verdict": "ALL GREEN - P1 adoption confirmed"
+      },
+      "artifacts": [
+        "examples/gqa/gqa.py (4b4e453e4b8f2922baefbecb85912494)",
+        "examples/gqa/history_version/gqa_impl_s3_iter7.py (pre-change backup)",
+        "examples/gqa/perf_tuning/{candidate_iter7_P1.json, candidate_iter7_P5.json, probe_iter7_P3.md, probe_iter7_P3_fix2ub.py}",
+        "examples/gqa/perf_tuning/{p1_retile_iter7.py (V2 rule + V1 retained + offline predictor), gen_variant_iter7_p5.py, gqa_flat_kv2_p5_variant.py, diff_iter7_p5.txt}",
+        "examples/gqa/perf_tuning/{run_iter7_p1_gate0.py, run_iter7_p5_gate0.py, prof_gqa_ab_iter7.py, run_matrix_iter7.sh, parse_iter7_ab.py}",
+        "examples/gqa/perf_tuning/msprof_op_iter7_* (87 dirs incl. 36 rejected-V1 data retained)",
+        "examples/gqa/perf_tuning/{gate3_iter7_outputs_pre.pt, gate3_iter7_outputs_post.pt, gate3_iter7_chosen_pre.json, gate3_iter7_chosen_post.json, baseline_iter7.json}",
+        "examples/gqa/perf_tuning/perf_log.md (iter7 entry)"
+      ],
+      "unverified": [
+        "W_OH~2.5us/RATE~80GB/s are 3-8-point empirical fits; model-extrapolated shapes (c5/c8-class tout gains) not individually A/B'd - only R1-R6 measured",
+        "bpb 256-512KB transition-zone rate not independently calibrated",
+        "unaligned-shape pad kernel tax still untested (iter6 carry-over)",
+        "P3 A2-PTO pipe physical medium unverified (pto-isa submodule absent locally - sole needs-deeper-study residual, PTO-migration topic)"
+      ],
+      "next_hint_iter8": [
+        "P2 (main kernel BSND direct write, eliminates transpose_out entirely): re-estimate vs NEW baseline (tout now 4.9-17.6us; remaining e2e share ~12-24% per domain); MEDIUM risk, V-side FIN touches pacing -> wait-id discriminating gate mandatory",
+        "P4 (transpose_qkv elimination, strided->Nz L1 probe first) sequenced after P2",
+        "pad-kernel tax measurement for unaligned shapes (minor, carry-over)",
+        "not-doable additions: FIX->UB / ws round-trip elimination class (P3 infeasible, platform-level); kv2 vec-busy micro-ops (P5 calibrated ~1%)"
+      ]
+    },
+    "iter8_scope_user_approved": {
+      "date": "2026-10-19",
+      "candidate": "P2: prefill main kernel writes BSND output directly (strided MTE3, decode-path precedent), eliminating transpose_out kernel + its launch floor (2.5-3.8us). iter6 estimate e2e -9..-44% is PRE-P1; marginal re-estimation vs new baseline REQUIRED (tout now 4.86-29.58us = e2e share R1 24%/R6 20%/R2 18%/R3 18%/R4 12%) with go/no-go checkpoint",
+      "risk_class": "MEDIUM (V-side FIN phase touches pacing chain in flat kernels -> wait-id discriminating gate mandatory; unaligned/padded shape crop logic complexity -> scope may need narrowing to aligned subset first)",
+      "post_iter8": "orchestrator runs cann-bench eval (precedent: direct measurement task) to quantify P1+P2 at bench level; if P2 rejected at gates, eval still quantifies P1"
+    },
+    "iter8_result": {
+      "mode": "implement (P2 main-kernel BSND direct write eliminating transpose_out in first-wave coverage, user-approved; eval to follow)",
+      "completed": "2026-10-19",
+      "executor": "@tilelang-op-perf-tuner",
+      "result": "ADOPTED (Gate 0/2/3 all PASS)",
+      "phase_a": "GO - revised marginal estimate e2e -12..-19.5% central (iter6 pre-P1 estimate voided); first-wave coverage = chosen in {g2stack_flat, g2stack_flat_kv2} AND S%64==0 -> bench 7/20 cases (c1,c2,c3,c4,c7,c18,c20); feasibility EVIDENCED not modeled: expert-mode BSND 4-D strided box write compiles+runs bitwise-correct (probe 15/15), generated code = single copy_ub_to_gm/DataCopyPad with dstStride change only, instruction counts identical both arms, strided per-box MTE3 = 1.07-1.17x contiguous -> main cost upper bound +0.13..+0.98us vs eliminated tout 7.67-29.58us; launch-floor double-count corrected (disclosed); unaligned-S excluded WITH ROOT CAUSE: BSND real-S crop needs fp16/bf16 d2d ViewCopy = 561103-missing-binary trap (gqa.py:5486-5489 precedent), in-kernel masked rows would invade paced V beat",
+      "gate0": "23/23 PASS (15 coverage-domain bitwise + L2 kernel-level equivalence transpose_out(main_pre)==main_post 15/15 + 8 domain-outside isolation incl. padrow_s100/l1_s_tail_s124 flat-dispatch-but-unaligned gate-isolation evidence; NaN/Inf dual-kv injection position+sign+finite exact; fullrange golden-invariance criterion with iter7 precedent disclosed; MQA N_kv=1; mc boundaries)",
+      "gate2": "same-session alternating 3+3, 42/42 rc=0 rated 1650MHz: PRIMARY r2 e2e 45.00->37.16us = -17.42% / r6 48.45->39.04 = -19.42% (5.8x/6.5x threshold, distributions non-overlapping); secondary r3 -18.23% / r4 -12.04% / c7 -12.91% (first-ever c7 e2e measurement, no cross-session anchor - disclosed); domain-outside r1 +0.80% / r5 -0.01%; main-cost guardrail worst +2.28% (limit +5%); gain-realization 91.5-100.6% of eliminated tout; UNEXPECTED direction: 4/5 covered workloads main got FASTER (strided write cost < removed L2 write+read pass); wait-id discriminating gate 5/5 PASS: sum-wait deltas -0.23..+0.99us vs eliminated tout 7.7-29.6us (max inflation 13% of gain, veto threshold 100%), pacing mirror flat (V-id3 -0.9..+0.8%, C-id1 -2.0..+4.6%) = NO iter4-style migration; DISCLOSED SUB-CRITERION FAIL: session-health r1 cross-session anchor +3.41% (domain-outside micro-kernel ~+-10% band; diagnostic s4-s6 re-collected: 6-sample BASE mean +2.9% back in band; criterion NOT moved, reported FAIL per pre-registration)",
+      "gate3": "backup history_version/gqa_impl_s3_iter8.py (md5 4b4e453e verified); gqa.py 4b4e453e -> 3aa9cfa2625cdce96a62ce967785fe85 (orchestrator-measured diff +131/-15 lines, 22 diff groups; subagent reported +131/-17/17 hunks - counting-caliber difference disclosed, functionally immaterial); out_bsnd=False path generated code byte-identical; domain-outside 16/16 bitwise (main BHSD + final dual-hook, incl. P1 retile plans surviving per-shape); ruff 0.15.14 + 0.16.7 four gates exit 0 (max line 140 = limit); msprof bottom-line on INTEGRATED file zero-monkeypatch: r2/r4 chains show tout ABSENT (e2e 37.46/216.62us), r1 tout still 5.26us blk16, r5 main 145.36 anchor-band; instrumentation grep=0; npu-smi OK zero residual",
+      "orchestrator_independent_verification": {
+        "static": "new md5 3aa9cfa2 verified; backup == 4b4e453e pre-change baseline; test_gqa.py 3e2d0888 unchanged; AST parse OK; out_bsnd capability wired (28 occurrences); ruff format+check pass (own run); instrumentation grep=0; artifacts complete (candidate_iter8_P2.json, p2_bsnd_design_iter8.md, baseline_iter8.json, 72 msprof dirs, perf_log iter8 entry)",
+        "test_suite": "orchestrator-run: --level all -> SUITE_EXIT=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 0 FAIL/WARN, 0 fallback, 'Test Passed!' (/tmp/opencode/orch_iter8_suite.log)",
+        "selftest": "orchestrator-run: gqa.py -> SELFTEST_EXIT=0, prefill_causal (=bench c1, coverage domain) 3.663e-04 viol=0 + decode 2.281e-05 viol=0, 'Test Passed!' (/tmp/opencode/orch_iter8_selftest.log)",
+        "device": "npu-smi 2 chips OK, zero residual processes",
+        "verdict": "ALL GREEN - P2 adoption confirmed; eval_readiness verified (clean for cann-bench run)"
+      },
+      "harness_bugfixes_disclosed": "2 harness defects fixed with criteria verbatim unchanged (iter7 V1->V2 precedent): torch.equal NaN IEEE semantics -> view(int16) raw-bit comparison (BASE-vs-BASE rerun reproduced); CPU-fp32-golden atol misjudging shipped bf16 (r3 viol=12) -> test_gqa f6 caliber + viol_arm==viol_base invariance",
+      "unverified": [
+        "c7 e2e anchor first-measurement (no cross-session reference)",
+        "unaligned-S domain e2e untested (zero-change by design, bitwise invariance verified instead)",
+        "eval harness caliber may differ from sum-TaskDur (direction should be >= ours, inference not measurement)",
+        "session-health r1 sub-criterion FAIL disclosed (domain-outside, cross-session band, diagnostic rerun back in band, criterion not moved)",
+        "pad kernel tax still untested (iter6 carry-over); P2 wave-2 domains not implemented"
+      ],
+      "next_hint_iter9": [
+        "P2 wave-2 (highest expected value): same mechanism to remaining tout domains - per-head _gqa_kernel_expert (r1+c5/c6, tout still 24% of r1 e2e), prefill_expert (c19), g2stack (c8/c9/c10); infrastructure READY (capability bit + chain_key + generator/audit/Gate0 harness reusable), ~2-line edit per kernel; expected 5-25% e2e each",
+        "unaligned-S crop decision (wave-2 companion): FIN row-masked write (touches paced V beat, wait-id gate) vs keep transpose_out(s_real=) (zero-risk status quo)",
+        "P4 (transpose_qkv elimination, strided GM->Nz L1 probe first): tqkv now 22-29% of coverage-domain e2e",
+        "do-not-pursue list unchanged + P5 kv2 vec micro-ops (calibrated ~1%)"
+      ]
+    },
+    "eval_20261019_attempt1_incident": {
+      "eval_code_attempted": "cann_final_eval_20261019_175412 (INVALID: 14/20, [ERROR] 执行失败)",
+      "symptom": "correctness stage (2 concurrent): case 15 aicore timeout 507014 -> cases 16/17 cascade sync fail -> 18-20 skipped; stage 3 (serial) then ran 14/14 fine; final report based on 14/20 = invalid for comparison",
+      "case15": "decode B60 S1 Skv1024 Nq32 Nkv8 D256 noncausal fp16 -> dense_expert_d256 (blockDim=20 fixed-core, cross-core semaphores)",
+      "root_cause_analysis": {
+        "verdict": "NOT a code regression - eval-environment concurrency hazard (co-residency deadlock class)",
+        "evidence": [
+          "device plog (debug/plog/plog-423741_20261019175116864.log): Task run failed device_id=0 stream_id=45 task_id=29 errType=0x4 task timeout, blockDim=20, tilingKey=0, retCode=0x25 aicore timeout",
+          "AST comparison bd470e07 (passed case15 in 10-18 eval) vs 3aa9cfa2 (current): 7/9 kernel factories IDENTICAL incl. _gqa_kernel_dense_expert_d256; only the 2 flat kernels changed (P2 coverage by design)",
+          "local sequential repro case15: PASS (max_diff 3.8e-05 vs fp32 golden, no hang)",
+          "sequential smoke cases 15-20 on current gqa.py: ALL PASS",
+          "orchestrator-run full suite 24/24 + self-test PASS on the integrated file (post-adoption)",
+          "same eval's stage 3 (serial): 14/14 PASS; cases 1-14 correctness PASSED under the SAME 2-concurrency including 5 P2-coverage cases",
+          "concurrent 2-process repro attempt (case15+case16, 8+8 iters): did NOT hit the race (probabilistic; small sample - hypothesis not falsified)",
+          "precedent: evals 10-17/10-18 passed the same window with the same concurrency = race luck; P1/P2 changed prefill case durations shifting the pairing"
+        ],
+        "mechanism": "two blockDim=20 fixed-core kernels with cross-core semaphore protocols cannot co-reside on a 20-AI-core chip if the scheduler interleaves their blocks -> each kernel's cross-core flag chain waits for non-resident peer blocks -> watchdog aicore timeout. Hazard class applies to ALL expert kernels of this family (pre-existing), not P2-specific"
+      },
+      "disposition": "rerun eval with --processes-per-card 1 (correctness stage serialized; performance stage was ALWAYS serial in every prior eval ('1 卡 × 1 并发/卡' in 10-17/10-18 logs) -> scores remain comparable; deviation disclosed)",
+      "journal_candidate": "round-3 journal: fixed-core cross-core-semaphore kernels + concurrent eval streams = co-residency deadlock hazard (target: cann-bench docs + tilelang-perf-optimization deployment notes)"
+    },
+    "iter9_scope_user_approved": {
+      "date": "2026-10-19",
+      "candidate": "P2 wave-2: same BSND direct-write mechanism (infra ready: out_bsnd capability bit + chain_key + generator/audit/Gate0 harness, ~2-line edit per kernel) extended to remaining transpose_out domains: per-head _gqa_kernel_expert (r1/c5/c6, tout ~26% of r1 e2e), prefill_expert (c19, ~19%), g2stack (c8/c9/c10, small share ~3-7% - Phase A per-domain go/no-go REQUIRED, skip if predicted <3%)",
+      "unaligned_S": "stays EXCLUDED this round (transpose_out(s_real=) retained, P1 retile remains active for them); FIN row-masked-write crop decision deferred (touches paced V beat)",
+      "post_iter9": "orchestrator runs cann-bench eval for consolidation (user-approved plan)"
+    },
+    "iter9_result": {
+      "mode": "implement (P2 wave-2: extend BSND direct-write to per-head/prefill_expert/g2stack domains, user-approved)",
+      "completed": "2026-10-19",
+      "executor": "@tilelang-op-perf-tuner",
+      "result": "ADOPTED for prefill_expert + g2stack domains; per-head domain STRUCTURALLY EXCLUDED (compiler-level evidence, honest exit)",
+      "phase_a": "per-domain go/no-go on measured BASE B-matrix (14/14 rc=0 rated freq): per-head go (r1 tout 26.3% of e2e, predicted -25.4%), prefill_expert go (c19 tout 13.5%, predicted -13.1%), g2stack go (task-book's 3-7% warning CORRECTED by measurement: tout share 6.5/8.8/12.5% for c8/c9/c10, c10 tout=153.5us blk64)",
+      "per_head_exclusion": {
+        "verdict": "STRUCTURALLY INFEASIBLE on current tilelang (evidence-closed, alternatives evaluated and rejected, domain keeps shipped path with P1 retile intact)",
+        "root_cause": "COMPILER BUG CLASS FINDING: AUTO-mode threads=2 AscendVidReduction pass emits WRONG descriptors for strided BSND output writes - un-split blockCount=64 (vs correct 32/vid for contiguous) + stale contiguous vid offsets (vid*4096 instead of vid*32768) -> two vids overlap-write + out-of-bounds. Proof: r1 BITFAIL maxabsdiff=5.9e4, c5 BITFAIL NaN; threads=1 pipeline form BITOK but ZERO bench cases fall in it. Generated-code audit + bitwise probe double evidence; 6 configs base/w2 source-paired",
+        "note": "all causal/odd-kv/D!=128 per-head shapes necessarily use threads=2 (= r1/c5/c6 all affected) - narrowing gate to threads=1 has no economic value; tilelang pass fix = out-of-scope rewrite; JOURNAL CANDIDATE (framework bug documentation)"
+      },
+      "gate0": "25/25 (14 coverage raw-bit bitwise + L2 kernel-level equivalence + golden viol_arm==viol_base==0 f6 caliber + NaN/Inf dual-domain injection nan-counts 275/128 exact + fullrange dual-domain + 11 domain-outside isolation incl per-head/wave-1/decode/unaligned four families)",
+      "gate2": "same-session alternating 3+3 (guards 2+2), 50/50 rc=0 rated 1650MHz, artifact 0 rows: c19 57.41->49.86us = +13.15% (PRIMARY, prediction error +0.05pp); c8 855.69->797.67 = +6.78% (PRIMARY); c9 657.87->605.21 = +8.00% (PRIMARY); c10 1231.62->1071.94 = +12.97% (secondary); tout ABSENT in all 4; main delta -0.35..+1.65% (c8 main FASTER again = wave-1 L2 effect recurrence); guards all in overlap band: r1 -1.61% / r2 +1.12% / r5 +0.19% / s100e -0.37% / s100g +0.10%; realization 91.1-105.2%; wait-id gate 4/4 PASS: sum-wait inflation +0.36..+8.35us vs eliminated tout 7.6..159.2us (max 5% of gain, veto 100%); c19 V-id3 +20.7% disclosed as 0.07us micro-delta (0.14% of e2e) - no downgrade per pre-registered rule; session health: BASE reproduced Phase A anchors within +-0.57% (r1 +3.37% within pre-registered +-10% micro-kernel band)",
+      "gate3": "backup history_version/gqa_impl_s3_iter9.py (md5 3aa9cfa2 verified); gqa.py 3aa9cfa2 -> 606b07ff474ec42b8244f0831327d75b (orchestrator-verified diff +102/-27 == claim; integrate_iter9_p2w2.py 18 line-anchored assertion edits); pre/post integration 15/15 bitwise (final all-bitwise; wave-2 5x transpose_out(main_pre)==main_post; domain-outside main BHSD 5/5; newly-skipped census == wave-2 set exactly; P1 plans preserved per-domain); one comparator harness defect fixed with criteria verbatim unchanged (main_is_bhsd misused real S for unaligned padded-main cases; iter7/8 precedent, disclosed); ruff 0.15.14 + 0.16.7 four gates exit 0 (max line 140 = limit); msprof bottom-line zero-monkeypatch: c19/c9 tout ABSENT (e2e within -1.6%/+0.2% of Gate2 W2 arm), r1 excluded-domain tout STILL PRESENT 5.51us blk16 (P1 alive), r2 wave-1 untouched, r5 decode 146.88 anchor-band; instrumentation grep=0; npu-smi OK zero residual",
+      "orchestrator_independent_verification": {
+        "static": "new md5 606b07ff verified; backup == 3aa9cfa2 pre-change baseline; test_gqa.py 3e2d0888 unchanged; diff +102/-27 matches claim; artifacts complete (candidate_iter9_P2w2.json, p2_wave2_design_iter9.md, baseline_iter9.json, 74 msprof dirs, perf_log iter9 entry); ruff format+check pass (own run); instrumentation grep=0",
+        "test_suite": "orchestrator-run: --level all -> SUITE_EXIT=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 0 FAIL/WARN, 0 fallback, 'Test Passed!' (/tmp/opencode/orch_iter9_suite.log)",
+        "selftest": "orchestrator-run: gqa.py -> SELFTEST_EXIT=0, 'Test Passed!', 0 fallback (/tmp/opencode/orch_iter9_selftest.log)",
+        "device": "npu-smi 2 chips OK, zero residual processes",
+        "verdict": "ALL GREEN - wave-2 adoption confirmed"
+      },
+      "pad_tax_finding": "incidental measurement: unaligned s100e e2e 235us vs aligned-isomorph 57us - Fill/pad path tax HUGE (unaligned shapes not in bench 20, real-world relevance; next_hint item)",
+      "next_hint_iter10": [
+        "P4 transpose_qkv elimination (largest remaining aux in coverage domains: c19 33%, r2 27% of e2e; strided GM->Nz L1 probe first)",
+        "pad kernel tax (s100e evidence: 4.1x e2e vs aligned isomorph)",
+        "per-head domain RE-OPENABLE after tilelang AscendVidReduction strided-write fix (economics proven: r1 -25%)",
+        "do-not-pursue list: iter8 items + per-head threads=1 gate narrowing"
+      ],
+      "unverified": [
+        "bench-perspective improvement not yet confirmed by cann-bench run (orchestrator to execute; B-matrix caliber conservative for small shapes, marked inference)",
+        "wave-2 did not re-run strided rate probe (reused wave-1 calibration; Gate 2 main deltas -0.35..+1.65% evidence in-band)",
+        "per-head threads=1 subdomain performance untested (zero bench coverage, no economic case)"
+      ]
+    },
+    "iter10_scope_user_approved": {
+      "date": "2026-10-19",
+      "candidate": "P4: eliminate transpose_qkv aux kernel (input-side BSND->BHSD-padded transpose) by direct strided GM load in main kernels; tqkv = largest remaining aux in coverage domains (c19 33%, r2 27% of e2e per iter9 next_hint); probe-first: strided GM->L1(Nz) expressibility + strided MTE2 rate + minimal correctness -> go/no-go; implement same round only if go",
+      "budget_note": "FINAL budgeted iteration (10/10); round 3 closes after - scope discipline: probe checkpoint mandatory before building; no-go ends round with analysis report",
+      "post_iter10": "if adopted, orchestrator proposes consolidation eval (user decision at that point); round-3 journal + final report regardless"
+    },
+    "iter10_result": {
+      "mode": "implement probe-gated (P4 transpose_qkv elimination via BSND strided direct-read, user-approved, FINAL budgeted iteration)",
+      "completed": "2026-10-20",
+      "executor": "@tilelang-op-perf-tuner",
+      "result": "ADOPTED (probe GO -> full Gate 0/2/3 chain same round)",
+      "probe": "GO on all 5 items: (1) expressibility triple-evidence closure - lowering source (src/op/ascend.cc compute_strideN folds singleton head dim to realSrcN=D*N) + codegen (single copy_gm_to_l1 per box, instruction counts equal both arms 19=19/16=16) + DECODE DENSE_EXPERT PRODUCTION PRECEDENT (gqa.py:1229/:1266 strided BSND->nz/zn L1, iter6-measured at 87-94% of MTE2 roof) + RAG (asc_copy_gm2l1 n_burst<=4095/gap 32B units, all boxes in bounds); (2) Nz gate NON-ISSUE: ND->NZ is inline MTE2 conversion (Catlass TileCopyTla), no UB transit; (3) strided MTE2 rate: real-kernel differential, main-only wall -0.47%..+0.70% no degradation; (4) smoke 5/5 raw-bit bitwise incl NaN/Inf + fullrange; (5) economics: tqkv share 12.8-27.8% measured, pessimistic band 10.2-22.2% >> 3%",
+      "scope": "first wave = flat kv1/kv2 domains (in_bsnd capability bit + dual-alignment gate + adapter resolve-then-supply reorder); unaligned S stays on transpose_qkv (tail-mode, skv200 measured 166.8us tax - future item); per-head AUTO conservatively excluded (iter9 AscendVidReduction finding applicability verified and declared)",
+      "gate0": "25/25 PASS (14 coverage bitwise + golden dual-arm / 11 isolation incl s100 + padcol_skv200 dual gate-isolation evidence; one harness defect fixed with criteria verbatim unchanged - dual-driver gate fork caught by isolation case on the spot, disclosed)",
+      "gate2": "same-session alternating, 48/48 rc=0 rated 1650MHz, artifact 0 rows: PRIMARY r2 e2e 36.11->26.35us = -27.04% (prediction 27.0) / r4 216.83->188.08 = -13.26% (pred 12.8), distributions non-overlapping; secondary r6 -26.16% / r3 -21.80% / c7 -23.62% (c7 tqkv first-ever measurement 12.09us); guards r1 -1.09% / r5 +0.01% / c19 +0.26% / c8 +0.34% all overlapping; tqkv elimination confirmed 5/5 (p4-arm chains = ['main'] only); main delta +0.32..+1.45us (max 7.6% of eliminated tqkv, tripwire 50% not triggered); realization 92.4-103.3%; wait-id discriminating gate (mandatory, K/V loads inside paced loop) 5/5 PASS: sum-wait inflation <=+0.79us vs tqkv 10-28us, V-id3/C-id1 flat = no iter4-style beat migration; anchor disclosure: 8/9 in-band, r2 base -3.83% out-of-band disclosed (small-shape cross-session drift, iter8-r1 precedent, same-session criteria unaffected)",
+      "gate3": "backup history_version/gqa_impl_s3_iter10.py (md5 606b07ff verified); gqa.py 606b07ff -> f59b561212e60a50b78a51671999ef7c (orchestrator-verified diff +217/-60 == claim, 22 assertion edits); pre/post integration 13/13 bitwise (domain-outside 8 >= 5 required; p4-domain tqkv census 1->0); ruff 0.15.14+0.16.7 four gates exit 0; msprof bottom-line zero-patch: r2/c7 tqkv ABSENT, skv200 tqkv PRESENT (unaligned retained), r1 tout blk16 P1 alive, r5 anchor-band; instrumentation grep=0; npu-smi OK zero residual",
+      "orchestrator_independent_verification": {
+        "static": "new md5 f59b5612 verified; backup == 606b07ff pre-change; test_gqa.py 3e2d0888 unchanged; diff +217/-60 matches claim; artifacts complete (probe_iter10_P4.md, candidate_iter10_P4.json, p4_design_iter10.md, 58 msprof dirs, perf_log iter10 entry); ruff format+check pass (own run); instrumentation grep=0",
+        "test_suite": "orchestrator-run: --level all -> SUITE_EXIT=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 0 FAIL/WARN, 0 fallback, 'Test Passed!' (/tmp/opencode/orch_iter10_suite.log)",
+        "selftest": "orchestrator-run: gqa.py -> SELFTEST_EXIT=0, 'Test Passed!', 0 fallback (/tmp/opencode/orch_iter10_selftest.log)",
+        "device": "npu-smi 2 chips OK, zero residual processes",
+        "verdict": "ALL GREEN - P4 adoption confirmed"
+      },
+      "bench_perspective": "7/20 bench cases now SINGLE-KERNEL chains (BSND in -> BSND out, zero aux): c1/c2/c3/c4/c7/c18/c20; tuner recommends consolidation eval (expected e2e -13..-27% on those cases, score > 69.47)",
+      "unverified": [
+        "cann-bench consolidation eval NOT yet run (user decision pending)",
+        "per-head AUTO read-side strided behavior untested (conservatively excluded, NOT proven infeasible)",
+        "c7 bench-wall caliber gain not separately measured (B-matrix caliber conservative, iter9 finding 4)"
+      ],
+      "next_hint_round3_close": [
+        "P4 wave-2: g2stack + prefill_expert input direct-read (mechanism verbatim-isomorphic, infra fully ready; c19 tqkv 33% = largest single remaining item, c8/c9/c10 6-8%) - REQUIRES BUDGET EXTENSION (10/10 reached)",
+        "per-head domain re-open after tilelang AscendVidReduction strided-write fix (economics proven iter9: r1 -25%)",
+        "unaligned-shape tail-mode tqkv tax (skv200 measured 166.8us) - standalone item",
+        "pad kernel tax (iter9: s100e e2e 4.1x aligned isomorph) - standalone item",
+        "do-not-pursue list continues (iter8 items + per-head threads=1 narrowing)"
+      ]
+    },
+    "budget_status": "11/11 EXHAUSTED (extension used); round 3 closes after consolidation eval + journal",
+    "iter11_scope_user_approved": {
+      "date": "2026-10-20",
+      "candidate": "P4 wave-2: in_bsnd strided direct-read extended to _gqa_kernel_prefill_g2stack (c8/c9/c10, tqkv 6-8% of e2e) + _gqa_kernel_prefill_expert (c19, tqkv 33% = largest single remaining aux item); mechanism verbatim-isomorphic to wave-1, infra fully ready",
+      "exclusions": "per-head AUTO stays excluded (iter9 AscendVidReduction); unaligned S stays on transpose_qkv (tail-mode tax = separate future item); decode already BSND-direct",
+      "post_iter11": "orchestrator runs SINGLE consolidation eval covering P4w1+w2 (user-approved plan), then round-3 journal + final report"
+    },
+    "iter11_result": {
+      "mode": "implement (P4 wave-2: in_bsnd strided direct-read extended to g2stack + prefill_expert domains, user-approved budget extension)",
+      "completed": "2026-10-20",
+      "executor": "@tilelang-op-perf-tuner",
+      "result": "ADOPTED both domains (partial adoption not needed)",
+      "precheck": "6/6 PASS: g2stack stacked-box algebra CLOSED (M_stack concat dim only on dst side; compute_strideN reads source extents; generated-code proof realSrcN=4096/8192/2560 per box; decisive precedent = wave-1 flat emit_qload verbatim-isomorphic double-box form); prefill_expert structure CLOSED (runtime parity-branch + strided box form already in production in decode dense_expert gqa.py:1228-1231/:1265-1268; n_burst/gap in-bounds all 4 bench shapes; N_kv=1 MQA degenerates to contiguous); codegen audit 6/6 configs (copy_gm_to_l1 counts equal, realSrcN D->N*D flip exact, flag/DataCopy source counts equal); new finding disclosed: ns=1 parity-else K/V box compiler-dead-eliminated BOTH ARMS (census expectation corrected ns-aware, criteria untouched)",
+      "gate0": "24/24 (14 coverage raw-bit bitwise incl NaN/Inf structural equality g2stack-416/prexpert-275 + fullrange golden-invariance with bf16 self-saturation disclosed both-arms-equal viol=14298 + 10 isolation incl wave-1 flat x2 tqkv-ABSENT-both-arms non-disturbance direct evidence + 3 domain-boundary cases s130/s100e/padcol_skv400)",
+      "gate2": "same-session alternating 3+3, 40/40 rc=0 rated 1650MHz, artifact 0, anchors 7/7 in-band: c19 50.64->33.72us = +33.41% (prediction 33.0; main delta +0.02us = +0.06% ZERO-COST) / c8 803.17->759.77 = +5.40% / c9 599.29->565.15 = +5.70% / c10 1084.49->1006.85 = +7.16% - all four non-overlapping; guards r2 +2.71% (same-code both arms = session noise) / r1 -0.56% / r5 +0.37% overlapping; tqkv elimination 4/4 (w2-arm chains = ['main'] only; base-arm tqkv 16.94/52.26/43.63/91.95us); main-delta tripwire (50%): max 21.8% (c9) not triggered; realization 78.3-99.9%; wait-id gate 4/4 PASS: sum-wait inflation 4.5/16.6/17.4/26.1% of gain << 100% veto; batch-pacer mirror flat (C-id2 +1.6..+2.3%, V-id4 -0.1..+0.8%) = no iter4-style migration; absorption fingerprint disclosed: g2stack V-id0 +25.7..+39.3% <-> C-id5 -10.9..-22.2% complementary (intra-batch load absorption, not beat-structure change)",
+      "gate3": "backup history_version/gqa_impl_s3_iter11.py (md5 f59b5612 verified); gqa.py f59b5612 -> 9aa645dcd318ff7d5eabba910b56125f (orchestrator-verified diff +224/-76 == claim; 20 assertion edits, 19 hunks, AST OK, whole-file flag-line-sequence equality assertion, site text imported from generator = single source of truth); pre/post integration 17/17 bitwise (6 in-domain tqkv census 1->0, 11 out-domain census identical); ruff 0.15.14+0.16.7 four gates exit 0 (>140-char lines 0); domain-outside 11 bitwise >= 5 required (wave-1 flat x2 / per-head x2 / decode x2 / unaligned gate x5 incl skv200/skv400/s130/s100e/padrow_s100); msprof bottom-line zero-patch: c19/c9 chains ['main'] only (e2e within +2.3%/+0.1% of Gate2), skv200 tqkv PRESENT tail 167-168us, skv400g tqkv PRESENT 289.7us + tout ABSENT (S-aligned out_bsnd survives), r1 tqkv+main+tout blk16 P1 alive 20.43us, r2 wave-1 main-only 26.93 unchanged, r5 145.77 anchor-band; instrumentation grep=0; npu-smi OK zero residual",
+      "orchestrator_independent_verification": {
+        "static": "new md5 9aa645dc verified; backup == f59b5612 pre-change; test_gqa.py 3e2d0888 unchanged; diff +224/-76 matches claim; 98 iter11 artifacts (candidate json, design md, baseline json, perf_log entry); ruff format+check pass (own run); instrumentation grep=0; no residual processes",
+        "test_suite": "orchestrator-run: --level all -> SUITE_EXIT=0, 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, 0 FAIL/WARN, 0 fallback, 'Test Passed!' (/tmp/opencode/orch_iter11_suite.log)",
+        "selftest": "orchestrator-run: gqa.py -> SELFTEST_EXIT=0, 'Test Passed!', 0 fallback (/tmp/opencode/orch_iter11_selftest.log)",
+        "device": "npu-smi 2 chips OK",
+        "verdict": "ALL GREEN - P4 wave-2 adoption confirmed"
+      },
+      "bench_perspective": "11/20 bench cases now SINGLE-KERNEL chains (BSND in -> BSND out, zero aux): wave-1 c1/c2/c3/c4/c7/c18/c20 + wave-2 c8/c9/c10/c19",
+      "unverified": [
+        "bench-wall perspective gains unmeasured (consolidation eval = next step; B-matrix caliber conservative for small shapes per iter9 finding 5)",
+        "g2stack V-id0-up/C-id5-down complementary micro-attribution is inference-level (net effect covered by sum-wait gate + e2e)",
+        "per-head AUTO read-side strided behavior still untested (conservative exclusion continues, NOT proven infeasible)",
+        "c8/c10 E3-probe wall vs Gate-2 delta consistency is cross-caliber corroboration only"
+      ],
+      "next_hint_round3_archive": [
+        "per-head domain (r1/c5/c6) blocked BOTH input+output sides by AUTO AscendVidReduction - re-open after tilelang fix (r1 -23% economics proven)",
+        "pad kernel tax HIGHEST standalone value: unaligned tail-mode tqkv skv200 167-168us / skv400g 289.7us = 6-10x aligned isomorph, Mask_full Fill+slice-assign in chain",
+        "do-NOT-pursue: FIX->UB/ws round-trip (P3 infeasible), kv2 vec micro-ops (P5 ~1%), decode body (87-94% roof), F launch floor, kv1 ring-depth/step-order (iter4), ci coarsening (iter3), cube-compute (<=18.2% busy), per-head threads=1 gate narrowing (zero bench coverage)"
+      ]
+    },
+    "closed": {
+      "date": "2026-10-20",
+      "stop_reason": "budget 11/11 exhausted (10 default + 1 user-approved extension); user plan executed to completion (iter11 + single consolidation eval)",
+      "iterations": {
+        "iter6": "roofline analysis_only: per-domain positioning + 9-pipe idle tables + root causes (ws L2 round-trip tax, aux pure-movement tax 23-61% of e2e, decode at 87-94% HBM roof) + P1-P6 plan",
+        "iter7": "P1 transpose_out retile ADOPTED (e2e R1 -26.8%/R6 -19.9%; V1 rejected by pre-registered guardrail, V2 rule-fix passed criteria verbatim); P5 neg_sm narrowing REJECTED (+0.75/+1.15% < 3%, honest); P3 FIX->UB probe INFEASIBLE (platform-level: asc_copy_l0c2ub A5-only, ws round-trip elimination class archived)",
+        "iter8": "P2 wave-1 BSND direct-write ADOPTED (flat domains; r2 -17.4%/r6 -19.4% e2e; wait-id gate proved pacing untouched); eval attempt-1 INVALID (co-residency deadlock, root-caused non-regression) -> serial rerun 69.25",
+        "iter9": "P2 wave-2 ADOPTED for prefill_expert+g2stack (c19 +13.2%/c8 +6.8%/c9 +8.0%/c10 +13.0%); per-head EXCLUDED with compiler-bug evidence (AUTO threads=2 AscendVidReduction strided-write descriptors); eval 69.47",
+        "iter10": "P4 wave-1 tqkv elimination ADOPTED (probe GO 5/5; r2 e2e -27.0%/r4 -13.3%; 7/20 bench cases single-kernel)",
+        "iter11": "P4 wave-2 ADOPTED both domains (c19 +33.4% zero-main-cost / c8-c10 +5.4..7.2%; 11/20 single-kernel); consolidation eval 70.73"
+      },
+      "shipped_md5": "9aa645dcd318ff7d5eabba910b56125f",
+      "backup_chain": "history_version/gqa_impl_s3_iter{5,7,8,9,10,11}.py (bd470e07 <- cbce7441; 4b4e453e; 3aa9cfa2; 606b07ff; f59b5612; each orchestrator-verified at adoption)",
+      "remaining_candidates_archived": [
+        "pad/tail-mode tax for unaligned shapes (HIGHEST standalone value: skv200 tqkv tail 167-168us, skv400g 289.7us = 6-10x aligned isomorph; Mask_full Fill+slice-assign in chain)",
+        "per-head domain (r1/c5/c6) re-open after tilelang AscendVidReduction strided-write fix (economics proven: r1 -23..-25%)",
+        "do-NOT-pursue: FIX->UB/ws round-trip (P3 platform-infeasible), kv2 vec micro-ops (P5 ~1%), decode body (87-94% roof), F launch floor, kv1 ring-depth/step-order (iter4 falsified), ci coarsening (iter3 falsified), cube-compute (<=18.2% busy), per-head threads=1 narrowing (zero bench coverage)"
+      ],
+      "journal": ".agents/skill-journal/gqa-20261020-150553.md (5 entries: AscendVidReduction strided-write bug, eval co-residency deadlock recipe, BSND direct-read/write aux-elimination pattern, aux grid starvation + wave-overhead antipattern, unaligned-isomorph measurement guidance)",
+      "answer_to_user_original_question": "CV 并行掩盖诉求经 round2+3 完整闭环：kv1/kv2 prefill 域已流水化并证局部最优，decode 证带宽墙，round3 roofline 进一步把瓶颈从 CV 互等推进到 aux 搬运税与 L2 往返税，最终以 BSND 直读直写消除 11/20 case 的全部 aux——score 67.88->70.73，avg_speedup 0.6333->0.7731 (+22.1% 相对)"
+    }
+  },
+  "perf_eval_20261019": {
+    "date": "2026-10-19",
+    "requested_by": "user-approved plan: iter8=P2 then eval (covering P1+P2)",
+    "executor": "orchestrator direct",
+    "eval_code": "cann_final_eval_20261019_202123",
+    "reports": [
+      ".agents/skills/cann-bench/reports/cann_{performance,final}_eval_20261019_202123.{json,md,html}"
+    ],
+    "subject_md5": "3aa9cfa2625cdce96a62ce967785fe85 (post-iter7 P1 + iter8 P2)",
+    "submission": "/tmp/opencode/gqa_submission (wheel rebuilt, cann_bench/gqa.py + wheel content md5 == repo file; old bd470e07 archived)",
+    "methodology_deviation_disclosed": "--processes-per-card 1 (vs default 2): correctness stage serialized after attempt-1 concurrency incident (case15 aicore-timeout co-residency deadlock, root-caused NOT a regression - see eval_20261019_attempt1_incident). Scores comparable: performance stage (which produces all timings) ran serial in ALL prior evals; correctness concurrency affects no timing. Serial rerun: correctness 20/20 zero failures, confirming the diagnosis",
+    "result": {
+      "cases": "20/20 PASS",
+      "pass_rate": 1.0,
+      "score": 69.25,
+      "compilation_score": 20.0,
+      "function_score": 30.0,
+      "performance_score": 19.25,
+      "avg_speedup": 0.6961
+    },
+    "vs_20261018_113143": {
+      "score": "68.12 -> 69.25 (+1.13)",
+      "avg_speedup": "0.6435 -> 0.6961 (+0.0526)",
+      "perf_score": "18.12 -> 19.25 (+1.13)",
+      "accuracy": "精度误差 column IDENTICAL all 20 cases",
+      "p2_covered_cases": "c1 38.48->29.82 (-22.5%, 0.43->0.55x) / c2 58.66->31.82 (-45.8%, 0.39->0.71x) / c3 98.28->83.94 (-14.6%, 0.50->0.59x) / c4 227.02->215.30 (-5.2%, 0.46->0.48x) / c7 49.16->39.42 (-19.8%, 0.62->0.77x) / c18 34.00->25.46 (-25.1%, 0.45->0.60x) / c20 38.52->28.84 (-25.1%, 0.43->0.57x)",
+      "p1_bonus_non_covered": "c5 70.56->65.74 (-6.8%) / c19 46.50->42.94 (-7.7%) - P1 retile benefits ALL transpose_out-using domains (per-head, prefill_expert), beyond iter7's measured r1-r6",
+      "decode_unchanged": "c11-c17 within +-2.6% noise band (not touched by P1/P2, as designed); case15 PASSED 407.50us ~= prev 405.72 (hang was concurrency hazard, kernel innocent - confirmed)",
+      "large_prefill_non_covered": "c6/c8/c9/c10 within -1.1%..-0.3% (g2stack kv4 etc, P2 wave-2 candidates)",
+      "cumulative_vs_20261017_pre_round2": "score 67.88 -> 69.25 (+1.37), avg_speedup 0.6333 -> 0.6961 (+9.9% relative)"
+    }
+  },
+  "perf_eval_20261019_r3": {
+    "date": "2026-10-19",
+    "requested_by": "user-approved plan: iter9=P2 wave-2 then eval consolidation",
+    "executor": "orchestrator direct",
+    "eval_code": "cann_final_eval_20261019_235909",
+    "reports": [
+      ".agents/skills/cann-bench/reports/cann_{performance,final}_eval_20261019_235909.{json,md,html}"
+    ],
+    "subject_md5": "606b07ff474ec42b8244f0831327d75b (post-iter9 P2-wave-2; wheel content md5 verified == repo file; old 3aa9cfa2 archived)",
+    "methodology": "--processes-per-card 1 (serial correctness, documented standard for this operator family after the attempt-1 co-residency incident; performance stage serial as always -> scores comparable)",
+    "result": {
+      "cases": "20/20 PASS",
+      "pass_rate": 1.0,
+      "score": 69.47,
+      "compilation_score": 20.0,
+      "function_score": 30.0,
+      "performance_score": 19.47,
+      "avg_speedup": 0.7058
+    },
+    "vs_20261019_202123": {
+      "score": "69.25 -> 69.47 (+0.22)",
+      "avg_speedup": "0.6961 -> 0.7058",
+      "accuracy": "IDENTICAL all 20 cases (programmatic max_diff comparison, exact)",
+      "wave2_cases": "c8 860.68->807.34 (-6.2%, 0.45->0.48x) / c9 650.60->598.74 (-8.0%, 0.40->0.43x) / c10 1273.60->1088.70 (-14.5%, 0.54->0.63x) / c19 42.94->39.54 (-7.9%, 0.76->0.83x; Gate2 B-matrix was -13.15%, bench-caliber dilution consistent with the disclosed metrics-injection upper-bound caliber)",
+      "variance_observations": "c16 -5.3% (decode, untouched - cross-session variance favorable); c20 +3.7% (wave-1 covered, untouched this round - variance, same class as prior c2-flag resolved in iter4); rest within +-2.5%",
+      "cumulative_score_journey": "67.88 (10-17, pre-round2) -> 68.12 (iter5 C2) -> 69.25 (iter7 P1 + iter8 P2w1) -> 69.47 (iter9 P2w2); avg_speedup 0.6333 -> 0.7058 (+11.4% relative)"
+    }
+  },
+  "perf_eval_20261020": {
+    "date": "2026-10-20",
+    "requested_by": "user-approved plan: iter11=P4 wave-2 then SINGLE consolidation eval covering P4w1+w2",
+    "executor": "orchestrator direct",
+    "eval_code": "cann_final_eval_20261020_144308",
+    "reports": [
+      ".agents/skills/cann-bench/reports/cann_{performance,final}_eval_20261020_144308.{json,md,html}"
+    ],
+    "subject_md5": "9aa645dcd318ff7d5eabba910b56125f (post-iter11; wheel content md5 verified == repo file; old 606b07ff archived)",
+    "methodology": "--processes-per-card 1 (documented standard after co-residency incident); identical otherwise (warmup 3 / repeat 5 / Level1 / seed 0 / --no-perf-batch-cases)",
+    "result": {
+      "cases": "20/20 PASS",
+      "pass_rate": 1.0,
+      "score": 70.73,
+      "compilation_score": 20.0,
+      "function_score": 30.0,
+      "performance_score": 20.73,
+      "avg_speedup": 0.7731
+    },
+    "vs_20261019_235909": {
+      "score": "69.47 -> 70.73 (+1.26)",
+      "avg_speedup": "0.7058 -> 0.7731",
+      "accuracy": "IDENTICAL all 20 cases (programmatic exact comparison)",
+      "p4_wave1_cases": "c1 -15.0% (0.56->0.66x) / c2 -17.6% (0.71->0.87x) / c3 -27.6% (0.60->0.82x) / c4 -14.5% (0.47->0.56x) / c7 -16.1% (0.75->0.90x) / c18 -19.0% (0.58->0.72x) / c20 -18.9% (0.55->0.68x)",
+      "p4_wave2_cases": "c8 -7.1% (0.48->0.52x) / c9 -6.0% (0.43->0.46x) / c10 -9.1% (0.63->0.69x) / c19 -20.4% (0.83->1.04x CROSSED PARITY)",
+      "untouched": "c5/c6 (per-head, excluded domains) -1.3%/-0.5% noise; c11-c17 decode within +-1.6% noise",
+      "milestone": "11/20 bench cases now single-kernel chains (BSND in -> BSND out, zero aux launches)"
+    },
+    "round3_score_journey": "68.12 (10-18, pre-round3-opt) -> 69.25 (P1+P2w1) -> 69.47 (P2w2) -> 70.73 (P4w1+w2); full journey since round-2 start: 67.88 -> 70.73 (+2.85), avg_speedup 0.6333 -> 0.7731 (+22.1% relative)"
+  }
+}

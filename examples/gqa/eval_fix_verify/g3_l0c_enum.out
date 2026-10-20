@@ -1,0 +1,5 @@
+/opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/utils/_path_manager.py:66: UserWarning: Permission mismatch: The owner of /opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so does not match.
+  warnings.warn(f"Permission mismatch: The owner of {path} does not match.")
+device=npu:0 torch=2.7.1+cpu
+[OK ] D256 B2 S252 Skv252 Nq128 Nkv8 causal float16        out_finite=True
+[OK ] D256 B2 S252 Skv252 Nq128 Nkv8 causal bfloat16       out_finite=True

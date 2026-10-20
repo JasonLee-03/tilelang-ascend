@@ -1,0 +1,77 @@
+{
+  "iteration": 2,
+  "project": "B",
+  "title": "_gqa_kernel_prefill_g2stack_flat — flat cross-task 4-phase pipeline (kv_iters==1 specialization)",
+  "timestamp": "2026-10-17",
+  "status": "ADOPTED (all gates passed)",
+  "final_gqa_py": {
+    "md5": "cbce74410fee5f615489d0391b3ea620",
+    "lines": 5144,
+    "diff_vs_backup": "2 pure-insert hunks: +453 lines (kernel factory after _gqa_kernel_prefill_g2stack) and +38 lines (dispatch gate before the g2stack spec); ZERO lines of existing kernels modified",
+    "backup": "examples/gqa/history_version/gqa_impl_s3_iter2.py (md5 6dab75d373ae71671b53b661b65ee674)"
+  },
+  "design": {
+    "blueprint": "flat_pipeline_analysis.md §5.2",
+    "deviations_from_blueprint": [
+      "GATE NARROWED: task-spec/blueprint gate 'kv_iters<=2' implemented as 'kv_iters==1'. Rationale: the flat kernel is a kv==1 specialization (flattened stream degenerates to the task sequence; kv_useful==1 provable for every task so the causal block-skip machinery is unnecessary); kv==2 shapes already get the g2stack ns=2 intra-task batch stagger (measured -28.6%/kv in iter1) and flattening a variable-length 2*mc stream with per-task causal variation is a different, unbuilt/unvalidated change. kv==2 dispatch is UNCHANGED (g2stack).",
+      "V-side fill strategy: iter2 first attempt removed per-task fills (self-reset via r_factors underflow) — bit-identical for finite inputs but leaked NaN/Inf across same-parity tasks (boundary_sparse_special WARN nan_pos_mismatch=512). FIXED by restoring per-task zero-fills of acc_o/sumexp parity slots at AO(x) head (V-order-safe: previous same-parity reader FIN(x-2) ran two beats earlier). Post-fix: 24/24 suite PASS and bit-identical preserved.",
+      "q_l1 double-buffering NOT added (local event ids 6/7 hardware-reserved; MTE1<->MTE2 id space 0-5 full) — single-slot q_l1 with Qload(x+2) prefetch issued inside loop step x, as blueprinted.",
+      "Cross-semaphores kept SINGLE counting (ids 0-5, no parity split): the merged pacing stall (G1(x) WS1_V2C wait == SM(x-1) done) is beat-aligned with G2(x-1)'s WS2_V2C wait, so parity splitting buys nothing (beat algebra in the variant module docstring)."
+    ],
+    "structure": {
+      "C_scope": "prologue Qload(0),G1(0),Qload(1); steady loop t=0..mc-3: G1(t+1)->G2(t)->Qload(t+2); epilogue G2(mc-2),G1(mc-1),G2(mc-1); alloc_var-bound epilogue indices (xc1/xc2)",
+      "V_scope": "init static fills (acc_o/sumexp/neg_sm cap); prologue SM(0),SM(1); steady loop jj=0..mc-3: AO(jj)->FIN(jj)->SM(jj+2); epilogue AO/FIN(mc-2), AO/FIN(mc-1); alloc_var-bound epilogue indices (xv1/xv2)",
+      "ws_slots": "ns_flat=2, slot = task_offset%2; GM ws 6.55MB (was 3.28MB)",
+      "offset": "AO(x) runs 2 V-beats after SM(x+1)... concretely SM(x)->G2(x)->AO(x) chain gets >=1 full beat (~2.9us) slack (offset-3 design point; offset-1/2 expose ~0.8us G2 latency per beat)",
+      "onchip_budget": "L0A/L0B/L0C unchanged (exactly at envelopes); L1 unchanged 192KB/512KB; UB ~155KB/192KB (+32KB acc_o parity +0.5KB sumexp/is/rf vs shipped)"
+    }
+  },
+  "gates": {
+    "B0_standalone_precision": "PASS 7/7 — perf_tuning/run_flat_variant.py: r2_causal_fp16, r2_noncausal_fp16, c3like_causal_bf16(mc13), c2like_noncausal_fp16(G=12), mc2_edge_causal_fp16(mc=2 all cores), mc2_edge_noncausal_bf16, mixed_mc23_causal_fp16(r_tasks!=0). ALL cases bit_identical=True vs shipped g2stack AND within suite tolerance vs golden (fp16 atol 1e-3 / bf16 2e-2, rtol 1e-2). No deadlock in any configuration.",
+    "B1_performance": "PASS — R3 (c3like, primary): variant 60.26/61.08/60.20 (mean 60.51) vs same-session shipped 78.30/79.36/79.16 (mean 78.94) => -23.3% (gate >=10%). R2 (L0-c1, supplementary): variant 27.54/25.64/26.48 (mean 26.55) vs shipped 29.44/28.80/28.40 (mean 28.88) => -8.1% (below 10% but positive; consistent with iter1 prediction that the F~9us fixed overhead dilutes gains at 4 tasks/core). Post-fill-fix recheck (r4/r5): R3 59.36/62.48, R2 25.40/26.48 — no degradation from the restored fills.",
+    "B2_integrated_precision": "PASS — test_gqa.py --level all on the integrated gqa.py: 18/18 PRECISION_PASS (L0+L1 blocking) + 6/6 BOUNDARY_PASS, 0 FAIL/WARN, exit=0, 'Test Passed!' (candidate_iter2_B2_test_all_v2.log). First integration run had 1 BOUNDARY_WARN (boundary_sparse_special, nan_pos_mismatch=512 — the fill-removal NaN leak, see deviations); FIXED and re-run green.",
+    "B3_no_regression": "PASS — R1 default shape (out-of-gate, per-head path): 10.70/10.22us vs BASE same-session mean 10.53 (range 9.98-11.06) => within noise (<3%). Out-of-gate outputs bit-identical pre/post integration: default_B1 (per-head), c4like_kv2 (g2stack ns=2), c5like_d256 (per-head ladder), decode_c11 (dense decode) — all bit_identical=True (save_outgate_outputs.py pre/post + torch.equal)."
+  },
+  "dispatch_verification": {
+    "probe": "perf_tuning/probe_dispatch.py on integrated gqa.py",
+    "R2_in_gate": "g2stack_flat",
+    "R3_in_gate": "g2stack_flat",
+    "c2_in_gate": "g2stack_flat",
+    "R4_out_kv2": "g2stack (unchanged)",
+    "B1_out_small": "per_head_bm64 (unchanged)"
+  },
+  "measurements": {
+    "method": "msprof op --kernel-name=main_kernel Task Duration, Ascend910_9362 real NPU, same-session interleaved sampling; prof scripts: perf_tuning/prof_flat_variant.py (standalone variant) and prof_gqa_pipeline.py (shipped path; post-integration it dispatches to flat on in-gate shapes — r4/r5 'ship' columns are therefore flat-via-production-path and double as an integration-equivalence check: 61.72/61.46 R3, 25.90/27.02 R2, matching the standalone variant within noise)",
+    "R3_c3like_B2_Nq128_Nkv8_bf16_causal": {
+      "shipped_g2stack_us": [78.30, 79.36, 79.16],
+      "flat_variant_us": [60.26, 61.08, 60.20],
+      "flat_post_fill_fix_us": [59.36, 62.48],
+      "improvement_pct": 23.3
+    },
+    "R2_l0c1_B2_Nq32_Nkv8_fp16_causal": {
+      "shipped_g2stack_us": [29.44, 28.80, 28.40],
+      "flat_variant_us": [27.54, 25.64, 26.48],
+      "flat_post_fill_fix_us": [25.40, 26.48],
+      "flat_via_production_path_us": [25.90, 27.02],
+      "improvement_pct": 8.1
+    },
+    "R1_default_out_of_gate_us": [10.70, 10.22],
+    "fitted_model_update": "flat: wall = F + mc*P_flat; from R2(25.9@mc4) & R3(60.9@mc13): P_flat ~= 3.9us/task, F ~= 10.3us — vs shipped ns=1 P=5.27. Residual per-task overhead vs the ~2.9us vector-busy floor (~1us/task) is handshake/flag round-trip latency (INFERENCE; not instruction-verified — L0-c1 sim capture aborted in iter1, not retried)."
+  },
+  "framework_findings": [
+    "TVMScript parser rejects nested def inside prim_func ('Function must be decorated'); @T.macro (precedent: examples/elementwise/elementwise_add_pipeline.py) with EXPLICIT args for all prim_func-local entities + hygienic definition-site closure for factory constants is the working pattern.",
+    "T.macro hygienic=False does NOT resolve factory-level helper functions (_ids) at use site — 'Undefined variable'.",
+    "Passing my_count-derived expressions (embedding T.if_then_else -> multi-statement condval lowering) as macro args inlines statement-pattern code into tile-op index / SetFlag-id expression positions -> bisheng 'unexpected type name int32_t'. FIX: T.alloc_var scalars bound at statement position (xc1/xc2/xv1/xv2), macro receives a plain variable.",
+    "Cross-flag '15 sets per flagId' documented limit is PENDING-DEPTH semantics, not lifetime: shipped g2stack sets each SEM mc times per launch (mc=26 on c4like, 26>15) and works on HW; flat variant keeps pending skew <=3. (Empirically RESOLVES iter1 unverified item #3.)"
+  ],
+  "artifacts": [
+    "examples/gqa/gqa.py (integrated: flat kernel + gate; md5 cbce74410fee5f615489d0391b3ea620)",
+    "examples/gqa/perf_tuning/gqa_flat_variant.py (standalone development copy, kept in sync)",
+    "examples/gqa/perf_tuning/run_flat_variant.py (B0 runner)",
+    "examples/gqa/perf_tuning/prof_flat_variant.py (B1 single-shot prof script)",
+    "examples/gqa/perf_tuning/debug_flat_diff.py, debug_compile_err.py, probe_dispatch.py, save_outgate_outputs.py",
+    "examples/gqa/perf_tuning/candidate_iter2_B2_test_all.log (first integration, 1 boundary WARN), candidate_iter2_B2_test_all_v2.log (post-fix, all green)",
+    "examples/gqa/perf_tuning/msprof_op_B1_{var,ship}_{r3,r2}_{1,2,3}/, msprof_op_B1p_{var,ship}_{r3,r2}_{4,5}/, msprof_op_B3_r1_{1,2}/",
+    "examples/gqa/perf_tuning/outgate_outputs_{pre,post}.pt"
+  ]
+}

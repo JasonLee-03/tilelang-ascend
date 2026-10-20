@@ -1,0 +1,19 @@
+/opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/utils/_path_manager.py:66: UserWarning: Permission mismatch: The owner of /opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so does not match.
+  warnings.warn(f"Permission mismatch: The owner of {path} does not match.")
+[W910 18:54:31.253759157 ToKernelNpu.cpp:41] Warning: Device do not support double dtype now, dtype cast replace with float. (function operator())
+[PASS] base1 fp16 B2S128Nq32Nkv8 causal (mere=1.87e-04 mare=4.41e-03 maxdiff=4.88e-04)
+[PASS] base4 bf16 B4S256Nq64Nkv8 noncausal (mere=3.57e-04 mare=7.81e-03 maxdiff=9.77e-04)
+[PASS] base6 bf16 B2S256Nq128Nkv8 D256 causal (mere=7.91e-04 mare=1.50e-02 maxdiff=3.91e-03)
+[PASS] base11 fp16 B16S1Skv2048 decode (mere=6.02e-05 mare=9.73e-04 maxdiff=3.05e-05)
+[PASS] base15 fp16 B60S1Skv1024 D256 decode (mere=8.27e-05 mare=9.77e-04 maxdiff=6.10e-05)
+[PASS] base19 MHA bf16 B2S128Nq32Nkv32 causal (mere=8.02e-04 mare=1.39e-02 maxdiff=3.91e-03)
+[PASS] D512 fp16 B2S256Nq32Nkv8 causal (mere=1.68e-04 mare=4.74e-03 maxdiff=4.88e-04)
+[PASS] D512 fp16 B2S256Nq32Nkv8 noncausal (mere=1.29e-04 mare=1.94e-03 maxdiff=1.22e-04)
+[PASS] D256 fp16 B2S252Skv256 Nq128 noncausal (was UB-overflow) (mere=1.29e-04 mare=1.94e-03 maxdiff=1.22e-04)
+[PASS] nonaligned fp16 B2S124Skv124Nq32 causal (mere=1.88e-04 mare=4.17e-03 maxdiff=4.88e-04)
+[PASS] nonaligned bf16 B2S127Skv125Nq48 noncausal (mere=5.11e-04 mare=7.81e-03 maxdiff=9.77e-04)
+[PASS] nonaligned decode fp16 B16S1Skv2044 (mere=1.86e-03 mare=2.88e-03 maxdiff=1.22e-04)
+[PASS] fullrange fp16 B2S128Nq32Nkv8 causal (mere=0.00e+00 mare=0.00e+00 maxdiff=0.00e+00)
+[PASS] fullrange bf16 B2S128Nq32Nkv8 causal [-65504,65504] (mere=0.00e+00 mare=0.00e+00 maxdiff=0.00e+00)
+
+=== 14/14 PASS ===

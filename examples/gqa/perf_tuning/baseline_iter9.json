@@ -1,0 +1,55 @@
+{
+  "iteration": 9,
+  "stage": 3,
+  "mode": "implement",
+  "timestamp": "2026-10-19T23:40:00+08:00",
+  "operator": "gqa",
+  "baseline_at_iteration_start": {
+    "gqa.py_md5": "3aa9cfa2625cdce96a62ce967785fe85",
+    "test_gqa.py_md5": "3e2d08881cb7b6f36d5c89b2fd37a146",
+    "precision_status": "pass (inherited: iter8-adopted file, cann-bench 2026-10-19 20/20 PASS score 69.25 avg_speedup 0.6961; full suite 24/24)",
+    "programming_mode": "mixed (per-head AUTO ladder + AUTO dense decode + expert manual-flag prefill/decode kernels + AUTO transpose/pad kernels) — unchanged this iteration",
+    "kernel_times_base_arm_B_matrix_us": {
+      "note": "same-session BASE means (2 samples Phase-A / 3 samples Gate-2), msprof op TaskDur sums, all 1650/1650 MHz",
+      "r1_perhead": {"e2e": 20.0, "tout": 5.26, "main": 10.09},
+      "c5_perhead_d256": {"e2e": 77.1, "tout": 7.66, "main": 58.83},
+      "c6_perhead_d256": {"e2e": 598.62, "tout": 30.68, "main": 531.92},
+      "c19_prefill_expert": {"e2e": 57.41, "tout": 7.6, "main": 33.05},
+      "c8_g2stack": {"e2e": 855.69, "tout": 55.14, "main": 749.31},
+      "c9_g2stack": {"e2e": 657.87, "tout": 57.82, "main": 555.9},
+      "c10_g2stack": {"e2e": 1231.62, "tout": 159.15, "main": 982.71}
+    },
+    "test_shapes": {
+      "r1": "(1,128,128,8,2,128) causal fp16",
+      "c5": "(2,128,128,32,8,256) causal fp16",
+      "c6": "(2,256,256,128,8,256) causal bf16",
+      "c19": "(2,128,128,32,32,128) causal bf16",
+      "c8": "(4,1024,1024,32,8,128) causal fp16",
+      "c9": "(4,512,512,64,8,128) noncausal bf16",
+      "c10": "(4,512,512,128,8,128) causal bf16"
+    },
+    "test_command": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all"
+  },
+  "result": {
+    "adopted": true,
+    "adopted_domains": ["prefill_expert (bench c19)", "g2stack (bench c8/c9/c10)"],
+    "excluded_domains": ["per-head _gqa_kernel_expert — structurally infeasible with the minimal edit (AUTO threads=2 vid-reduction mis-lowers strided BSND writes; r1/c5 BITFAIL empirical + codegen evidence); kept shipped BHSD + transpose_out + P1 retile"],
+    "candidate_times_w2_arm_us": {
+      "c19": {"e2e": 49.86, "improvement_pct": 13.15},
+      "c8": {"e2e": 797.67, "improvement_pct": 6.78},
+      "c9": {"e2e": 605.21, "improvement_pct": 8.0},
+      "c10": {"e2e": 1071.94, "improvement_pct": 12.97}
+    },
+    "guards": "r1 -1.61% / r2 +1.12% / r5 +0.19% / s100e -0.37% / s100g +0.10% (all overlapping, within +/-3%)",
+    "precision_after": "pass — Gate 0 25/25 bit-identical; Gate 3 pre/post 15/15 bit-identical; full suite 24/24 exit 0 zero fallback; self-check Test Passed!",
+    "new_gqa_py_md5": "606b07ff474ec42b8244f0831327d75b",
+    "backup": "examples/gqa/history_version/gqa_impl_s3_iter9.py (3aa9cfa2625cdce96a62ce967785fe85)"
+  },
+  "consecutive_no_improvement": "reset-to-0 recommended (adopted); Orchestrator records",
+  "eval_readiness": {
+    "device": "Health OK, zero residual processes, HBM at idle baseline (3375/2875 MB, 'No running processes found')",
+    "repo_state": "gqa.py = adopted 606b07ff474ec42b8244f0831327d75b; test_gqa.py untouched 3e2d08881cb7b6f36d5c89b2fd37a146",
+    "recommended_eval_subject_md5": "606b07ff474ec42b8244f0831327d75b",
+    "serial_only_warning": "kernel family = blockDim-20 Fixed-Core expert kernels with cross-core semaphores — the eval harness must NOT co-schedule two such kernels on the 20-core chip (deadlock precedent: eval attempt-1 case15 aicore timeout 507014, AST-proven not a code regression)"
+  }
+}

@@ -1,0 +1,145 @@
+{
+ "module_md5": "f59b561212e60a50b78a51671999ef7c",
+ "shapes": {
+  "r2_flat_kv1_causal": {
+   "chosen": [
+    "g2stack_flat"
+   ],
+   "cat": "p4",
+   "tqkv_calls": [],
+   "in_bsnd": null
+  },
+  "r6_flat_kv1_mqa4": {
+   "chosen": [
+    "g2stack_flat"
+   ],
+   "cat": "p4",
+   "tqkv_calls": [],
+   "in_bsnd": null
+  },
+  "r4_flat_kv2_bf16": {
+   "chosen": [
+    "g2stack_flat_kv2"
+   ],
+   "cat": "p4",
+   "tqkv_calls": [],
+   "in_bsnd": null
+  },
+  "c7_flat_kv2_cross": {
+   "chosen": [
+    "g2stack_flat_kv2"
+   ],
+   "cat": "p4",
+   "tqkv_calls": [],
+   "in_bsnd": null
+  },
+  "mqa_nkv1_flat_kv1": {
+   "chosen": [
+    "g2stack_flat"
+   ],
+   "cat": "p4",
+   "tqkv_calls": [],
+   "in_bsnd": null
+  },
+  "r1_perhead": {
+   "chosen": [
+    "per_head_bm64"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(1, 128, 8, 128)",
+     "128",
+     "128"
+    ]
+   ],
+   "in_bsnd": null
+  },
+  "d256_perhead": {
+   "chosen": [
+    "per_head_bm64"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 128, 32, 256)",
+     "128",
+     "128"
+    ]
+   ],
+   "in_bsnd": null
+  },
+  "c19_prexpert_mha": {
+   "chosen": [
+    "prefill_expert"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 128, 32, 128)",
+     "128",
+     "128"
+    ]
+   ],
+   "in_bsnd": null
+  },
+  "c9_g2stack_kv4": {
+   "chosen": [
+    "g2stack"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(4, 512, 64, 128)",
+     "512",
+     "512"
+    ]
+   ],
+   "in_bsnd": null
+  },
+  "padrow_s100_flatkv1": {
+   "chosen": [
+    "g2stack_flat"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 100, 32, 128)",
+     "128",
+     "128"
+    ]
+   ],
+   "in_bsnd": null
+  },
+  "padcol_skv200_flatkv2": {
+   "chosen": [
+    "g2stack_flat_kv2"
+   ],
+   "cat": "out",
+   "tqkv_calls": [
+    [
+     "(2, 128, 32, 128)",
+     "128",
+     "256"
+    ]
+   ],
+   "in_bsnd": null
+  },
+  "r5_decode_expert": {
+   "chosen": [
+    "dense_expert"
+   ],
+   "cat": "out",
+   "tqkv_calls": [],
+   "in_bsnd": null
+  },
+  "decode_auto": {
+   "chosen": [
+    "dense_auto"
+   ],
+   "cat": "out",
+   "tqkv_calls": [],
+   "in_bsnd": null
+  }
+ }
+}

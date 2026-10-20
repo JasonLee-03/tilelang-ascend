@@ -1,0 +1,1204 @@
+"""P4 wave-2 variant — g2stack + prefill_expert with BSND strided INPUT reads
+(transpose_qkv elimination).
+
+Standalone precheck/Gate-0/Gate-2 development file (Stage 3 iter11).  Generated
+by gen_variant_iter11_p4w2.py from the SHIPPED
+`_gqa_kernel_prefill_expert` (gqa.py:1997-2500) and
+`_gqa_kernel_prefill_g2stack` (gqa.py:2503-3028) blocks of
+examples/gqa/gqa.py (md5 f59b561212e60a50b78a51671999ef7c) via 5 line-scoped
+edit sites per kernel — see diff_iter11_p4w2.txt in this directory for the
+complete unified diff (the audit artifact).  gqa.py is NOT modified by this
+file; constants are imported read-only.
+
+Mechanism: the ADOPTED iter10 wave-1 in_bsnd pattern (flat kv1/kv2) extended
+to the two ns-batched expert kernels — in_bsnd=True declares Q/K/V as the
+caller's BSND tensors and switches the load boxes from `X[bz, head, rows, :]`
+(contiguous, row stride D) to `X[bz, rows, head, :]` (strided, row stride
+N*D).  compute_strideN folds the singleton head dim into copy_gm_to_l1's
+realSrcN; ND->zN/zn is the MTE2 on-the-fly transform (probe_iter10_P4.md §1-2).
+The K/V target form (runtime parity branch + runtime idx window + BSND strided
+box) is LITERALLY the decode dense_expert production pattern
+(gqa.py:1228-1231/:1265-1268).  g2stack's stacked-M Q pair keeps the M_stack
+dim dst-side only — per-box source algebra identical to the adopted wave-1
+flat emit_qload (p4_wave2_design_iter11.md §2.1).
+
+Bit-identity argument: on the ALIGNED domain (S%64==0, S_kv%128==0 — the host
+gate) transpose_qkv is a pure rearrangement with NO zero-fill and NO value
+change; element (b, head, s, d) of its BHSD output == element (b, s, head, d)
+of its BSND input.  The variant reads the identical element set from the
+identical source addresses into identical L1 zn/nz tiles => every downstream
+mma/softmax/FIN input is bit-identical => final outputs BIT-IDENTICAL to the
+shipped transpose_qkv+main chain (Gate 0 criterion; raw-bit compare, iter8
+finding 3).
+
+Untouched (audited): every set/wait flag line byte-identical; slot depths,
+step order, token counts, causal runtime kv_useful bounds, use_mask branches
+(iter4 pacing-is-load-bearing); UB/L1/L0/ws geometry; arithmetic; the iter9
+out_bsnd FIN write.  in_bsnd=False reproduces the shipped codegen
+byte-for-byte (the else branches keep the shipped lines verbatim).
+
+PER-HEAD / AUTO domains stay excluded (iter9 finding 1 / iter10 finding 5).
+The flat kv1/kv2 kernels are wave-1 territory — untouched here.
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import tilelang
+from tilelang import language as T
+from tilelang.intrinsics import make_zn_layout, make_nz_layout
+
+from gqa import P28_EXPERT_PASS_CONFIGS, P28_NUM_CORES, _BIG_NEG  # noqa: E402,F401
+
+
+@tilelang.jit(out_idx=[4], workspace_idx=[5, 6, 7], pass_configs=P28_EXPERT_PASS_CONFIGS)
+def _gqa_kernel_prefill_expert(
+    B,
+    S_padded,
+    S_kv_padded,
+    sm_scale,
+    is_causal,
+    N_q=8,
+    N_kv=2,
+    D=128,
+    dtype="float16",
+    block_M=64,
+    skv_minus_s=0,
+    use_mask=True,
+    block_N=128,
+    num_stages=4,
+    cross_interval=2,
+    out_bsnd=False,
+    in_bsnd=False,
+):
+    """Expert manual-flag deep-pipeline per-head prefill kernel.
+
+    Dispatch guard (wrapper): S>4, D==128, kv_iters==1 or even kv_iters>=2,
+    causal requires S_kv>=S, instance count B*N_q*q_blocks >= NUM_CORES.
+    One task per (bz, hq, bx) Q-head block, statically split over NUM_CORES
+    cores.
+
+    kv_iters==1 (ns=1, odd) relaxation: with a single batch
+    iteration the r_factors[0] = neg_sm[0] - neg_sm[1] path reads the
+    neg_sm_cap init in slot 1 (both slots are filled with neg_sm_cap =
+    -sm_scale*_BIG_NEG*0.5 before the batch), so r_factors[0] is hugely
+    negative and exp(r_factors[0]) underflows to 0 — the rescale
+    multiplies only the zero-initialized sumexp/acc_o, so the
+    odd-slot parity hazard does not arise.  Odd ns>1 stays rejected: across
+    multiple outer iterations the prv slot goes stale (running min lives in
+    the cur slot of the previous, odd-length batch).
+
+    Dataflow (per task): Q block loaded into q_l1 [block_M, D] (full BHSD
+    box); KV loop batched by num_stages: GEMM1 batch (K load + mma -> ws_s)
+    then GEMM2 batch (V load + ws_p -> p_l1 + mma -> ws_o); V-side (2 AIV,
+    half rows each) runs phase-1 softmax batch + phase-2 O-accumulation batch
+    concurrently with the C-side of the following batch (cross-core
+    semaphores, cross_interval grain).
+
+    Causal skip: KV blocks with idx*block_N >= (bx+1)*block_M + skv_minus_s
+    are fully masked; the visible set is a block PREFIX, so the skip is
+    expressed as a runtime loop bound kv_useful (identical semantics to the
+    g2/per-head skip predicate, branch-free for flag pairing: both scopes
+    compute the same kv_useful from the same task_id inputs, so the
+    batch_iters sequence — and therefore every set/wait pair count — matches
+    on the C and V sides).  Non-causal is subsumed: skip_limit = 1<<30 makes
+    kv_u_raw huge, clamped to kv_iters.  NOTE: computed WITHOUT a trace-time
+    `if` — TVM Script scopes branch-body assignments to the if's var frame
+    (tir/parser.py visit_if), so an if/else form would leave batch_iters
+    undefined after the branch.
+
+    Softmax is max-after-mask (as in the g2/per-head prefill
+    kernels: the additive mask is applied to the raw scores BEFORE the
+    running-max update — avoids the max-before-mask bf16-causal underflow
+    edge).  Output needs no scatter plan: BHSD makes each vid's [half, D]
+    row segment one contiguous box (runtime-base/static-extent copy).
+
+    out_bsnd ([S3-iter9-P2w2]): declare Output BSND [B, S_padded, N_q, D] and
+    write the FIN box strided (row stride N_q*D) instead of the BHSD
+    contiguous box, so the host can skip the transpose_out kernel entirely —
+    the iter8 wave-1 mechanism extended to this kernel (identical SIG_S_HALF
+    pair around the write, identical single DataCopyPad per box with the
+    per-vid blockCount, only dstStride differs).  Callers MUST only request it
+    when S_padded == S (row-aligned): the BSND tensor then IS the
+    [B, S, N_q, D] result and no crop is materialized.  Arithmetic and the
+    flag protocol are untouched => final outputs are BIT-IDENTICAL to the
+    BHSD + transpose_out chain (Gate 0: run_iter9_p2w2_gate0.py).
+    """
+    assert block_N == D, "expert prefill kernel requires D == block_N (square l0b tiles)"
+    # ns==1 allowed (single-batch kv=1 form; the neg_sm odd-slot
+    # parity hazard needs >=2 batch iterations to manifest).  Odd ns>1 is
+    # still rejected: the prv slot goes stale across outer iterations.
+    assert num_stages == 1 or num_stages % 2 == 0, "num_stages must be 1 or even (neg_sm slot parity across batches)"
+    assert num_stages <= ((S_kv_padded + block_N - 1) // block_N), "num_stages <= kv_iters"
+    accum_dtype = "float"
+
+    # max-after-mask neg_sm init cap — sentinel + fully-masked-row max
+    # floor at mask/2 (identical rationale as
+    # _gqa_kernel_prefill_g2stack; see the note there).
+    neg_sm_cap = -sm_scale * _BIG_NEG * 0.5
+
+    G = N_q // N_kv
+    q_blocks = S_padded // block_M
+    kv_iters = S_kv_padded // block_N
+    # kv_iters==1 allowed (ns=1 single-batch); odd kv_iters>1
+    # (e.g. Skv=300 -> kv=3) still falls back to the g2/per-head paths
+    assert kv_iters == 1 or (kv_iters >= 2 and kv_iters % 2 == 0), "expert prefill requires kv_iters == 1 or even kv_iters >= 2"
+    assert (not is_causal) or skv_minus_s >= 0, "causal expert prefill requires S_kv >= S"
+    block_num = B * N_q * q_blocks
+    assert block_num >= P28_NUM_CORES, "expert prefill requires block_num >= NUM_CORES"
+    num_outer = T.ceildiv(kv_iters, num_stages)
+    half = block_M // 2
+    # causal skip boundary offset (original, pre-padding — same as g2);
+    # 1<<30 for non-causal subsumes the no-skip case into the clamp below
+    skip_limit = skv_minus_s if is_causal else (1 << 30)
+
+    q_tasks = block_num // P28_NUM_CORES
+    r_tasks = block_num % P28_NUM_CORES
+
+    # Cross-core semaphores (C <-> V) — verbatim dense-expert allocation
+    SEM_WS1_C2V = 0  # ws_s ready:      C(FIX) -> V
+    SEM_WS1_V2C = 1  # ws_s consumed:   V(MTE2) -> C
+    SEM_WS2_V2C = 2  # ws_p ready:      V(MTE3) -> C
+    SEM_WS2_C2V = 3  # ws_p consumed:   C(MTE2) -> V
+    SEM_WS3_C2V = 4  # ws_o ready:      C(FIX) -> V
+    SEM_WS3_V2C = 5  # ws_o consumed:   V(MTE2) -> C
+
+    # Local directed event ids (per pipe pair) — verbatim dense expert
+    # minus SIG_QFILL (no pad-row fill: S_padded is block aligned and the
+    # wrapper zero-pads Q rows)
+    SIG_K_L1 = 0  # MTE2 <-> MTE1 (k_l1[side] ownership, slots 0/1)
+    SIG_V_L1 = 2  # MTE2 <-> MTE1 (v_l1[side] ownership, slots 0/1)
+    SIG_P_L1 = 4  # MTE2 <-> MTE1 (p_l1 ownership)
+    SIG_Q_L1 = 5  # MTE2 <-> MTE1 (q_l1 ownership)
+    SIG_L0AB = 0  # MTE1 <-> M (l0a/l0b slots 0/1)
+    SIG_L0C = 0  # M <-> FIX (l0c slots 0/1)
+    SIG_IO_UB = 0  # MTE2 <-> V (io_buf slots 0/1)
+    SIG_MASK = 2  # MTE2 <-> V (mask_v ready/free)
+    SIG_S_HALF = 0  # V <-> MTE3 (acc_s_half ownership)
+
+    def task_range(cid_val):
+        start = cid_val * q_tasks + T.if_then_else(cid_val < r_tasks, cid_val, r_tasks)
+        count = q_tasks + T.if_then_else(cid_val < r_tasks, 1, 0)
+        return start, count
+
+    # [S3-iter9-P2w2] Output layout: BSND [B, S_padded, N_q, D] when the host
+    # skips transpose_out (caller-gated on S_padded == S), else the shipped
+    # BHSD [B, N_q, S_padded, D].
+    out_shape = [B, S_padded, N_q, D] if out_bsnd else [B, N_q, S_padded, D]
+
+    # [S3-iter11-P4w2] Input layout: BSND when the host skips transpose_qkv
+    # (caller-gated on S_padded == S AND S_kv_padded == S_kv — aligned
+    # shapes only, so the strided load windows never leave the real tensor
+    # and no zero-fill pad semantics are lost), else the shipped BHSD.
+    qkv_q_shape = [B, S_padded, N_q, D] if in_bsnd else [B, N_q, S_padded, D]
+    qkv_kv_shape = [B, S_kv_padded, N_kv, D] if in_bsnd else [B, N_kv, S_kv_padded, D]
+
+    @T.prim_func
+    def main(
+        Q: T.Tensor(qkv_q_shape, dtype),  # type: ignore  BSND if in_bsnd else BHSD
+        K: T.Tensor(qkv_kv_shape, dtype),  # type: ignore  ditto
+        V: T.Tensor(qkv_kv_shape, dtype),  # type: ignore  ditto
+        Mask: T.Tensor([B, S_padded, S_kv_padded], accum_dtype),  # type: ignore
+        Output: T.Tensor(out_shape, dtype),  # type: ignore  BSND if out_bsnd else BHSD
+        ws_s: T.Tensor([P28_NUM_CORES, num_stages, block_M, block_N], accum_dtype),  # type: ignore
+        ws_p: T.Tensor([P28_NUM_CORES, num_stages, block_M, block_N], dtype),  # type: ignore
+        ws_o: T.Tensor([P28_NUM_CORES, num_stages, block_M, D], accum_dtype),  # type: ignore
+    ):
+        with T.Kernel(P28_NUM_CORES, is_npu=True) as (cid, vid):
+            # ===== C-side buffers (verbatim dense expert) =====
+            q_l1 = T.alloc_L1([block_M, D], dtype)
+            # k/v double buffering: two separate 2D buffers per operand,
+            # selected by a runtime `if` (whole-buffer copies only — sliced
+            # copies of layout-annotated L1 buffers lower incorrectly)
+            k_l1_0 = T.alloc_L1([block_N, D], dtype)
+            k_l1_1 = T.alloc_L1([block_N, D], dtype)
+            v_l1_0 = T.alloc_L1([block_N, D], dtype)
+            v_l1_1 = T.alloc_L1([block_N, D], dtype)
+            p_l1 = T.alloc_L1([block_M, block_N], dtype)
+
+            T.annotate_layout(
+                {
+                    q_l1: make_zn_layout(q_l1),
+                    k_l1_0: make_nz_layout(k_l1_0),
+                    k_l1_1: make_nz_layout(k_l1_1),
+                    p_l1: make_zn_layout(p_l1),
+                    v_l1_0: make_zn_layout(v_l1_0),
+                    v_l1_1: make_zn_layout(v_l1_1),
+                }
+            )
+
+            # shared GEMM1/GEMM2 slots (D == block_N makes the shapes coincide)
+            l0a = T.alloc_L0A([2, block_M, D], dtype)
+            l0b = T.alloc_L0B([2, D, block_N], dtype)
+            l0c = T.alloc_L0C([2, block_M, block_N], accum_dtype)
+
+            # ===== V-side buffers (per vid, half rows) — verbatim dense expert =====
+            io_buf = T.alloc_ub([2, half, block_N], accum_dtype)
+            work_ub = T.alloc_ub([half, block_N], accum_dtype)
+            buf_2d = T.alloc_ub([half, block_N], accum_dtype)
+            acc_s_half = T.alloc_ub([half, block_N], dtype)
+            acc_o = T.alloc_ub([half, D], accum_dtype)
+            mask_v = T.alloc_ub([half, block_N], accum_dtype)
+            neg_sm = T.alloc_ub([2, half, 1], accum_dtype)
+            sumexp = T.alloc_ub([half, 1], accum_dtype)
+            sumexp_is = T.alloc_ub([num_stages, half, 1], accum_dtype)
+            r_factors = T.alloc_ub([num_stages, half, 1], accum_dtype)
+
+            my_start, my_count = task_range(cid)
+
+            with T.Scope("C"):
+                # init: pretend consumers already released everything
+                T.set_cross_flag("MTE2", SEM_WS2_C2V)
+                T.set_flag("MTE1", "MTE2", SIG_K_L1)
+                T.set_flag("MTE1", "MTE2", SIG_K_L1 + 1)
+                T.set_flag("MTE1", "MTE2", SIG_P_L1)
+                T.set_flag("MTE1", "MTE2", SIG_V_L1)
+                T.set_flag("MTE1", "MTE2", SIG_V_L1 + 1)
+                T.set_flag("MTE1", "MTE2", SIG_Q_L1)
+                T.set_flag("M", "MTE1", SIG_L0AB)
+                T.set_flag("M", "MTE1", SIG_L0AB + 1)
+                T.set_flag("FIX", "M", SIG_L0C)
+                T.set_flag("FIX", "M", SIG_L0C + 1)
+
+                for t in T.serial(my_count):
+                    task_id = my_start + t
+                    bx = task_id % q_blocks
+                    hq = (task_id // q_blocks) % N_q
+                    bz = task_id // (q_blocks * N_q)
+                    kg = hq // G
+
+                    # --- Q load: full [block_M, D] box (BHSD contiguous) ---
+                    T.wait_flag("MTE1", "MTE2", SIG_Q_L1)
+                    if in_bsnd:
+                        # [S3-iter11-P4w2] BSND strided Q box (bz, rows, hq, :)
+                        # — same element set as the BHSD box, row stride
+                        # N_q*D; ONE copy_gm_to_l1, count unchanged (decode
+                        # dense_expert precedent; wave-1 flat emit_qload is
+                        # the same algebra, p4_wave2_design_iter11.md §3).
+                        T.copy(
+                            Q[bz, bx * block_M : (bx + 1) * block_M, hq, :],
+                            q_l1,
+                        )
+                    else:
+                        T.copy(
+                            Q[bz, hq, bx * block_M : (bx + 1) * block_M, :],
+                            q_l1,
+                        )
+                    T.set_flag("MTE2", "MTE1", SIG_Q_L1)
+                    T.wait_flag("MTE2", "MTE1", SIG_Q_L1)
+
+                    for k in T.serial(num_outer):
+                        # causal skip as a RUNTIME loop bound: visible KV
+                        # blocks are the prefix [0, kv_useful) — the same set
+                        # the g2 skip predicate k*BN < (bx+1)*BM + skip_limit
+                        # admits.  Non-causal is subsumed: skip_limit = 1<<30
+                        # makes kv_u_raw huge, clamped to kv_iters.
+                        bound = (bx + 1) * block_M + skip_limit
+                        kv_u_raw = (bound + block_N - 1) // block_N
+                        kv_useful = T.if_then_else(kv_u_raw > kv_iters, kv_iters, kv_u_raw)
+                        _remaining = kv_useful - k * num_stages
+                        _rem_c = T.if_then_else(_remaining < 0, 0, _remaining)
+                        batch_iters = T.if_then_else(_rem_c < num_stages, _rem_c, num_stages)
+
+                        # --- GEMM1 batch: K loads + mma(Q, K^T) -> ws_s ---
+                        T.wait_cross_flag(SEM_WS1_V2C)
+                        for i in T.serial(batch_iters):
+                            side = i % 2
+                            idx = k * num_stages + i
+
+                            T.wait_flag("MTE1", "MTE2", SIG_K_L1 + side)
+                            if i % 2 == 0:
+                                if in_bsnd:
+                                    # [S3-iter11-P4w2] BSND strided box
+                                    # (bz, kv-rows, kg, :), row stride
+                                    # N_kv*D — decode dense_expert
+                                    # K-load production precedent
+                                    # (gqa.py:1229, identical
+                                    # runtime-idx parity form).
+                                    T.copy(
+                                        K[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        k_l1_0,
+                                    )
+                                else:
+                                    T.copy(
+                                        K[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        k_l1_0,
+                                    )
+                            else:
+                                if in_bsnd:
+                                    T.copy(
+                                        K[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        k_l1_1,
+                                    )
+                                else:
+                                    T.copy(
+                                        K[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        k_l1_1,
+                                    )
+                            T.set_flag("MTE2", "MTE1", SIG_K_L1 + side)
+
+                            T.wait_flag("M", "MTE1", SIG_L0AB + side)
+                            if i < 2:
+                                T.copy(q_l1, l0a[side, :, :])
+
+                            T.wait_flag("MTE2", "MTE1", SIG_K_L1 + side)
+                            if i % 2 == 0:
+                                T.copy(k_l1_0, l0b[0, :, :], transpose=True)
+                            else:
+                                T.copy(k_l1_1, l0b[1, :, :], transpose=True)
+                            T.set_flag("MTE1", "MTE2", SIG_K_L1 + side)
+                            T.set_flag("MTE1", "M", SIG_L0AB + side)
+
+                            T.wait_flag("MTE1", "M", SIG_L0AB + side)
+                            T.wait_flag("FIX", "M", SIG_L0C + side)
+                            T.mma(l0a[side, :, :], l0b[side, :, :], l0c[side, :, :], init=True)
+                            T.set_flag("M", "MTE1", SIG_L0AB + side)
+                            T.set_flag("M", "FIX", SIG_L0C + side)
+
+                            T.wait_flag("M", "FIX", SIG_L0C + side)
+                            T.copy(l0c[side, :, :], ws_s[cid, i, :, :])
+                            T.set_flag("FIX", "M", SIG_L0C + side)
+                            if (i + 1) % cross_interval == 0 or i == batch_iters - 1:
+                                T.set_cross_flag("FIX", SEM_WS1_C2V)
+
+                        # --- GEMM2 batch: V loads + ws_p -> p_l1 + mma(P, V) -> ws_o ---
+                        T.wait_cross_flag(SEM_WS3_V2C)
+                        for i in T.serial(batch_iters):
+                            side = i % 2
+                            idx = k * num_stages + i
+
+                            T.wait_flag("MTE1", "MTE2", SIG_V_L1 + side)
+                            if i % 2 == 0:
+                                if in_bsnd:
+                                    # [S3-iter11-P4w2] BSND strided box
+                                    # (bz, kv-rows, kg, :), row stride
+                                    # N_kv*D — decode dense_expert
+                                    # V-load production precedent
+                                    # (gqa.py:1266, identical
+                                    # runtime-idx parity form).
+                                    T.copy(
+                                        V[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        v_l1_0,
+                                    )
+                                else:
+                                    T.copy(
+                                        V[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        v_l1_0,
+                                    )
+                            else:
+                                if in_bsnd:
+                                    T.copy(
+                                        V[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        v_l1_1,
+                                    )
+                                else:
+                                    T.copy(
+                                        V[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        v_l1_1,
+                                    )
+                            T.set_flag("MTE2", "MTE1", SIG_V_L1 + side)
+
+                            T.wait_flag("MTE1", "MTE2", SIG_P_L1)
+                            if i % cross_interval == 0:
+                                T.wait_cross_flag(SEM_WS2_V2C)
+                            T.copy(ws_p[cid, i, :, :], p_l1)
+                            T.set_flag("MTE2", "MTE1", SIG_P_L1)
+
+                            T.wait_flag("MTE2", "MTE1", SIG_V_L1 + side)
+                            T.wait_flag("M", "MTE1", SIG_L0AB + side)
+                            if i % 2 == 0:
+                                T.copy(v_l1_0, l0b[0, :, :])
+                            else:
+                                T.copy(v_l1_1, l0b[1, :, :])
+                            T.set_flag("MTE1", "MTE2", SIG_V_L1 + side)
+
+                            T.wait_flag("MTE2", "MTE1", SIG_P_L1)
+                            T.copy(p_l1, l0a[side, :, :])
+                            T.set_flag("MTE1", "MTE2", SIG_P_L1)
+                            T.set_flag("MTE1", "M", SIG_L0AB + side)
+
+                            T.wait_flag("MTE1", "M", SIG_L0AB + side)
+                            T.wait_flag("FIX", "M", SIG_L0C + side)
+                            T.mma(l0a[side, :, :], l0b[side, :, :], l0c[side, :, :], init=True)
+                            T.set_flag("M", "MTE1", SIG_L0AB + side)
+                            T.set_flag("M", "FIX", SIG_L0C + side)
+
+                            T.wait_flag("M", "FIX", SIG_L0C + side)
+                            T.copy(l0c[side, :, :], ws_o[cid, i, :, :])
+                            T.set_flag("FIX", "M", SIG_L0C + side)
+                            if (i + 1) % cross_interval == 0 or i == batch_iters - 1:
+                                T.set_cross_flag("FIX", SEM_WS3_C2V)
+
+                        T.set_cross_flag("MTE2", SEM_WS2_C2V)
+
+                    # MTE1 no longer reads q_l1; return it before the next task reloads Q
+                    T.set_flag("MTE1", "MTE2", SIG_Q_L1)
+
+                # destroy: consume outstanding init-direction flags
+                T.wait_flag("MTE1", "MTE2", SIG_K_L1)
+                T.wait_flag("MTE1", "MTE2", SIG_K_L1 + 1)
+                T.wait_flag("MTE1", "MTE2", SIG_P_L1)
+                T.wait_flag("MTE1", "MTE2", SIG_V_L1)
+                T.wait_flag("MTE1", "MTE2", SIG_V_L1 + 1)
+                T.wait_flag("MTE1", "MTE2", SIG_Q_L1)
+                T.wait_flag("M", "MTE1", SIG_L0AB)
+                T.wait_flag("M", "MTE1", SIG_L0AB + 1)
+                T.wait_flag("FIX", "M", SIG_L0C)
+                T.wait_flag("FIX", "M", SIG_L0C + 1)
+
+            with T.Scope("V"):
+                # init: pretend producers already released everything
+                T.set_cross_flag("MTE2", SEM_WS1_V2C)
+                T.set_cross_flag("MTE2", SEM_WS3_V2C)
+                T.set_flag("V", "MTE2", SIG_IO_UB)
+                T.set_flag("V", "MTE2", SIG_IO_UB + 1)
+                T.set_flag("MTE3", "V", SIG_S_HALF)
+
+                for t in T.serial(my_count):
+                    task_id = my_start + t
+                    bx = task_id % q_blocks
+                    hq = (task_id // q_blocks) % N_q
+                    bz = task_id // (q_blocks * N_q)
+
+                    T.tile.fill(acc_o, 0.0)
+                    T.tile.fill(sumexp, 0.0)
+                    T.tile.fill(neg_sm, neg_sm_cap)
+
+                    for k in T.serial(num_outer):
+                        # same unified runtime kv_useful bound as the C scope
+                        # (identical formula + inputs -> identical batch_iters
+                        # sequence -> flag pairs stay balanced on both sides)
+                        bound = (bx + 1) * block_M + skip_limit
+                        kv_u_raw = (bound + block_N - 1) // block_N
+                        kv_useful = T.if_then_else(kv_u_raw > kv_iters, kv_iters, kv_u_raw)
+                        _remaining = kv_useful - k * num_stages
+                        _rem_c = T.if_then_else(_remaining < 0, 0, _remaining)
+                        batch_iters = T.if_then_else(_rem_c < num_stages, _rem_c, num_stages)
+
+                        # --- phase 1: softmax batch (read ws_s, write ws_p) ---
+                        T.wait_cross_flag(SEM_WS2_C2V)
+                        for i in T.serial(batch_iters):
+                            cur = i % 2
+                            prv = 1 - cur
+                            idx = k * num_stages + i
+                            io_side = i % 2
+
+                            T.wait_flag("V", "MTE2", SIG_IO_UB + io_side)
+                            if i % cross_interval == 0:
+                                T.wait_cross_flag(SEM_WS1_C2V)
+                            T.copy(ws_s[cid, i, vid * half : vid * half + half, :], io_buf[io_side, :, :])
+                            T.set_flag("MTE2", "V", SIG_IO_UB + io_side)
+
+                            if use_mask:
+                                # 2-flag mask sync (varlen pattern): MTE2 loads
+                                # mask_v only after the previous iteration's add
+                                # consumed it (set+wait = V->MTE2 ordering point)
+                                T.set_flag("V", "MTE2", SIG_MASK)
+                                T.wait_flag("V", "MTE2", SIG_MASK)
+                                T.copy(
+                                    Mask[
+                                        bz,
+                                        bx * block_M + vid * half : bx * block_M + vid * half + half,
+                                        idx * block_N : (idx + 1) * block_N,
+                                    ],
+                                    mask_v,
+                                )
+                                T.set_flag("MTE2", "V", SIG_MASK)
+
+                            T.wait_flag("MTE2", "V", SIG_IO_UB + io_side)
+                            T.copy(io_buf[io_side, :, :], work_ub)
+                            T.set_flag("V", "MTE2", SIG_IO_UB + io_side)
+
+                            # online softmax (batched 2-phase form) —
+                            # max-after-mask: the additive mask is applied
+                            # to the raw scores BEFORE the running-max update
+                            # (the reference semantics; matches the g2/per-head
+                            # prefill kernels, avoids the max-before-mask
+                            # bf16-causal underflow edge)
+                            if use_mask:
+                                T.wait_flag("MTE2", "V", SIG_MASK)
+                                T.tile.add(work_ub, work_ub, mask_v)
+                            # clear=True is kept: it compiles correctly on
+                            # all builds and avoids the slow scalar merge
+                            # loops of the clear=False lowering (see the
+                            # _gqa_kernel_expert note).
+                            T.reduce_max(work_ub, neg_sm[cur, :, :], dim=-1)
+                            T.tile.mul(neg_sm[cur, :, :], neg_sm[cur, :, :], -sm_scale)
+                            T.tile.min(neg_sm[cur, :, :], neg_sm[cur, :, :], neg_sm[prv, :, :])
+
+                            T.tile.broadcast(buf_2d, neg_sm[cur, :, :])
+                            T.tile.axpy(buf_2d, work_ub, sm_scale)
+                            T.tile.exp(work_ub, buf_2d)
+
+                            T.reduce_sum(work_ub, sumexp_is[i, :, :], dim=-1)
+                            T.tile.sub(r_factors[i, :, :], neg_sm[cur, :, :], neg_sm[prv, :, :])
+
+                            # write probs -> ws_p (via acc_s_half)
+                            T.wait_flag("MTE3", "V", SIG_S_HALF)
+                            T.copy(work_ub, acc_s_half)
+                            T.set_flag("V", "MTE3", SIG_S_HALF)
+
+                            T.wait_flag("V", "MTE3", SIG_S_HALF)
+                            T.copy(acc_s_half, ws_p[cid, i, vid * half : vid * half + half, :])
+                            T.set_flag("MTE3", "V", SIG_S_HALF)
+                            if (i + 1) % cross_interval == 0 or i == batch_iters - 1:
+                                T.set_cross_flag("MTE3", SEM_WS2_V2C)
+
+                        T.set_cross_flag("MTE2", SEM_WS1_V2C)
+
+                        # --- phase 2: O accumulation batch (read ws_o) ---
+                        for i in T.serial(batch_iters):
+                            T.tile.exp(r_factors[i, :, :], r_factors[i, :, :])
+                            T.tile.mul(sumexp, sumexp, r_factors[i, :, :])
+                            T.tile.add(sumexp, sumexp, sumexp_is[i, :, :])
+                            T.tile.broadcast(buf_2d, r_factors[i, :, :])
+                            T.tile.mul(acc_o, acc_o, buf_2d)
+
+                            io_side = i % 2
+                            T.wait_flag("V", "MTE2", SIG_IO_UB + io_side)
+                            if i % cross_interval == 0:
+                                T.wait_cross_flag(SEM_WS3_C2V)
+                            T.copy(ws_o[cid, i, vid * half : vid * half + half, :], io_buf[io_side, :, :])
+                            T.set_flag("MTE2", "V", SIG_IO_UB + io_side)
+
+                            T.wait_flag("MTE2", "V", SIG_IO_UB + io_side)
+                            T.copy(io_buf[io_side, :, :], work_ub)
+                            T.set_flag("V", "MTE2", SIG_IO_UB + io_side)
+
+                            T.tile.add(acc_o, acc_o, work_ub)
+
+                        T.set_cross_flag("MTE2", SEM_WS3_V2C)
+
+                    # --- final normalize + per-vid contiguous output box ---
+                    # (Output rows bx*BM+vid*half .. +half form one contiguous
+                    # [half, D] box in BHSD — a single runtime-base/static-
+                    # extent copy; the runtime `vid` slice pattern is the one
+                    # proven by the ws reads above. No scatter plan needed.)
+                    # fully-masked-row guard (see
+                    # _gqa_kernel_expert).
+                    T.tile.add(sumexp, sumexp, 1e-30)
+                    T.tile.broadcast(buf_2d, sumexp)
+                    T.tile.div(acc_o, acc_o, buf_2d)
+                    T.wait_flag("MTE3", "V", SIG_S_HALF)
+                    T.copy(acc_o, acc_s_half)
+                    T.set_flag("V", "MTE3", SIG_S_HALF)
+                    T.wait_flag("V", "MTE3", SIG_S_HALF)
+                    if out_bsnd:
+                        # [S3-iter9-P2w2] BSND strided box: the SAME element set
+                        # as the BHSD box in the else branch, written straight
+                        # into the caller's [B, S, N_q, D] layout so the
+                        # transpose_out launch is eliminated.  Both forms lower
+                        # to ONE copy_ub_to_gm/DataCopyPad (blockCount=half,
+                        # blockLen=D*sizeof(T)); only dstStride differs
+                        # (N_q*D - D vs 0) — the instruction count and the
+                        # SIG_S_HALF flag pair around it are unchanged (wave-1
+                        # mechanism; codegen_audit_iter9.log prexpert_c19).
+                        T.copy(
+                            acc_s_half,
+                            Output[bz, bx * block_M + vid * half : bx * block_M + vid * half + half, hq, :],
+                        )
+                    else:
+                        T.copy(
+                            acc_s_half,
+                            Output[bz, hq, bx * block_M + vid * half : bx * block_M + vid * half + half, :],
+                        )
+                    T.set_flag("MTE3", "V", SIG_S_HALF)
+
+                # destroy: consume outstanding init-direction flags
+                T.wait_flag("V", "MTE2", SIG_IO_UB)
+                T.wait_flag("V", "MTE2", SIG_IO_UB + 1)
+                T.wait_flag("MTE3", "V", SIG_S_HALF)
+
+    return main
+
+
+@tilelang.jit(out_idx=[4], workspace_idx=[5, 6, 7], pass_configs=P28_EXPERT_PASS_CONFIGS)
+def _gqa_kernel_prefill_g2stack(
+    B,
+    S_padded,
+    S_kv_padded,
+    sm_scale,
+    is_causal,
+    N_q=8,
+    N_kv=2,
+    D=128,
+    dtype="float16",
+    block_M=64,
+    skv_minus_s=0,
+    use_mask=True,
+    block_N=128,
+    num_stages=4,
+    cross_interval=2,
+    out_bsnd=False,
+    in_bsnd=False,
+):
+    """G_inner=2 M-stacked expert manual-flag deep-pipeline prefill kernel.
+
+    One task serves the 2 Q heads (hq0, hq0+1) of one (bz, kg, gb) at the same
+    bx: K/V/mask GM traffic and task count /2 vs the per-head expert; the
+    per-iteration C<->V handshake packet cost amortizes over both heads
+    (the scalar-pipe handshake was measured as the top stall source).
+
+    Dispatch guard (wrapper): S>4, D==128, fp16/bf16, kv_iters==1 or even
+    >=2, causal requires S_kv>=S, G%2==0 (no tail head-pair), stacked
+    instance count B*N_kv*(G/2)*q_blocks >= NUM_CORES.
+
+    Stacked GEMM form: M_stack = 2*block_M.  l0a [2, M_stack, D] f16 is
+    EXACTLY the 65536B L0A limit; l0c [2, M_stack, block_N] f32 is EXACTLY
+    the 131072B wmma.accumulator planning envelope (boundary-inclusive, the
+    same total the g2 kernel runs as 4x[64,128]) — zero margin by design.
+
+    V-side row mapping: stacked block rows [h*BM, (h+1)*BM) belong to head
+    hq0+h; vid v processes the [v*half, v*half+half) strip of EACH head
+    (leading-dim runtime indexing — the io_buf[io_side]/neg_sm[cur] proven
+    pattern).  Tile temporaries (io_buf/work_ub/buf_2d/acc_s_half/mask_v)
+    are shared by both heads with per-(i,h) complete flag ping-pongs; only
+    the row STATE (acc_o/neg_sm/sumexp/sumexp_is/r_factors) is per head
+    (leading-dim head index: acc_o [2,half,D], neg_sm [4,half,1] idx
+    h*2+cur, sumexp [2,half,1], sumexp_is/r_factors [ns*2,half,1] idx
+    i*2+h).  io_side = h keeps the MTE2/V io_buf ping-pong overlapped
+    (h1's MTE2 prefetch runs under h0's V compute).
+
+    Cross-core semaphore sequence per task/k: STRUCTURALLY IDENTICAL to the
+    per-head expert — the inner h-loop never touches cross flags; the
+    ci-grain waits/sets are hoisted outside it, so every set/wait pair count
+    matches on the C and V sides by construction (verified bit-stable
+    across repeated runs).
+
+    Causal skip: runtime loop bound kv_useful (branch-free, identical
+    formula on C and V scopes -> identical batch_iters sequence -> flag
+    pair counts match).  Both heads cover the SAME Q-row range
+    [bx*BM, (bx+1)*BM) -> same mask rows (mask depends only on (s, j)) ->
+    same visible prefix; no new mask form.
+
+    Softmax is max-after-mask (mask applied to raw scores before the
+    running max) with the batched 2-phase form of the per-head expert;
+    per-head recurrences are independent and keep the exact
+    per-head update order (phase-2 h-loop inside the i-loop).  The neg_sm
+    slot parity argument holds per head: ns even keeps the prv
+    slot live across batch boundaries; ns==1 single-batch is harmless
+    (r_factors[0] = neg_sm[0] - neg_sm_cap init -> exp() underflows to 0
+    and multiplies only the zero-init accumulators).  Output: per (h, vid)
+    contiguous [half, D] BHSD box
+    (runtime-base/static-extent copy).
+
+    out_bsnd: see _gqa_kernel_prefill_expert ([S3-iter9-P2w2], identical
+    mechanism and gate — BSND direct write for the two per-(h, vid) FIN
+    boxes, transpose_out eliminated on the aligned-S domain).
+    """
+    assert block_N == D, "g2stack prefill requires D == block_N (square l0b tiles)"
+    assert num_stages == 1 or num_stages % 2 == 0, "num_stages must be 1 or even (neg_sm slot parity across batches)"
+    assert num_stages <= ((S_kv_padded + block_N - 1) // block_N), "num_stages <= kv_iters"
+    accum_dtype = "float"
+
+    # max-after-mask neg_sm init cap.  This
+    # kernel applies the additive mask to the RAW scores BEFORE the running
+    # max, so a masked column can only win the max if its raw score exceeds
+    # the visible max by more than |mask| — impossible with _BIG_NEG=-1e30
+    # vs finite fp32 scores.  Fully-masked rows (mixed blocks) would still
+    # cancel the additive mask in the shift (softmax shift-invariance), so
+    # the running max is FLOORED at mask/2: neg_sm <= -sm_scale*_BIG_NEG/2.
+    # Normal rows keep the exact max (their neg_sm <= ~5e10 << cap).
+    neg_sm_cap = -sm_scale * _BIG_NEG * 0.5
+
+    G = N_q // N_kv
+    assert G % 2 == 0, "g2stack prefill requires even G (wrapper guards odd/tail)"
+    G_batches = G // 2
+    q_blocks = S_padded // block_M
+    kv_iters = S_kv_padded // block_N
+    assert kv_iters == 1 or (kv_iters >= 2 and kv_iters % 2 == 0), "g2stack prefill requires kv_iters == 1 or even kv_iters >= 2"
+    assert (not is_causal) or skv_minus_s >= 0, "causal requires S_kv >= S"
+    block_num = B * N_kv * G_batches * q_blocks
+    assert block_num >= P28_NUM_CORES, "g2stack requires block_num >= NUM_CORES"
+    num_outer = T.ceildiv(kv_iters, num_stages)
+    half = block_M // 2  # per-vid row strip within one head's segment
+    M_stack = 2 * block_M  # stacked GEMM M dim (2 Q heads)
+    # causal skip boundary offset (original, pre-padding — same as per-head);
+    # 1<<30 for non-causal subsumes the no-skip case into the clamp below
+    skip_limit = skv_minus_s if is_causal else (1 << 30)
+
+    q_tasks = block_num // P28_NUM_CORES
+    r_tasks = block_num % P28_NUM_CORES
+
+    # Cross-core semaphores (C <-> V) — verbatim per-head expert allocation
+    SEM_WS1_C2V = 0  # ws_s ready:      C(FIX) -> V
+    SEM_WS1_V2C = 1  # ws_s consumed:   V(MTE2) -> C
+    SEM_WS2_V2C = 2  # ws_p ready:      V(MTE3) -> C
+    SEM_WS2_C2V = 3  # ws_p consumed:   C(MTE2) -> V
+    SEM_WS3_C2V = 4  # ws_o ready:      C(FIX) -> V
+    SEM_WS3_V2C = 5  # ws_o consumed:   V(MTE2) -> C
+
+    # Local directed event ids (per pipe pair) — verbatim per-head expert
+    SIG_K_L1 = 0  # MTE2 <-> MTE1 (k_l1[side] ownership, slots 0/1)
+    SIG_V_L1 = 2  # MTE2 <-> MTE1 (v_l1[side] ownership, slots 0/1)
+    SIG_P_L1 = 4  # MTE2 <-> MTE1 (p_l1 ownership)
+    SIG_Q_L1 = 5  # MTE2 <-> MTE1 (q_l1 ownership)
+    SIG_L0AB = 0  # MTE1 <-> M (l0a/l0b slots 0/1)
+    SIG_L0C = 0  # M <-> FIX (l0c slots 0/1)
+    SIG_IO_UB = 0  # MTE2 <-> V (io_buf slots 0/1)
+    SIG_MASK = 2  # MTE2 <-> V (mask_v ready/free)
+    SIG_S_HALF = 0  # V <-> MTE3 (acc_s_half ownership)
+
+    def task_range(cid_val):
+        start = cid_val * q_tasks + T.if_then_else(cid_val < r_tasks, cid_val, r_tasks)
+        count = q_tasks + T.if_then_else(cid_val < r_tasks, 1, 0)
+        return start, count
+
+    # [S3-iter9-P2w2] Output layout: BSND [B, S_padded, N_q, D] when the host
+    # skips transpose_out (caller-gated on S_padded == S), else the shipped
+    # BHSD [B, N_q, S_padded, D].
+    out_shape = [B, S_padded, N_q, D] if out_bsnd else [B, N_q, S_padded, D]
+
+    # [S3-iter11-P4w2] Input layout: BSND when the host skips transpose_qkv
+    # (caller-gated on S_padded == S AND S_kv_padded == S_kv — aligned
+    # shapes only, so the strided load windows never leave the real tensor
+    # and no zero-fill pad semantics are lost), else the shipped BHSD.
+    qkv_q_shape = [B, S_padded, N_q, D] if in_bsnd else [B, N_q, S_padded, D]
+    qkv_kv_shape = [B, S_kv_padded, N_kv, D] if in_bsnd else [B, N_kv, S_kv_padded, D]
+
+    @T.prim_func
+    def main(
+        Q: T.Tensor(qkv_q_shape, dtype),  # type: ignore  BSND if in_bsnd else BHSD
+        K: T.Tensor(qkv_kv_shape, dtype),  # type: ignore  ditto
+        V: T.Tensor(qkv_kv_shape, dtype),  # type: ignore  ditto
+        Mask: T.Tensor([B, S_padded, S_kv_padded], accum_dtype),  # type: ignore
+        Output: T.Tensor(out_shape, dtype),  # type: ignore  BSND if out_bsnd else BHSD
+        ws_s: T.Tensor([P28_NUM_CORES, num_stages, M_stack, block_N], accum_dtype),  # type: ignore
+        ws_p: T.Tensor([P28_NUM_CORES, num_stages, M_stack, block_N], dtype),  # type: ignore
+        ws_o: T.Tensor([P28_NUM_CORES, num_stages, M_stack, D], accum_dtype),  # type: ignore
+    ):
+        with T.Kernel(P28_NUM_CORES, is_npu=True) as (cid, vid):
+            # ===== C-side buffers (per-head expert, M stacked) =====
+            q_l1 = T.alloc_L1([M_stack, D], dtype)
+            # k/v double buffering: two separate 2D buffers per operand,
+            # selected by a runtime `if` (whole-buffer copies only — sliced
+            # copies of layout-annotated L1 buffers lower incorrectly)
+            k_l1_0 = T.alloc_L1([block_N, D], dtype)
+            k_l1_1 = T.alloc_L1([block_N, D], dtype)
+            v_l1_0 = T.alloc_L1([block_N, D], dtype)
+            v_l1_1 = T.alloc_L1([block_N, D], dtype)
+            p_l1 = T.alloc_L1([M_stack, block_N], dtype)
+
+            T.annotate_layout(
+                {
+                    q_l1: make_zn_layout(q_l1),
+                    k_l1_0: make_nz_layout(k_l1_0),
+                    k_l1_1: make_nz_layout(k_l1_1),
+                    p_l1: make_zn_layout(p_l1),
+                    v_l1_0: make_zn_layout(v_l1_0),
+                    v_l1_1: make_zn_layout(v_l1_1),
+                }
+            )
+
+            # shared GEMM1/GEMM2 slots (D == block_N makes the shapes coincide);
+            # l0a 64KB / l0c 131072B EXACTLY at their envelopes (zero margin
+            # by design)
+            l0a = T.alloc_L0A([2, M_stack, D], dtype)
+            l0b = T.alloc_L0B([2, D, block_N], dtype)
+            l0c = T.alloc_L0C([2, M_stack, block_N], accum_dtype)
+
+            # ===== V-side buffers (per vid) =====
+            # tile temporaries shared by both heads (complete per-(i,h) flag
+            # ping-pongs); row state per head via leading-dim runtime index
+            io_buf = T.alloc_ub([2, half, block_N], accum_dtype)
+            work_ub = T.alloc_ub([half, block_N], accum_dtype)
+            buf_2d = T.alloc_ub([half, block_N], accum_dtype)
+            acc_s_half = T.alloc_ub([half, block_N], dtype)
+            acc_o = T.alloc_ub([2, half, D], accum_dtype)
+            mask_v = T.alloc_ub([half, block_N], accum_dtype)
+            neg_sm = T.alloc_ub([4, half, 1], accum_dtype)  # idx h*2 + cur
+            sumexp = T.alloc_ub([2, half, 1], accum_dtype)  # idx h
+            sumexp_is = T.alloc_ub([num_stages * 2, half, 1], accum_dtype)  # idx i*2 + h
+            r_factors = T.alloc_ub([num_stages * 2, half, 1], accum_dtype)  # idx i*2 + h
+
+            my_start, my_count = task_range(cid)
+
+            with T.Scope("C"):
+                # init: pretend consumers already released everything
+                T.set_cross_flag("MTE2", SEM_WS2_C2V)
+                T.set_flag("MTE1", "MTE2", SIG_K_L1)
+                T.set_flag("MTE1", "MTE2", SIG_K_L1 + 1)
+                T.set_flag("MTE1", "MTE2", SIG_P_L1)
+                T.set_flag("MTE1", "MTE2", SIG_V_L1)
+                T.set_flag("MTE1", "MTE2", SIG_V_L1 + 1)
+                T.set_flag("MTE1", "MTE2", SIG_Q_L1)
+                T.set_flag("M", "MTE1", SIG_L0AB)
+                T.set_flag("M", "MTE1", SIG_L0AB + 1)
+                T.set_flag("FIX", "M", SIG_L0C)
+                T.set_flag("FIX", "M", SIG_L0C + 1)
+
+                for t in T.serial(my_count):
+                    task_id = my_start + t
+                    bx = task_id % q_blocks
+                    gb = (task_id // q_blocks) % G_batches
+                    kg = (task_id // (q_blocks * G_batches)) % N_kv
+                    bz = task_id // (q_blocks * G_batches * N_kv)
+                    hq0 = kg * G + gb * 2
+
+                    # --- Q load: both heads' [block_M, D] boxes stacked into
+                    # q_l1 (static-slice dest — the dense-expert proven
+                    # sliced-L1 pattern; whole q_l1 then copies to l0a) ---
+                    T.wait_flag("MTE1", "MTE2", SIG_Q_L1)
+                    if in_bsnd:
+                        # [S3-iter11-P4w2] BSND strided Q boxes (bz, rows,
+                        # hq, :) — same element sets, row stride N_q*D; ONE
+                        # copy_gm_to_l1 per box, count unchanged.  The
+                        # stacked M dim is dst-side only (static q_l1 slices,
+                        # byte-identical across arms); each box's source
+                        # extents [1, BM, 1, D] fold to realSrcN = N_q*D —
+                        # the wave-1 flat emit_qload is the identical
+                        # two-box form (p4_wave2_design_iter11.md §2.1).
+                        T.copy(
+                            Q[bz, bx * block_M : (bx + 1) * block_M, hq0, :],
+                            q_l1[0:block_M, :],
+                        )
+                        T.copy(
+                            Q[bz, bx * block_M : (bx + 1) * block_M, hq0 + 1, :],
+                            q_l1[block_M:M_stack, :],
+                        )
+                    else:
+                        T.copy(
+                            Q[bz, hq0, bx * block_M : (bx + 1) * block_M, :],
+                            q_l1[0:block_M, :],
+                        )
+                        T.copy(
+                            Q[bz, hq0 + 1, bx * block_M : (bx + 1) * block_M, :],
+                            q_l1[block_M:M_stack, :],
+                        )
+                    T.set_flag("MTE2", "MTE1", SIG_Q_L1)
+                    T.wait_flag("MTE2", "MTE1", SIG_Q_L1)
+
+                    for k in T.serial(num_outer):
+                        # causal skip as a RUNTIME loop bound (branch-free,
+                        # identical on C and V scopes — see per-head expert)
+                        bound = (bx + 1) * block_M + skip_limit
+                        kv_u_raw = (bound + block_N - 1) // block_N
+                        kv_useful = T.if_then_else(kv_u_raw > kv_iters, kv_iters, kv_u_raw)
+                        _remaining = kv_useful - k * num_stages
+                        _rem_c = T.if_then_else(_remaining < 0, 0, _remaining)
+                        batch_iters = T.if_then_else(_rem_c < num_stages, _rem_c, num_stages)
+
+                        # --- GEMM1 batch: K loads + mma(Q, K^T) -> ws_s ---
+                        T.wait_cross_flag(SEM_WS1_V2C)
+                        for i in T.serial(batch_iters):
+                            side = i % 2
+                            idx = k * num_stages + i
+
+                            T.wait_flag("MTE1", "MTE2", SIG_K_L1 + side)
+                            if i % 2 == 0:
+                                if in_bsnd:
+                                    # [S3-iter11-P4w2] BSND strided box
+                                    # (bz, kv-rows, kg, :), row stride
+                                    # N_kv*D — decode dense_expert
+                                    # K-load production precedent
+                                    # (gqa.py:1229, identical
+                                    # runtime-idx parity form).
+                                    T.copy(
+                                        K[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        k_l1_0,
+                                    )
+                                else:
+                                    T.copy(
+                                        K[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        k_l1_0,
+                                    )
+                            else:
+                                if in_bsnd:
+                                    T.copy(
+                                        K[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        k_l1_1,
+                                    )
+                                else:
+                                    T.copy(
+                                        K[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        k_l1_1,
+                                    )
+                            T.set_flag("MTE2", "MTE1", SIG_K_L1 + side)
+
+                            T.wait_flag("M", "MTE1", SIG_L0AB + side)
+                            if i < 2:
+                                T.copy(q_l1, l0a[side, :, :])
+
+                            T.wait_flag("MTE2", "MTE1", SIG_K_L1 + side)
+                            if i % 2 == 0:
+                                T.copy(k_l1_0, l0b[0, :, :], transpose=True)
+                            else:
+                                T.copy(k_l1_1, l0b[1, :, :], transpose=True)
+                            T.set_flag("MTE1", "MTE2", SIG_K_L1 + side)
+                            T.set_flag("MTE1", "M", SIG_L0AB + side)
+
+                            T.wait_flag("MTE1", "M", SIG_L0AB + side)
+                            T.wait_flag("FIX", "M", SIG_L0C + side)
+                            T.mma(l0a[side, :, :], l0b[side, :, :], l0c[side, :, :], init=True)
+                            T.set_flag("M", "MTE1", SIG_L0AB + side)
+                            T.set_flag("M", "FIX", SIG_L0C + side)
+
+                            T.wait_flag("M", "FIX", SIG_L0C + side)
+                            T.copy(l0c[side, :, :], ws_s[cid, i, :, :])
+                            T.set_flag("FIX", "M", SIG_L0C + side)
+                            if (i + 1) % cross_interval == 0 or i == batch_iters - 1:
+                                T.set_cross_flag("FIX", SEM_WS1_C2V)
+
+                        # --- GEMM2 batch: V loads + ws_p -> p_l1 + mma(P, V) -> ws_o ---
+                        T.wait_cross_flag(SEM_WS3_V2C)
+                        for i in T.serial(batch_iters):
+                            side = i % 2
+                            idx = k * num_stages + i
+
+                            T.wait_flag("MTE1", "MTE2", SIG_V_L1 + side)
+                            if i % 2 == 0:
+                                if in_bsnd:
+                                    # [S3-iter11-P4w2] BSND strided box
+                                    # (bz, kv-rows, kg, :), row stride
+                                    # N_kv*D — decode dense_expert
+                                    # V-load production precedent
+                                    # (gqa.py:1266, identical
+                                    # runtime-idx parity form).
+                                    T.copy(
+                                        V[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        v_l1_0,
+                                    )
+                                else:
+                                    T.copy(
+                                        V[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        v_l1_0,
+                                    )
+                            else:
+                                if in_bsnd:
+                                    T.copy(
+                                        V[bz, idx * block_N : (idx + 1) * block_N, kg, :],
+                                        v_l1_1,
+                                    )
+                                else:
+                                    T.copy(
+                                        V[bz, kg, idx * block_N : (idx + 1) * block_N, :],
+                                        v_l1_1,
+                                    )
+                            T.set_flag("MTE2", "MTE1", SIG_V_L1 + side)
+
+                            T.wait_flag("MTE1", "MTE2", SIG_P_L1)
+                            if i % cross_interval == 0:
+                                T.wait_cross_flag(SEM_WS2_V2C)
+                            T.copy(ws_p[cid, i, :, :], p_l1)
+                            T.set_flag("MTE2", "MTE1", SIG_P_L1)
+
+                            T.wait_flag("MTE2", "MTE1", SIG_V_L1 + side)
+                            T.wait_flag("M", "MTE1", SIG_L0AB + side)
+                            if i % 2 == 0:
+                                T.copy(v_l1_0, l0b[0, :, :])
+                            else:
+                                T.copy(v_l1_1, l0b[1, :, :])
+                            T.set_flag("MTE1", "MTE2", SIG_V_L1 + side)
+
+                            T.wait_flag("MTE2", "MTE1", SIG_P_L1)
+                            T.copy(p_l1, l0a[side, :, :])
+                            T.set_flag("MTE1", "MTE2", SIG_P_L1)
+                            T.set_flag("MTE1", "M", SIG_L0AB + side)
+
+                            T.wait_flag("MTE1", "M", SIG_L0AB + side)
+                            T.wait_flag("FIX", "M", SIG_L0C + side)
+                            T.mma(l0a[side, :, :], l0b[side, :, :], l0c[side, :, :], init=True)
+                            T.set_flag("M", "MTE1", SIG_L0AB + side)
+                            T.set_flag("M", "FIX", SIG_L0C + side)
+
+                            T.wait_flag("M", "FIX", SIG_L0C + side)
+                            T.copy(l0c[side, :, :], ws_o[cid, i, :, :])
+                            T.set_flag("FIX", "M", SIG_L0C + side)
+                            if (i + 1) % cross_interval == 0 or i == batch_iters - 1:
+                                T.set_cross_flag("FIX", SEM_WS3_C2V)
+
+                        T.set_cross_flag("MTE2", SEM_WS2_C2V)
+
+                    # MTE1 no longer reads q_l1; return it before the next task reloads Q
+                    T.set_flag("MTE1", "MTE2", SIG_Q_L1)
+
+                # destroy: consume outstanding init-direction flags
+                T.wait_flag("MTE1", "MTE2", SIG_K_L1)
+                T.wait_flag("MTE1", "MTE2", SIG_K_L1 + 1)
+                T.wait_flag("MTE1", "MTE2", SIG_P_L1)
+                T.wait_flag("MTE1", "MTE2", SIG_V_L1)
+                T.wait_flag("MTE1", "MTE2", SIG_V_L1 + 1)
+                T.wait_flag("MTE1", "MTE2", SIG_Q_L1)
+                T.wait_flag("M", "MTE1", SIG_L0AB)
+                T.wait_flag("M", "MTE1", SIG_L0AB + 1)
+                T.wait_flag("FIX", "M", SIG_L0C)
+                T.wait_flag("FIX", "M", SIG_L0C + 1)
+
+            with T.Scope("V"):
+                # init: pretend producers already released everything
+                T.set_cross_flag("MTE2", SEM_WS1_V2C)
+                T.set_cross_flag("MTE2", SEM_WS3_V2C)
+                T.set_flag("V", "MTE2", SIG_IO_UB)
+                T.set_flag("V", "MTE2", SIG_IO_UB + 1)
+                T.set_flag("MTE3", "V", SIG_S_HALF)
+
+                for t in T.serial(my_count):
+                    task_id = my_start + t
+                    bx = task_id % q_blocks
+                    gb = (task_id // q_blocks) % G_batches
+                    kg = (task_id // (q_blocks * G_batches)) % N_kv
+                    bz = task_id // (q_blocks * G_batches * N_kv)
+                    hq0 = kg * G + gb * 2
+
+                    T.tile.fill(acc_o, 0.0)
+                    T.tile.fill(sumexp, 0.0)
+                    T.tile.fill(neg_sm, neg_sm_cap)
+
+                    for k in T.serial(num_outer):
+                        # same unified runtime kv_useful bound as the C scope
+                        # (identical formula + inputs -> identical batch_iters
+                        # sequence -> flag pairs stay balanced on both sides)
+                        bound = (bx + 1) * block_M + skip_limit
+                        kv_u_raw = (bound + block_N - 1) // block_N
+                        kv_useful = T.if_then_else(kv_u_raw > kv_iters, kv_iters, kv_u_raw)
+                        _remaining = kv_useful - k * num_stages
+                        _rem_c = T.if_then_else(_remaining < 0, 0, _remaining)
+                        batch_iters = T.if_then_else(_rem_c < num_stages, _rem_c, num_stages)
+
+                        # --- phase 1: softmax batch (read ws_s, write ws_p) ---
+                        # ci-grain cross waits/sets hoisted OUTSIDE the h-loop
+                        # (one flag pair per i, covering BOTH heads' strips of
+                        # the stacked tile — the C side produces/consumes the
+                        # whole [M_stack, BN] tile per flag)
+                        T.wait_cross_flag(SEM_WS2_C2V)
+                        for i in T.serial(batch_iters):
+                            if i % cross_interval == 0:
+                                T.wait_cross_flag(SEM_WS1_C2V)
+                            for h in T.serial(2):
+                                cur = i % 2
+                                prv = 1 - cur
+                                idx = k * num_stages + i
+                                io_side = h
+                                row0 = h * block_M + vid * half
+
+                                T.wait_flag("V", "MTE2", SIG_IO_UB + io_side)
+                                T.copy(ws_s[cid, i, row0 : row0 + half, :], io_buf[io_side, :, :])
+                                T.set_flag("MTE2", "V", SIG_IO_UB + io_side)
+
+                                if use_mask:
+                                    # 2-flag mask sync (varlen pattern): MTE2
+                                    # loads mask_v only after the previous
+                                    # (i,h)'s add consumed it — mask rows are
+                                    # h-independent (mask depends on (s, j))
+                                    T.set_flag("V", "MTE2", SIG_MASK)
+                                    T.wait_flag("V", "MTE2", SIG_MASK)
+                                    T.copy(
+                                        Mask[
+                                            bz,
+                                            bx * block_M + vid * half : bx * block_M + vid * half + half,
+                                            idx * block_N : (idx + 1) * block_N,
+                                        ],
+                                        mask_v,
+                                    )
+                                    T.set_flag("MTE2", "V", SIG_MASK)
+
+                                T.wait_flag("MTE2", "V", SIG_IO_UB + io_side)
+                                T.copy(io_buf[io_side, :, :], work_ub)
+                                T.set_flag("V", "MTE2", SIG_IO_UB + io_side)
+
+                                # online softmax (batched 2-phase form) —
+                                # max-after-mask; per-head state slots
+                                # (neg_sm idx h*2+cur, prv = h*2+prv)
+                                if use_mask:
+                                    T.wait_flag("MTE2", "V", SIG_MASK)
+                                    T.tile.add(work_ub, work_ub, mask_v)
+                                # clear=True is kept (compiles correctly on
+                                # all builds; see the _gqa_kernel_expert
+                                # note).
+                                T.reduce_max(work_ub, neg_sm[h * 2 + cur, :, :], dim=-1)
+                                T.tile.mul(neg_sm[h * 2 + cur, :, :], neg_sm[h * 2 + cur, :, :], -sm_scale)
+                                T.tile.min(neg_sm[h * 2 + cur, :, :], neg_sm[h * 2 + cur, :, :], neg_sm[h * 2 + prv, :, :])
+
+                                T.tile.broadcast(buf_2d, neg_sm[h * 2 + cur, :, :])
+                                T.tile.axpy(buf_2d, work_ub, sm_scale)
+                                T.tile.exp(work_ub, buf_2d)
+
+                                T.reduce_sum(work_ub, sumexp_is[i * 2 + h, :, :], dim=-1)
+                                T.tile.sub(r_factors[i * 2 + h, :, :], neg_sm[h * 2 + cur, :, :], neg_sm[h * 2 + prv, :, :])
+
+                                # write probs -> ws_p (via acc_s_half)
+                                T.wait_flag("MTE3", "V", SIG_S_HALF)
+                                T.copy(work_ub, acc_s_half)
+                                T.set_flag("V", "MTE3", SIG_S_HALF)
+
+                                T.wait_flag("V", "MTE3", SIG_S_HALF)
+                                T.copy(acc_s_half, ws_p[cid, i, row0 : row0 + half, :])
+                                T.set_flag("MTE3", "V", SIG_S_HALF)
+                            if (i + 1) % cross_interval == 0 or i == batch_iters - 1:
+                                T.set_cross_flag("MTE3", SEM_WS2_V2C)
+
+                        T.set_cross_flag("MTE2", SEM_WS1_V2C)
+
+                        # --- phase 2: O accumulation batch (read ws_o) ---
+                        for i in T.serial(batch_iters):
+                            if i % cross_interval == 0:
+                                T.wait_cross_flag(SEM_WS3_C2V)
+                            for h in T.serial(2):
+                                # per-head recurrence in the exact per-head
+                                # order (rescale by r_factors[i], then add
+                                # ws_o[i]'s contribution)
+                                T.tile.exp(r_factors[i * 2 + h, :, :], r_factors[i * 2 + h, :, :])
+                                T.tile.mul(sumexp[h, :, :], sumexp[h, :, :], r_factors[i * 2 + h, :, :])
+                                T.tile.add(sumexp[h, :, :], sumexp[h, :, :], sumexp_is[i * 2 + h, :, :])
+                                T.tile.broadcast(buf_2d, r_factors[i * 2 + h, :, :])
+                                T.tile.mul(acc_o[h, :, :], acc_o[h, :, :], buf_2d)
+
+                                io_side = h
+                                row0 = h * block_M + vid * half
+                                T.wait_flag("V", "MTE2", SIG_IO_UB + io_side)
+                                T.copy(ws_o[cid, i, row0 : row0 + half, :], io_buf[io_side, :, :])
+                                T.set_flag("MTE2", "V", SIG_IO_UB + io_side)
+
+                                T.wait_flag("MTE2", "V", SIG_IO_UB + io_side)
+                                T.copy(io_buf[io_side, :, :], work_ub)
+                                T.set_flag("V", "MTE2", SIG_IO_UB + io_side)
+
+                                T.tile.add(acc_o[h, :, :], acc_o[h, :, :], work_ub)
+
+                        T.set_cross_flag("MTE2", SEM_WS3_V2C)
+
+                    # --- final normalize + per-(h, vid) contiguous output box ---
+                    # (head h's rows [bx*BM + vid*half, +half) are one
+                    # contiguous [half, D] box in BHSD — runtime-base/
+                    # static-extent copy, the pattern proven by the ws reads)
+                    for h in T.serial(2):
+                        # fully-masked-row guard (see
+                        # _gqa_kernel_expert).
+                        T.tile.add(sumexp[h, :, :], sumexp[h, :, :], 1e-30)
+                        T.tile.broadcast(buf_2d, sumexp[h, :, :])
+                        T.tile.div(acc_o[h, :, :], acc_o[h, :, :], buf_2d)
+                        T.wait_flag("MTE3", "V", SIG_S_HALF)
+                        T.copy(acc_o[h, :, :], acc_s_half)
+                        T.set_flag("V", "MTE3", SIG_S_HALF)
+                        T.wait_flag("V", "MTE3", SIG_S_HALF)
+                        if out_bsnd:
+                            # [S3-iter9-P2w2] BSND strided box: the SAME
+                            # element set as the BHSD box in the else branch,
+                            # written straight into the caller's
+                            # [B, S, N_q, D] layout so the transpose_out
+                            # launch is eliminated.  Both forms lower to ONE
+                            # copy_ub_to_gm/DataCopyPad per (h, vid)
+                            # (blockCount=half, blockLen=D*sizeof(T)); only
+                            # dstStride differs (N_q*D - D vs 0) — the
+                            # instruction count and the SIG_S_HALF flag pair
+                            # around it are unchanged (wave-1 mechanism;
+                            # codegen_audit_iter9.log g2stack_c8/c9).
+                            T.copy(
+                                acc_s_half,
+                                Output[bz, bx * block_M + vid * half : bx * block_M + vid * half + half, hq0 + h, :],
+                            )
+                        else:
+                            T.copy(
+                                acc_s_half,
+                                Output[bz, hq0 + h, bx * block_M + vid * half : bx * block_M + vid * half + half, :],
+                            )
+                        T.set_flag("MTE3", "V", SIG_S_HALF)
+
+                # destroy: consume outstanding init-direction flags
+                T.wait_flag("V", "MTE2", SIG_IO_UB)
+                T.wait_flag("V", "MTE2", SIG_IO_UB + 1)
+                T.wait_flag("MTE3", "V", SIG_S_HALF)
+
+    return main

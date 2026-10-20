@@ -1,0 +1,143 @@
+{
+  "iteration": 6,
+  "mode": "analysis_only",
+  "round": 2,
+  "timestamp": "2026-10-19T11:05:00+08:00",
+  "note": "Stage 3 iter6 roofline memory-bottleneck analysis (user task: collect pipeline data, roofline the memory bottleneck down to specific pipes, attribute root causes via idle ratios, produce next-step optimization plan for user decision). Previous session collected the 40-dir matrix and was interrupted after collection; THIS session verified/reused it, fixed+recollected the broken copy/copyl2 microbenchmarks (s3/s4), and produced the analysis. No kernel modification (gqa.py md5 bd470e072d0a48faeac1e786306932e8 / test_gqa.py 3e2d08881cb7b6f36d5c89b2fd37a146 verified before and after). Full report: perf_tuning/roofline_analysis_iter6.md",
+  "precision_status": "pass (inherited: shipped version 20/20 PASS in 2026-10-18 cann-bench final eval, score 68.12; not re-run this round since gqa.py untouched)",
+  "programming_mode": "expert (P28_EXPERT_PASS_CONFIGS, manual C/V scopes + flag chains) for flat/flat_kv2/g2stack/prefill_expert/dense_expert; AUTO (4 passes ON, threads=2) for per-head _gqa_kernel_expert ladder; AUTO for transpose/pad aux kernels",
+  "environment": {
+    "tilelang": "0.1.4 (~/.local site-packages)",
+    "cann": "9.2.0",
+    "soc": "Ascend910_9362 (20 AIC + 40 AIV, L2 168MB per platform ini, HBM 64GB)",
+    "freq": "1650/1650 MHz on all profiled runs (OpBasicInfo Current/Rated)",
+    "session": "legacy collection 2026-10-19 07:57-08:09 (40 dirs, previous session); this session: verification + C_copy_s3/s4 + C_copyl2_s3/s4 recollection 10:45-10:50; npu-smi healthy, 0 residual processes"
+  },
+  "test_command_template": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; export LD_LIBRARY_PATH=/usr/local/sqlite3/lib:$LD_LIBRARY_PATH; msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization,Memory,L2Cache,ArithmeticUtilization,MemoryUB,MemoryL0,ResourceConflictRatio --output=<dir> python3 examples/gqa/perf_tuning/prof_gqa_iter6.py --shape <r1..r6>",
+  "roofs": {
+    "cube_theoretical_TFLOPS": {"at_1650MHz": 270.3, "at_ini_1500MHz": 245.8, "source": "Ascend910_9362.ini: 20 cores x 16x16x16 (8192 FLOP/cyc fp16); measured run freq 1650MHz"},
+    "cube_empirical_TFLOPS": {"value": 240.1, "source": "C_torch_gemm: MatMulV3 fp16 4096^3, TaskDur 572.42us, aic_cube 92.7%, hot window ~= TaskDur"},
+    "cube_microbench_tilelang_gemm": "INVALID as roof (latency-bound: barrier_all per k-iter; 74 TFLOPS; internal cube_ratio inconsistency disclosed; kept on disk)",
+    "hbm_mixed_TBs": {"l2_side": 1.307, "hbm_side_est": 0.98, "source": "C_copy s3/s4 FIXED kernel (s1/s2 invalid: 256B/iter slice bug): 503.3MB r+w / 384.95us mean [384.24,385.66]; read side 50% L2-hit (fresh RNG src)"},
+    "mte2_gm_read_spec_TBs": {"value": 1.056, "source": "ini ddr_rate=32 B/cyc/core x 20 x 1.65GHz (52.8 GB/s per core)"},
+    "l2_mixed_TBs": {"value": 3.578, "source": "C_copyl2 s3/s4: 335.5MB r+w L2-resident / 93.77us mean [94.16,93.38], read hit 96.9%"},
+    "vector_add_class_TFLOPS": {"value": 4.39, "busy_pct": 94.7, "source": "C_vec s1/s2: msprof aiv_vec_fops 1.505 GFLOP fp16 add-chain / 342.91us; NOTE op-class anchor only (26% of 16.9 TFLOPS theoretical FMA)"},
+    "ridge_points_FLOP_per_B": {"hbm_mixed": 207, "l2_mixed": 76}
+  },
+  "counter_conventions_calibrated": {
+    "pipe_ratio_window": "TaskDur (verified via multi-wave gemm microbench block rows)",
+    "gm_to_l1_quirk": "prefill-family measured = analytic(Q+K+V+ws_p) + 1xQ systematic (R1 +20%/R2,R3,R6 +25%/R4 +14.3% = exactly one Q volume; decode +0.2% clean) - mechanism unverified (Nz dest footprint / dual-box counting, inference)",
+    "read_write_main_memory": "= sum of component path volumes (within 0.1-0.3% after Q-quirk accounting)",
+    "l2cache_units": "read counters 128B lines; write counters ~512B lines (calibrated against path volumes on R4/R5, inference - no doc source)",
+    "decode_l2_hit_61pct": "counter artifact (first-touch K/V has zero reuse by code fact); physical HBM read floor 134.2MB used for decode verdict",
+    "artifact_row_filter": "iter4/5 impossible-row filter armed; 0 rows dropped in iter6 A/B (data clean)"
+  },
+  "baselines": [
+    {
+      "id": "R1_default",
+      "shape": {"B": 1, "S": 128, "S_kv": 128, "N_q": 8, "N_kv": 2, "D": 128, "causal": true, "dtype": "fp16"},
+      "kernel": "per_head_bm64 (_gqa_kernel_expert AUTO)",
+      "tasks": 16, "block_dim": 16,
+      "task_duration_us": {"mean": 10.34, "min": 10.04, "max": 10.66, "spread_pct": 6.0},
+      "hot_core_window_us": {"aic": 6.48, "aiv": 7.28},
+      "roofline": {"flops_eff_GFLOP": 0.067, "AI_l2side": 14.1, "TFLOPS_eff": 6.5, "pct_cube_roof": 2.4, "l2side_GBs": 460, "pct_l2_roof": 12.8, "hbm_side_GBs": 197, "bound": "latency/launch (no pipe >45%, single wave, 4 cores idle)"},
+      "key_waits_us_hot": {"aic_id1": 3.93, "aiv_id0": 3.21},
+      "aux_e2e": {"transpose_qkv_us": 4.67, "transpose_out_us": 12.01, "transpose_out_blk": 1, "aux_share_pct": 61.1, "e2e_sum_us": 27.29},
+      "artifact": "perf_tuning/msprof_op_iter6_A_r1_s1..s3, B_r1_allk_s1..s2"
+    },
+    {
+      "id": "R2_c1like_flat",
+      "shape": {"B": 2, "S": 128, "S_kv": 128, "N_q": 32, "N_kv": 8, "D": 128, "causal": true, "dtype": "fp16"},
+      "kernel": "g2stack_flat (kv==1, ns_flat=2)",
+      "tasks": 64, "tasks_per_core": "4/3", "block_dim": 20,
+      "task_duration_us": {"mean": 27.22, "min": 26.40, "max": 27.86, "spread_pct": 5.4},
+      "hot_core_window_us": {"aic": 22.75, "aiv": 24.39},
+      "roofline": {"flops_eff_GFLOP": 0.537, "AI_l2side": 15.9, "TFLOPS_eff": 19.7, "pct_cube_roof": 7.3, "l2side_GBs": 1237, "pct_l2_roof": 34.6, "hbm_side_GBs": 438, "bound": "F fixed overhead (~10.6us=39%) + pacing"},
+      "path_volumes_MB": {"gm_to_l1": 10.0, "l0c_to_gm": 8.0, "gm_to_ub": 12.0, "ub_to_gm": 4.0, "ws_roundtrip": 20.0, "ws_share_of_l2_traffic_pct": 62},
+      "key_waits_us_hot": {"aic_id1": 9.51, "aic_id2": 3.60, "aic_id5": 9.58, "aiv_id0": 5.91, "aiv_id3": 8.02, "aiv_id4": 3.50},
+      "aux_e2e": {"transpose_qkv_us": 10.02, "transpose_out_us": 13.21, "transpose_out_blk": 4, "aux_share_pct": 47.1, "e2e_sum_us": 49.29, "eval_xsession_aux_share_pct": 37.5},
+      "artifact": "perf_tuning/msprof_op_iter6_A_r2_s1..s3, B_r2_allk_s1..s2"
+    },
+    {
+      "id": "R3_c3like_flat",
+      "shape": {"B": 2, "S": 128, "S_kv": 128, "N_q": 128, "N_kv": 8, "D": 128, "causal": true, "dtype": "bf16"},
+      "kernel": "g2stack_flat (kv==1, ns_flat=2)",
+      "tasks": 256, "tasks_per_core": "13/12", "block_dim": 20,
+      "task_duration_us": {"mean": 60.53, "min": 60.12, "max": 60.86, "spread_pct": 1.2},
+      "hot_core_window_us": {"aic": 56.00, "aiv": 57.65},
+      "roofline": {"flops_eff_GFLOP": 2.147, "AI_l2side": 16.0, "TFLOPS_eff": 35.5, "pct_cube_roof": 13.1, "l2side_GBs": 2223, "pct_l2_roof": 62.1, "hbm_side_GBs": 405, "bound": "vec pacer (62.4%) + scalar-C (57.6%) + pacing; mask = 33% of GM_to_UB (64KB/u fp32)"},
+      "path_volumes_MB": {"gm_to_l1": 40.0, "l0c_to_gm": 32.0, "gm_to_ub": 48.0, "ub_to_gm": 16.0, "ws_roundtrip": 80.0, "mask_in_gm_to_ub_MB": 16.0, "ws_share_of_l2_traffic_pct": 62},
+      "per_u": {"vec_busy_us": 2.91, "cadence_window_us": 4.43, "P_ss_iter3_us": 3.88},
+      "key_waits_us_hot": {"aic_id1": 35.05, "aic_id2": 10.19, "aic_id5": 12.29, "aiv_id0": 9.04, "aiv_id3": 20.34, "aiv_id4": 4.52, "aiv_vector_stall": 22.57},
+      "aux_e2e": {"transpose_qkv_us": 18.38, "transpose_out_us": 24.10, "transpose_out_blk": 8, "aux_share_pct": 40.9, "e2e_sum_us": 103.82, "eval_xsession_aux_share_pct": 37.7},
+      "artifact": "perf_tuning/msprof_op_iter6_A_r3_s1..s3, B_r3_allk_s1..s2"
+    },
+    {
+      "id": "R4_c4like_flat_kv2",
+      "shape": {"B": 4, "S": 256, "S_kv": 256, "N_q": 64, "N_kv": 8, "D": 128, "causal": false, "dtype": "bf16"},
+      "kernel": "g2stack_flat_kv2 (iter5 adopted)",
+      "tasks": 512, "u_units": 1024, "tasks_per_core": "26/25", "block_dim": 20,
+      "task_duration_us": {"mean": 189.65, "min": 188.74, "max": 190.42, "spread_pct": 0.9, "iter5_adopted_anchor": 187.97},
+      "hot_core_window_us": {"aic": 185.12, "aiv": 186.72},
+      "roofline": {"flops_eff_GFLOP": 8.590, "AI_l2side": 19.6, "TFLOPS_eff": 45.3, "pct_cube_roof": 16.8, "l2side_GBs": 2307, "pct_l2_roof": 64.5, "hbm_side_GBs": 234, "bound": "scalar issue/pacing (aic_scalar 83.7% = hottest pipe) with vec pacer 64.4%; ws roundtrip = 77% of L2 traffic"},
+      "path_volumes_MB": {"gm_to_l1": 128.0, "l0c_to_gm": 128.0, "gm_to_ub": 128.0, "ub_to_gm": 48.0, "ws_roundtrip": 320.0, "ws_bytes_per_u_KB": 320, "operand_bytes_per_u_KB": 96, "ws_amplification_x": 3.3, "ws_share_of_l2_traffic_pct": 77},
+      "per_u": {"vec_busy_us": 2.35, "iter5_vec_busy_us": 2.38, "cadence_window_us": 3.59, "P2_marginal_iter5_us": 3.05, "residual_us": 0.7},
+      "key_waits_us_hot": {"aic_id1": 104.30, "aic_id2": 32.39, "aic_id5": 53.52, "aiv_id0": 9.25, "aiv_id3": 104.28, "aiv_id4": 28.95, "aiv_vector_stall": 39.41, "note": "id1/id3 mirror = pacing-bound steady state (iter5 signature reproduced)"},
+      "aux_e2e": {"transpose_qkv_us": 27.77, "transpose_out_us": 29.31, "transpose_out_blk": 16, "aux_share_pct": 23.3, "e2e_sum_us": 244.79, "eval_xsession_aux_share_pct": 18.6},
+      "artifact": "perf_tuning/msprof_op_iter6_A_r4_s1..s3, B_r4_allk_s1..s2"
+    },
+    {
+      "id": "R5_c11like_decode",
+      "shape": {"B": 16, "S": 1, "S_kv": 2048, "N_q": 32, "N_kv": 8, "D": 128, "causal": false, "dtype": "fp16"},
+      "kernel": "dense_expert (ns=16, ci=4, M_tile=16 calibrated)",
+      "tasks": 128, "u_units": 2048, "tasks_per_core": "7/6", "block_dim": 20,
+      "task_duration_us": {"mean": 145.89, "min": 145.12, "max": 147.16, "spread_pct": 1.4},
+      "hot_core_window_us": {"aic": 142.13, "aiv": 143.01},
+      "roofline": {"flops_eff_GFLOP": 0.537, "flops_padded_GFLOP": 2.15, "AI_eff": 2.5, "TFLOPS_eff": 3.7, "pct_cube_roof": 1.4, "l2side_GBs": 1499, "pct_l2_roof": 41.9, "hbm_physical_read_GBs": 920, "pct_mte2_spec_roof": 87.1, "pct_empirical_hbm_roof": 93.9, "bound": "HBM/MTE2 wall (aic_mte2 86.2% mean / 95.7% hot; busy-period all-load rate ~1140 GB/s >= 108% of spec nominal 1056 - interface ceiling reached; physical K/V-only floor 920 GB/s used for headroom)"},
+      "path_volumes_MB": {"gm_to_l1": 136.75, "analytic_gm_to_l1": 136.6, "kv_unique_MB": 134.2, "kv_reload_factor": 1.0, "l0c_to_gm": 32.0, "gm_to_ub": 32.0, "ub_to_gm": 8.125, "model_vs_measured": "<=0.2% on all 4 paths"},
+      "key_waits_us_hot": {"aiv_id0": 47.80, "aiv_id4": 58.67, "aic_id1": 2.49, "aic_id2": 6.02, "aic_scalar_mte1_stall": 127.76, "note": "V idle 73% of wall waiting C's K/V stream - bandwidth root (iter3 verdict re-confirmed); mte1 starved by mte2 backend"},
+      "cflt": {"aic_cube_wait": 86.9, "aic_mte1_wait": 81.4, "aic_mte2_wait": 86.6},
+      "aux_e2e": {"aux_share_pct": 0.0, "note": "BSND direct supply; B_r5 flat layout confirms no hidden launches (launch-count=3)"},
+      "theoretical_floor_us": {"perfect_balance_at_spec_roof": 127.1, "perfect_balance_at_empirical_hbm_roof": 136.9, "headroom_pct_range": [6.2, 12.9], "verdict": "not-actionable list (split-K complexity, bench speedup already 0.97-1.06)"},
+      "artifact": "perf_tuning/msprof_op_iter6_A_r5_s1..s3, B_r5_allk_s1..s2"
+    },
+    {
+      "id": "R6_c2like_flat",
+      "shape": {"B": 2, "S": 128, "S_kv": 128, "N_q": 48, "N_kv": 4, "D": 128, "causal": false, "dtype": "fp16"},
+      "kernel": "g2stack_flat (kv==1, ns_flat=2)",
+      "tasks": 96, "tasks_per_core": "5/4", "block_dim": 20,
+      "task_duration_us": {"mean": 28.02, "min": 27.56, "max": 28.68, "spread_pct": 4.0},
+      "hot_core_window_us": {"aic": 23.48, "aiv": 25.07},
+      "roofline": {"flops_eff_GFLOP": 0.805, "AI_l2side": 18.2, "TFLOPS_eff": 28.7, "pct_cube_roof": 10.6, "l2side_GBs": 1577, "pct_l2_roof": 44.1, "hbm_side_GBs": 477, "bound": "F (~10.6us=38%) + vec/scalar (47.3/57.1%)"},
+      "path_volumes_MB": {"gm_to_l1": 15.0, "l0c_to_gm": 12.0, "gm_to_ub": 12.0, "ub_to_gm": 6.0, "ws_roundtrip": 30.0, "ws_share_of_l2_traffic_pct": 71},
+      "key_waits_us_hot": {"aic_id1": 8.07, "aic_id2": 4.70, "aic_id5": 9.71, "aiv_id0": 5.35, "aiv_id3": 9.45, "aiv_id4": 5.00},
+      "aux_e2e": {"transpose_qkv_us": 10.85, "transpose_out_us": 22.10, "transpose_out_blk": 3, "aux_share_pct": 54.5, "e2e_sum_us": 60.47, "eval_xsession_aux_share_pct": 46.2},
+      "artifact": "perf_tuning/msprof_op_iter6_A_r6_s1..s3, B_r6_allk_s1..s2"
+    }
+  ],
+  "aux_kernels": {
+    "transpose_out_pathology": "task grid = B*ceil(Nq/bm)*ceil(S/bn) with bm=16(Nq>=48)/8, bn=128 -> 1..32 tasks vs 40 vector cores; R1 = 1 task on 1 of 40 vec cores (42.6 GB/s = 1.2% of L2 roof), 12.01us > main kernel 10.61us; blk verified against source formula for all 6 conditions",
+    "transpose_qkv_rate_range_GBs": [165, 613, 1003, 1475, 660],
+    "transpose_out_rate_range_GBs": [42.6, 310, 680, 1118, 278],
+    "launch_floor_us": "2.5-3.8 per aux kernel (iter3 six-condition measured)",
+    "e2e_aux_share_pct_by_condition": {"r1": 61.1, "r2": 47.1, "r3": 40.9, "r4": 23.3, "r5": 0.0, "r6": 54.5},
+    "eval_xsession_reference_pct": {"c1": 37.5, "c2": 46.2, "c3": 37.7, "c4": 18.6, "c11": 0.0, "note": "op_statistic.csv 2026-10-18 eval; lower-bound caliber (no per-kernel metrics injection)"},
+    "pad_kernel": "not exercised (all 6 conditions aligned); untested item disclosed"
+  },
+  "phase0_verdict": {
+    "reused_dirs": 36, "recollected_dirs": 4, "invalidated_kept_on_disk": 4,
+    "detail": "A18+B12 reused (anchors within +-4.7%, dispatch verified per-run, 0 artifact rows); C: vec/gemm/torch_gemm reused (gemm disclosed as invalid roof), copy/copyl2 s1-s2 INVALID (microbench slice bug moved 256B/iter - physically impossible 8TB/s apparent) -> fixed kernel recollected as s3+s4; parse tool None-format bug fixed"
+  },
+  "verdict": "memory_bottleneck_is_ws_L2_roundtrip_plus_aux_tax_not_HBM_except_decode",
+  "verdict_detail": "(1) prefill flat domains: ws_s/ws_p/ws_o C<->V exchange = 62-77% of L2-side traffic (3.3x amplification over operand bytes), HBM side only 234-514 GB/s (L2 absorbs 85-92%) - the tax is L2 bandwidth occupancy + two-hop latency feeding the load-bearing pacing chain (R4 C-id1/V-id3 ~104us each = 55% wall; aic_scalar 83.7% hottest pipe); (2) decode: true HBM wall - K/V first-touch 134.2MB streamed at 920 GB/s = 87% of spec MTE2 roof / 94% of empirical, hot-core mte2 95.7%, theoretical headroom <=12.9% -> not-actionable; (3) aux pure-mover tax = 23-61% of prefill e2e (same-session), transpose_out grid starvation (1-32 tasks vs 40 vec cores) is the single biggest recoverable pool; (4) cube never exceeds 18.2% - compute roof irrelevant everywhere",
+  "optimization_plan_for_iter7_user_decision": [
+    "P1 transpose_out retiling (host-only out_plan bm/bn -> tasks>=40; e2e model: r1 -31%/r6 -21%/r2 -13%/r3 -8%/r4 -4%; low risk, bit-exact; RECOMMENDED main item)",
+    "P2 main-kernel BSND direct Output write (fuse/eliminate transpose_out for flat kv1+kv2; e2e -9..-44%; medium risk - V-side FIN touch, wait-id gate mandatory)",
+    "P3 FIX->UB direct probe (eliminate ws_s/ws_o roundtrip = root cause (a); Gate-0 feasibility probe ONLY in iter7 (expert-mode L0C->UB unverified); potential main -10..-18% low-confidence)",
+    "P4 transpose_qkv elimination via BSND direct read (after P2; high risk: strided->Nz L1 unverified)",
+    "P5 kv2 neg_sm fill narrowing (iter5 hint 1; +1-2%; low effort; NaN-discipline gate)",
+    "P6 causal mask in-kernel regeneration (-0..-4% low confidence; deferred)",
+    "NOT-ACTIONABLE: decode (87-94% of roof), F launch floor (framework), kv1 ring-depth/step-order (iter4 falsified), R1 main expertization (net-negative precedent), ci coarsening (iter3 falsified), any cube-throughput work (<=18.2% busy)"
+  ],
+  "wait_metric_convention": "hotmax_mean = max across cores per sample, then mean across 3 samples (upper-bound hot-core caliber, iter3 convention); pipe ratios normalized to TaskDur; wait columns are upper-bound (overlap with issued async work - iter3 7-3 discipline: no wait-sum benefit models)"
+}

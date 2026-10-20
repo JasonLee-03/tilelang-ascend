@@ -1,0 +1,15 @@
+/opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/utils/_path_manager.py:66: UserWarning: Permission mismatch: The owner of /opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so does not match.
+  warnings.warn(f"Permission mismatch: The owner of {path} does not match.")
+/mnt/workspace/cann/20260910_gqa_V02/tilelang-ascend/.agents/skills/cann-bench/tasks/level4/gqa/golden.py:74: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  attn_weights = torch.where(all_masked, torch.zeros_like(attn_weights), attn_weights)
+[g1-73-fp16] PASS max_diff=1.221e-04 tolviol=0 nan=0
+[g1-73-bf16] PASS max_diff=9.766e-04 tolviol=0 nan=0
+[g1-81-fp16] PASS max_diff=4.883e-04 tolviol=0 nan=0
+[g1-82-bf16] PASS max_diff=9.766e-04 tolviol=0 nan=0
+[g1-decode-fp16] PASS max_diff=1.221e-04 tolviol=0 nan=0
+[g1-decode-bf16] PASS max_diff=2.441e-04 tolviol=0 nan=0
+[g1-decode-causal] PASS max_diff=3.052e-05 tolviol=0 nan=0
+[g1-d512-fp16] PASS max_diff=4.883e-04 tolviol=0 nan=0
+
+G1 fill-guard result: 8/8 PASS
+[PRECISION_PASS] no fp16/bf16 Fill/ZerosLike dispatched on any padding path; outputs match golden

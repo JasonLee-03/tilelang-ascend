@@ -1,0 +1,101 @@
+{
+ "iteration": 7,
+ "arm": "P5",
+ "title": "flat_kv2 neg_sm cap-refill narrowing — per-task SM(t,kv0)-head whole-buffer fill (512B/2 repeats) narrowed to the contiguous prv region (256B/1 repeat)",
+ "timestamp_preregistered": "2026-10-19T13:50:00+08:00",
+ "status": "REJECTED — measured +0.75% (R4) / +1.15% (c7), both below the preregistered 3% bar (distributions overlapping); precision Gate 0 was 11/11 bit-identical, flag protocol stable. gqa.py NOT touched by this arm (P1 adoption is the only iter7 edit). Variant + data retained.",
+ "mechanism": {
+  "target": "_gqa_kernel_prefill_g2stack_flat_kv2 emit_sm ONLY (the iter5-adopted kernel; kv1 flat / g2stack / decode / per-head / aux kernels NOT touched)",
+  "edit": "neg_sm slot layout remapped h*2+cur -> cur*2+h INSIDE flat_kv2 (bijective; all 7 cur refs + 2 prv refs in emit_sm remapped through the same map; no other kernel touches this buffer) so the prv slots at first_kv (kvpar==0) form the CONTIGUOUS region [2:4]; the per-task cap refill narrows from T.tile.fill(neg_sm) ([4,half,1] fp32 = 512B = 2 vector repeats) to T.tile.fill(neg_sm[(1-kvpar)*2 : (1-kvpar)*2+2, :, :]) ([2,half,1] = 256B = 1 repeat, still ONE instruction). cur-slot cap fill was a dead store (reduce_max is dest-only and runs before the slot's first read in the same beat — c2_design_iter5.md B.4-3/B.5-3 value-equivalence argument).",
+  "nan_discipline": "the prv cap refill itself is NEVER removed (iter2 NaN-leak lesson: a previous task's NaN/-Inf running max must not cross the task boundary); the per-task acc_o/sumexp fills in emit_ao are UNCHANGED (generator audit asserts both fill lines survive verbatim); the one-shot init whole-buffer fill is UNCHANGED; special-value propagation through the rescale chain is semantically identical to shipped.",
+  "flag_protocol": "NOT touched (generator audit: every set/wait flag line byte-identical to shipped) — no wait-id migration expected; telemetry recorded anyway per discipline #2, any unexpected migration reported as-is.",
+  "variant_generation": "perf_tuning/gen_variant_iter7_p5.py — programmatic extraction of gqa.py lines 3456-4027 (md5-pinned bd470e07..., boundary + edit-site asserts) + minimal line-scoped edits + static re-audit (remap census 7+2, fills census, flag-line identity, geometry identity, diff-hunk cap) + unified diff artifact diff_iter7_p5.txt (3 hunks).",
+  "model_prediction": "iter6 P5 card: vec busy 2.35->~2.28us/u, R4/c7 main -1..-2% (LOW expected value — below the 3% bar; honestly measured, goalposts NOT moved)"
+ },
+ "criteria_PREREGISTERED": {
+  "primary": "R4 AND c7-like main kernel TaskDur improvement >= 3% vs BASE, same-session interleaved alternating >= 3+3 samples per arm (--kernel-name=main_kernel --aic-metrics=PipeUtilization)",
+  "precision": "Gate 0: outputs BIT-IDENTICAL to shipped flat_kv2 on finite cases (7 in-gate shapes) + special-structure equality (NaN positions / Inf positions+signs / finite bits) on the iter5 dual-kv-block NaN/Inf injection AND the fullrange fp16 [-65504,65504] case + golden viol=0 + gate isolation 2 cases (variant never invoked, chosen=g2stack, bit-identical); if adopted: Gate 3 full suite + gate-out bit-identity",
+  "guardrail_domain": "only flat_kv2 may change behavior: gate-isolation asserts (causal kv2, stacked=32) + Gate 3 out-of-domain bit-identity spot checks (decode R5, per-head R1, flat kv1 R2/R3, dense_auto)",
+  "session_health": "BASE R4 main reproduces iter6 anchor 189.65us within ±3%; c7 BASE cross-session reference 35.52us (iter5) — reference only",
+  "noise_threshold_pct": 3.0
+ },
+ "gate0": {
+  "result": "11/11 PASS (run_iter7_p5_gate0.py, log: candidate_iter7_p5_gate0.log)",
+  "finite_cases_bit_identical": [
+   "r4_c4like_bf16",
+   "c7like_bf16",
+   "mc2_edge_noncausal_fp16 (stacked=40)",
+   "mixed_mc32_noncausal_fp16",
+   "mixed_mc76_noncausal_fp16",
+   "padcol_noncausal_fp16 (Skv=200)",
+   "padrow_noncausal_fp16 (S=100)"
+  ],
+  "special_value_cases": [
+   "boundary_sparse_c7like (iter5 NaN/Inf DUAL-kv-block injection: NaN pos equal, Inf pos+sign equal, finite bits equal — direct AND dispatch layers)",
+   "fullrange_r4like_fp16 (fp16 [-65504,65504] uniform, struct-equal)"
+  ],
+  "golden": "viol=0 on all finite cases",
+  "gate_isolation": [
+   "iso_causal_kv2_g2stack: variant NOT invoked, chosen=g2stack, bit-identical",
+   "iso_smallstack_g2stack (stacked=32): variant NOT invoked, chosen=g2stack, bit-identical"
+  ],
+  "nan_discipline_audit": "generator static audit: per-task acc_o/sumexp fills byte-identical to shipped; one-shot init whole-buffer neg_sm fill kept; prv cap refill kept (narrowed range only); all flag lines byte-identical"
+ },
+ "ab_data": {
+  "session": "2026-10-19 14:11-14:15, same session as P1V2, interleaved alternating 3+3, all 1650/1650 MHz, rc=0 12/12",
+  "r4": {
+   "base_samples_us": [
+    194.14,
+    184.86,
+    188.34
+   ],
+   "base_mean": 189.11,
+   "base_spread_pct": 4.9,
+   "p5_samples_us": [
+    187.02,
+    185.66,
+    190.38
+   ],
+   "p5_mean": 187.69,
+   "p5_spread_pct": 2.5,
+   "improvement_pct": 0.75,
+   "distributions": "OVERLAPPING (base min 184.86 < p5 max 190.38)",
+   "anchor_check": "base 189.11 vs iter6 189.65 = -0.3% (session healthy)"
+  },
+  "c7": {
+   "base_samples_us": [
+    36.08,
+    35.7,
+    36.1
+   ],
+   "base_mean": 35.96,
+   "base_spread_pct": 1.1,
+   "p5_samples_us": [
+    34.58,
+    36.12,
+    35.94
+   ],
+   "p5_mean": 35.55,
+   "p5_spread_pct": 4.3,
+   "improvement_pct": 1.15,
+   "distributions": "OVERLAPPING",
+   "anchor_check": "base 35.96 vs iter5 35.52 cross-session reference (+1.2%)"
+  },
+  "wait_id_telemetry": "no protocol migration (discipline #2): R4 id1 94.93->96.38, id3 97.60->99.51, id5 48.58->47.56, id0/id2/id4 deltas <= 0.9us — all within noise on ~100us waits; c7 deltas <= 0.35us. P5 does not touch flags (generator audit) — telemetry confirms.",
+  "verdict": "both shapes < 3% AND within/near noise bands => criterion FAIL (as preregistered; iter6 P5 card itself predicted only -1..-2% — measurement landed even lower: 0.75-1.15%)"
+ },
+ "integration": "PENDING",
+ "timestamp_finalized": "2026-10-19T15:10:00+08:00",
+ "disposition": {
+  "adopted": false,
+  "rollback_reason": "improvement below the preregistered 3% threshold on both judgement shapes (goalposts not moved); no gqa.py change was made for this arm, so no rollback action was needed",
+  "post_mortem": "the +0.18us/kv flat-form vec overhead attributed in iter5 to (cap refill + AO-head fills + FIN cadence) is dominated by the AO-head acc_o fill (16KB/task, NaN-discipline protected, NOT removable) and FIN cadence — the neg_sm refill is 512B->256B (2->1 vector repeat) per task, whose measured wall effect (~0.75-1.15%) sits at the noise floor. vec-busy micro-ops of this class are calibrated as NOT worth further iteration (probe report §4.4)."
+ },
+ "artifacts": [
+  "perf_tuning/gen_variant_iter7_p5.py (programmatic generator: md5-pinned extraction of gqa.py:3456-4027, line-asserted edits, static re-audit)",
+  "perf_tuning/gqa_flat_kv2_p5_variant.py (the variant)",
+  "perf_tuning/diff_iter7_p5.txt (3 hunks: docstring, narrowed fill + 7+2 slot remap, alloc comment)",
+  "perf_tuning/run_iter7_p5_gate0.py + candidate_iter7_p5_gate0.log",
+  "perf_tuning/msprof_op_iter7_P5_* (12 dirs)"
+ ]
+}

@@ -1,0 +1,54 @@
+{
+  "iteration": 8,
+  "mode": "implement",
+  "timestamp": "2026-10-19T15:40:00+08:00",
+  "operator": "gqa",
+  "scope_user_approved": "P2 ONLY — prefill main kernel BSND direct-write output, eliminating the transpose_out kernel. Wave-1 coverage domain: chosen in {g2stack_flat, g2stack_flat_kv2} AND S % 64 == 0 (aligned). P1 already shipped (iter7); P3 archived infeasible (probe_iter7_P3.md); P4/P5/P6 not attempted.",
+  "shipped_baseline": {
+    "gqa.py_md5_at_startup": "4b4e453e4b8f2922baefbecb85912494",
+    "test_gqa.py_md5_at_startup": "3e2d08881cb7b6f36d5c89b2fd37a146",
+    "verified_at_startup": true,
+    "ruff_status_at_startup": "clean (0.15.14 + 0.16.7 format/check, iter7 Gate 3 evidence)",
+    "precision_status": "pass (inherited: 2026-10-18 cann-bench 20/20 PASS score 68.12 avg_speedup 0.6435 on the PRE-P1 file; iter7 Gate 3 full suite 18 PRECISION_PASS + 6 BOUNDARY_PASS on the shipped file)",
+    "programming_mode": "hybrid (expert Fixed-Core main kernels P28_EXPERT_PASS_CONFIGS + AUTO transpose/pad aux kernels) — unchanged by P2"
+  },
+  "baseline_perf_anchors": {
+    "source": "iter7 V2 adopted-arm same-session anchors (cross-session reference only; this session's BASE arm must reproduce within ±3% or session health is investigated)",
+    "e2e_sum_TaskDur_us": {"R1": 20.05, "R2": 43.70, "R3": 98.31, "R4": 246.45, "R5": 146.81, "R6": 49.06, "c7": null},
+    "transpose_out_us_blk_post_P1": {"R1": [4.86, 16], "R2": [7.67, 16], "R3": [17.63, 16], "R4": [29.58, 16], "R6": [9.69, 12]},
+    "main_TaskDur_us": {"R1": 10.61, "R2": 26.06, "R3": 61.34, "R4": 187.71, "R5": 146.70, "R6": 27.52, "c7": 35.52},
+    "c7_e2e_note": "never measured before this round (iter7 collected main only); this session's BASE arm supplies it: 54.75us"
+  },
+  "baseline_this_session_BASE_arm": {
+    "note": "same-session interleaved BASE arm (the comparison basis for every Gate-2 verdict), 3 samples each, all 1650/1650 MHz",
+    "e2e_us": {"r1": 20.73, "r2": 45.00, "r3": 97.69, "r4": 246.89, "r5": 146.15, "r6": 48.45, "c7": 54.75},
+    "main_TaskDur_us": {"r1": 10.36, "r2": 27.05, "r3": 61.25, "r4": 189.24, "r5": 146.15, "r6": 28.11, "c7": 35.13},
+    "transpose_out_us_blk": {"r1": [5.49, 16], "r2": [7.89, 16], "r3": [17.83, 16], "r4": [29.55, 16], "r6": [9.65, 12], "c7": [7.72, 16]},
+    "anchor_reproduction_pct": {"r1": 3.41, "r2": 2.97, "r3": -0.63, "r4": 0.18, "r5": -0.45, "r6": -1.25}
+  },
+  "test_shape": {
+    "R1": "B1 S128 Skv128 Nq8 Nkv2 D128 causal fp16 (per_head_bm64) — OUT OF DOMAIN",
+    "R2": "B2 S128 Skv128 Nq32 Nkv8 D128 causal fp16 (g2stack_flat, bench c1/c20) — COVERED, PRIMARY",
+    "R3": "B2 S128 Skv128 Nq128 Nkv8 D128 causal bf16 (g2stack_flat, bench c3) — COVERED",
+    "R4": "B4 S256 Skv256 Nq64 Nkv8 D128 noncausal bf16 (g2stack_flat_kv2, bench c4) — COVERED",
+    "R5": "B16 S1 Skv2048 Nq32 Nkv8 D128 noncausal fp16 (dense_expert decode, bench c11) — OUT OF DOMAIN (already BSND)",
+    "R6": "B2 S128 Skv128 Nq48 Nkv4 D128 noncausal fp16 (g2stack_flat, bench c2) — COVERED, PRIMARY",
+    "c7": "B2 Sq128 Skv256 Nq32 Nkv8 D128 noncausal bf16 (g2stack_flat_kv2, bench c7) — COVERED"
+  },
+  "test_command_precision": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; python3 examples/gqa/test_gqa.py --level all",
+  "noise_threshold_pct": 3.0,
+  "iteration_budget": {"max": 10, "current": 8, "consecutive_no_improvement_in": 0},
+  "environment_contract": {
+    "cwd": "repo root /mnt/workspace/cann/20260910_gqa_V02/tilelang-ascend",
+    "env": ["unset PYTHONPATH", "export ACL_OP_INIT_MODE=1", "export LD_LIBRARY_PATH=/usr/local/sqlite3/lib:$LD_LIBRARY_PATH (before msprof export)"],
+    "npu_health_at_startup": "Health OK, zero residual processes, npu-smi verified (15:41)"
+  },
+  "post_adoption": {
+    "gqa.py_md5_new": "3aa9cfa2625cdce96a62ce967785fe85",
+    "test_gqa.py_md5": "3e2d08881cb7b6f36d5c89b2fd37a146 (untouched)",
+    "backup": "examples/gqa/history_version/gqa_impl_s3_iter8.py (md5 4b4e453e4b8f2922baefbecb85912494)",
+    "rollback_baseline": "examples/gqa/perf_tuning/gqa_impl_iter8_before.py (same md5)",
+    "adopted_perf_e2e_us": {"r1": 20.57, "r2": 37.16, "r3": 79.88, "r4": 217.16, "r5": 146.17, "r6": 39.04, "c7": 47.69},
+    "integrated_file_bottom_line_us": {"r2": 37.46, "r4": 216.62, "r1": 20.45, "r5": 145.36}
+  }
+}

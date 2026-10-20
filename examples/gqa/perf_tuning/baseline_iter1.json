@@ -1,0 +1,58 @@
+{
+  "iteration": 1,
+  "mode": "analysis_only",
+  "timestamp": "2026-10-16T18:10:00+08:00",
+  "note": "Stage 3 analysis-only round: evaluate user's flat cross-task pipeline hypothesis. No kernel modification this round; no adopt/rollback decision.",
+  "precision_status": "pass (inherited: examples/gqa/test_gqa.py --level all green per Orchestrator precondition; not re-run this round since gqa.py untouched)",
+  "programming_mode": "expert (P28_EXPERT_PASS_CONFIGS, manual C/V scopes + flag chains) for g2stack/prefill_expert/dense_expert; AUTO (4 passes ON, threads=2) for per-head _gqa_kernel_expert",
+  "test_command_template": "unset PYTHONPATH; export ACL_OP_INIT_MODE=1; msprof op --kernel-name=main_kernel --aic-metrics=PipeUtilization --output=<dir> python3 examples/gqa/prof_gqa_pipeline.py <flags>",
+  "baselines": [
+    {
+      "id": "R1_default",
+      "shape": {"B": 1, "S": 128, "S_kv": 128, "N_q": 8, "N_kv": 2, "D": 128, "causal": true, "dtype": "fp16"},
+      "kernel": "_gqa_kernel_expert(bm=64) per-head AUTO",
+      "tasks": 16, "tasks_per_core": 1, "block_dim": 16,
+      "task_duration_us": 9.94,
+      "utilization": {"aic_cube": 0.0403, "aiv_vec": 0.1686, "aic_scalar": "0.42-0.54", "aiv_scalar": "0.22-0.43"},
+      "artifact": "perf_tuning/msprof_op_default/OPPROF_20261016173026_AHDMSLSSWRRTUPXX",
+      "sim_reference": {"wall_us": 5.104, "artifact": "examples/gqa/msprof_sim/OPPROF_20261016163102_PRXNKARSFXKBQCTP"}
+    },
+    {
+      "id": "R2_l0c1",
+      "shape": {"B": 2, "S": 128, "S_kv": 128, "N_q": 32, "N_kv": 8, "D": 128, "causal": true, "dtype": "fp16"},
+      "kernel": "_gqa_kernel_prefill_g2stack(ns=1,ci=2)",
+      "tasks": 64, "tasks_per_core": "4 (cores 0-3) / 3 (cores 4-19)", "block_dim": 20,
+      "task_duration_us": 30.04,
+      "utilization": {"aic_cube": "0.067-0.090", "aiv_vec": "0.259-0.345", "aic_scalar": "0.29-0.48", "aiv_scalar": "0.30-0.46"},
+      "artifact": "perf_tuning/msprof_op_l0c1/OPPROF_20261016173054_HIGYPGUEBTPGXPNG"
+    },
+    {
+      "id": "R3_c3like",
+      "shape": {"B": 2, "S": 128, "S_kv": 128, "N_q": 128, "N_kv": 8, "D": 128, "causal": true, "dtype": "bf16"},
+      "kernel": "_gqa_kernel_prefill_g2stack(ns=1,ci=2)",
+      "tasks": 256, "tasks_per_core": "13/12", "block_dim": 20,
+      "task_duration_us": 77.44,
+      "utilization": {"aic_cube": "0.105-0.114", "aiv_vec": "0.416-0.451", "aic_scalar": "0.405-0.490", "aiv_scalar": "0.429-0.502"},
+      "artifact": "perf_tuning/msprof_op_c3like/OPPROF_20261016180317_LORUJDGRRJOJRUNC"
+    },
+    {
+      "id": "R4_c4like",
+      "shape": {"B": 4, "S": 256, "S_kv": 256, "N_q": 64, "N_kv": 8, "D": 128, "causal": false, "dtype": "bf16"},
+      "kernel": "_gqa_kernel_prefill_g2stack(ns=2,ci=2)",
+      "tasks": 512, "tasks_per_core": "26/25", "block_dim": 20,
+      "task_duration_us": 204.42,
+      "utilization": {"aic_cube": "0.161-0.168", "aiv_vec": "0.539-0.561", "aic_scalar": "0.434-0.483", "aiv_scalar": "0.393-0.427", "aic_fixpipe": "0.248-0.271"},
+      "artifact": "perf_tuning/msprof_op_c4like/OPPROF_20261016180404_HQYZBYLGCJKNBCZK"
+    }
+  ],
+  "fitted_model_g2stack_stacked_tile": {
+    "wall_per_task_ns1_us": 5.27,
+    "wall_per_task_ns2_us": 7.52,
+    "wall_per_kv_ns2_us": 3.76,
+    "fixed_kernel_overhead_us": 8.97,
+    "batching_gain_pct": 28.6,
+    "busy_per_task_us": {"aiv_vec": 2.60, "aic_cube": 0.66, "aic_scalar": 2.7, "aiv_scalar": 2.7, "aic_mte2": 1.5, "aic_fixpipe": 1.0}
+  },
+  "verdict": "partially_applicable",
+  "verdict_detail": "flat cross-task pipelining applies to g2stack regime with >=3 tasks/core and small kv_iters (expected 1.25-1.65x, inference); NOT applicable to 1-task/core small shapes (default B=1) and unnecessary for deep-kv decode (ns up to 16 already staggered)"
+}

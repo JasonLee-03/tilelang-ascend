@@ -1,0 +1,261 @@
+{
+ "iteration": 10,
+ "arm": "P4",
+ "title": "transpose_qkv elimination — main kernel reads BSND strided GM directly (flat kv1/kv2 first wave)",
+ "status": "adopted",
+ "timestamp_preregistered": "2026-10-20T01:05:00+08:00",
+ "scope_approved_by_user": "P4 only; probe-gated (no-go => probe report closes the round); first-wave <=2 kernel families; aligned S only; this is the LAST round in budget (10/10)",
+ "shipped_baseline": {
+  "gqa_py_md5": "606b07ff474ec42b8244f0831327d75b",
+  "test_gqa_py_md5": "3e2d08881cb7b6f36d5c89b2fd37a146",
+  "eval": "cann-bench 20/20 PASS score 69.47 avg_speedup 0.7058 (day of iter9 adoption)"
+ },
+ "probe_verdict": {
+  "verdict": "GO",
+  "e1_expressiveness": "PASS — both arms compile; every Q/K/V load box remains ONE copy_gm_to_l1 (count base==p4: kv1 19=19, kv2 16=16); realSrcN flips exactly D->N_q*D (Q) / D->N_kv*D (K,V) per src/op/ascend.cc compute_strideN singleton folding; ws_p->p_l1 loads stay 128; realTailM/need_clear multisites identical; SetFlag/WaitFlag/DataCopy* whole-source counts identical",
+  "e2_nz_layout_gate": "PASS — ND->NZ is an MTE2 on-the-fly transform (Catlass TileCopyTla, common.h copy_gm_to_l1 dst layout zN); NO UB staging exists or is needed; decode dense_expert production precedent (gqa.py:1229/:1266, K->nz / V->zn strided BSND boxes at 87-94% of MTE2 roof, iter6 §6.2)",
+  "e3_strided_rate": "PASS(directional) — main-only interleaved wall: r2_like +0.70% / c1_like -0.08% / r4_like_kv2 -0.47% (host-loop口径 weak signal, no degradation); quantitative Δmain deferred to Gate 2 msprof TaskDur",
+  "e4_smoke_bitwise": "PASS — 5/5 raw-bit identical vs the shipped transpose_qkv+main chain (finite golden viol 0/0, NaN/Inf injection struct-equal nan 608=608=608ref, fullrange golden-invariance)",
+  "e5_economics": "PASS — net central 12.8-27.8% on the first-wave domain (tqkv shares measured iter6/iter8/iter9; Δmain≈0 directional); pessimistic band (Δmain=20%*tqkv) 10.2-22.2%, all >>3%",
+  "first_wave_locked": [
+   "g2stack_flat (flat kv1)",
+   "g2stack_flat_kv2 (flat kv2)"
+  ],
+  "bench_coverage": [
+   "c1",
+   "c2",
+   "c3",
+   "c4",
+   "c7",
+   "c18",
+   "c20"
+  ],
+  "excluded": {
+   "per_head_AUTO_r1_c5_c6": "iter9 AscendVidReduction strided-box defect was demonstrated on UB->GM WRITES; GM->L1 READS under AUTO vid-splitting are UNTESTED (probe never touched AUTO kernels) — conservatively excluded, same domain treatment as iter9",
+   "g2stack_c8_c9_c10_prefill_expert_c19": "mechanism transfers (expert manual-flag, same load forms) but scope discipline (<=2 families, must finish all gates in-round); c19 (33% tqkv share) is the next-wave first choice",
+   "decode_c11_c17": "already BSND direct supply, no tqkv",
+   "non_aligned_S_or_Skv": "gate S%64==0 AND S_kv%128==0; zero-fill pad semantics stay on the shipped transpose_qkv path (wave-1 exclusion pattern)"
+  }
+ },
+ "criteria_PREREGISTERED": {
+  "gate0": {
+   "covered": "ARM final output BIT-IDENTICAL to BASE full chain (raw-bit view(int16)) + golden viol_arm==viol_base==0 (f6 policy) + variant INVOKED + transpose_qkv SKIPPED in ARM / RAN in BASE + chosen==expected flat spec",
+   "special": "NaN/Inf injection (iter5 set) x2 domains: nan/inf positions+signs+finite bits equal, nan_arm==nan_base==nan_ref; fullrange ±65504: golden-invariance criterion (iter7/8 precedent, disclosed)",
+   "isolation": "per-head / g2stack / prefill_expert / decode / non-aligned-S flat-hit / padcol-Skv200 flat-hit: variant NOT invoked, tqkv behavior identical across arms, outputs BIT-IDENTICAL",
+   "codegen_audit": "E1 audit re-run against the integrated factories (load descriptor algebra, iter9 method)"
+  },
+  "gate2": {
+   "method": "same-session interleaved msprof >=3+3 samples/arm, B-matrix e2e = Σ TaskDur, all 1650MHz verified, artifact rows filtered by TaskDur (iter4 finding 5)",
+   "primary": [
+    "r2 (flat kv1, =c1 shape)",
+    "r4 (flat kv2, =c4 shape)"
+   ],
+   "primary_criterion": "e2e improvement >=3% AND distributions non-overlapping — BOTH must pass",
+   "secondary": [
+    "r6 (=c2)",
+    "r3 (=c3)",
+    "c7 (kv2 cross)"
+   ],
+   "secondary_criterion": "guardrail: any covered-shape e2e regression >3% vetoes",
+   "out_of_domain_guards": [
+    "r1 (per-head)",
+    "r5 (decode)",
+    "c19 (prefill_expert)",
+    "c8 (g2stack)"
+   ],
+   "guard_criterion": "any e2e regression >3% vetoes (P4 must not touch out-of-domain paths)",
+   "main_cost": "Δmain TaskDur recorded as-is (P4 criterion is net e2e; if Δmain > 50% of the eliminated tqkv TaskDur, re-verify economics and disclose)",
+   "wait_id_gate": "MANDATORY (K/V loads sit inside the paced steady-state loop, iter4 lesson): Σwait inflation vs eliminated tqkv — inflation > tqkv vetoes; pacing mirrors V-id3 / C-id1 must stay flat (±20% band; iter4-style cadence migration vetoes + rolls back)",
+   "base_anchor": "BASE-arm reproduction of iter8/9 anchors: >=20µs components ±3%, micro-kernel components (<=20µs) ±10% (iter8 finding 7); deviation reported as-is, no goalpost moving"
+  },
+  "gate3": {
+   "trigger": "only if adopted",
+   "chain": "backup history_version/gqa_impl_s3_iter10.py (md5 606b07ff...) -> minimal integration (line-anchored asserted edits) -> full suite test_gqa.py --level all 24/24 exit 0 zero fallback -> gqa.py self-check Test Passed! -> >=5 out-of-domain bit-identity cases (pre/post integration final outputs raw-bit) -> ruff 0.15.14 (+0.16.7 if available) dual gate -> msprof fallback check on the INTEGRATED file with ZERO monkeypatch (covered-domain chain: tqkv ABSENT; non-aligned domain: tqkv STILL PRESENT; out-of-domain tout semantics unchanged) -> instrumentation grep=0 -> npu-smi health + zero leftover processes",
+   "rollback": "any failure -> restore backup (md5 == 606b07ff474ec42b8244f0831327d75b)"
+  }
+ },
+ "economics_preregistered": {
+  "benefit_model": "eliminated tqkv TaskDur in full (e2e=ΣTaskDur口径, launch floor already inside TaskDur — iter8 disclosure); cost = Δmain (strided load increment)",
+  "table": {
+   "r2_flatkv1": {
+    "tqkv_us": 10.02,
+    "e2e_shipped_us": 37.16,
+    "share_pct": 27.0,
+    "src": "iter6 B-matrix R2 / iter8 Gate2"
+   },
+   "r6_flatkv1": {
+    "tqkv_us": 10.85,
+    "e2e_shipped_us": 39.04,
+    "share_pct": 27.8,
+    "src": "iter6 R6 / iter8"
+   },
+   "r3_flatkv1": {
+    "tqkv_us": 18.38,
+    "e2e_shipped_us": 79.88,
+    "share_pct": 23.0,
+    "src": "iter6 R3 / iter8"
+   },
+   "r4_flatkv2": {
+    "tqkv_us": 27.77,
+    "e2e_shipped_us": 217.16,
+    "share_pct": 12.8,
+    "src": "iter6 R4 / iter8"
+   },
+   "c7_flatkv2": {
+    "tqkv_us": null,
+    "e2e_shipped_us": 47.69,
+    "share_pct": "15-23 est (inference-level, Gate2 BASE census will measure)",
+    "src": "iter8"
+   }
+  }
+ },
+ "artifacts": {
+  "probe": [
+   "probe_iter10_P4.py",
+   "probe_iter10_P4.log",
+   "probe_iter10_P4.md",
+   "probe_iter10_P4_results.json",
+   "codegen_iter10_p4_{r2_like_nc,c1_like_causal,r4_like_kv2}_{base,p4}.cu"
+  ],
+  "variant": [
+   "gen_variant_iter10_p4.py",
+   "gqa_p4_inbsnd_iter10_variant.py",
+   "diff_iter10_p4.txt"
+  ],
+  "gate0": [
+   "run_iter10_p4_gate0.py",
+   "gate0_iter10_covered.log (first run, harness defect)",
+   "gate0_iter10_full.log (25/25)"
+  ],
+  "gate2": [
+   "prof_gqa_ab_iter10.py",
+   "run_matrix_iter10.sh",
+   "msprof_op_iter10_S{1..4}_* (48 dirs)",
+   "parse_iter10_ab.py",
+   "parse_iter10_ab.txt"
+  ],
+  "gate3": [
+   "integrate_iter10_p4.py",
+   "diff_iter10_p4_integration.txt",
+   "save_gate3_outputs_iter10.py",
+   "compare_gate3_iter10.py",
+   "gate3_iter10_outputs_{pre,post}.pt",
+   "gate3_iter10_chosen_{pre,post}.json",
+   "gate3_iter10_test_all.log",
+   "gate3_iter10_selfcheck.log",
+   "run_g3_iter10.sh",
+   "msprof_op_iter10_G3_* (10 dirs)",
+   "parse_iter10_g3.py",
+   "parse_iter10_g3.txt",
+   "gqa_impl_iter10_before.py",
+   "../history_version/gqa_impl_s3_iter10.py"
+  ],
+  "design": [
+   "p4_design_iter10.md",
+   "candidate_iter10_P4.json"
+  ]
+ },
+ "timestamp_finalized": "2026-10-20T02:35:00+08:00",
+ "gate0": {
+  "runner": "run_iter10_p4_gate0.py (public gqa() API, dual-arm monkeypatch, same-process serial)",
+  "result": "25/25 PASS",
+  "covered_L1": "14/14 raw-bit identical (c1/c2/c20/c18-MQA-Nkv1/c3-Nq128/mc2-stacked40/mixed-mc-48/c4/c7/kv2-mixed-mc-46 + boundary_sparse kv1 (nan 716=716=716ref, inf pos+sign+finite bits equal) + boundary_sparse kv2 (nan 128=128=128ref) + fullrange kv1/kv2 (golden-invariance; kv2 bf16 golden self-saturated viol=196288 BOTH arms, iter7/8 precedent disclosed)); variant invoked + tqkv SKIP(ARM)/RUN(BASE) + chosen asserted per case",
+  "isolation_L3": "11/11 bit-identical + variant never installed + tqkv behavior identical: per-head r1/c5/odd_kv3, prefill_expert c19, g2stack c9-like/kv2-causal/s130, decode r5/auto, GATE ISOLATION s100_flat_unaligned (tqkv RUN + tout(s_real) RUN) and padcol_skv200_flatkv2 (S aligned, S_kv non-aligned => tqkv RUN, out_bsnd still skips tout)",
+  "harness_fix_disclosed": "first run 23/25: the two gate-isolation cases caught a HARNESS defect (factory patch unconditional while pass-through gated => in_bsnd kernel fed BHSD tensors on non-aligned flat-hit shapes; tilelang does not validate input shapes). Fix = one p4_gate predicate drives both (mirrors the integration's single in_bsnd_eff variable). Criteria untouched (iter7/8/9 harness-fix precedent). The integration is structurally immune.",
+  "codegen_audit": "probe E1 (both arms, 3 configs): copy_gm_to_l1 count equal (kv1 19=19, kv2 16=16); realSrcN D->N_q*D (Q) / D->N_kv*D (K,V) per compute_strideN; ws_p->p_l1 loads stay 128; realTailM/need_clear multisets identical; SetFlag/WaitFlag/DataCopy* whole-source counts identical"
+ },
+ "gate2": {
+  "method": "same-session interleaved msprof B-matrix (e2e = SUM TaskDur), 48/48 rc=0, all 1650/1650MHz, 0 artifact rows; matrix S1-S4 with per-round arm rotation",
+  "e2e": {
+   "r2_PRIMARY": {
+    "base": 36.11,
+    "p4": 26.35,
+    "improve_pct": 27.04,
+    "predicted": 27.0,
+    "distributions": "non-overlapping"
+   },
+   "r4_PRIMARY": {
+    "base": 216.83,
+    "p4": 188.08,
+    "improve_pct": 13.26,
+    "predicted": 12.8,
+    "distributions": "non-overlapping"
+   },
+   "r6": {
+    "base": 38.94,
+    "p4": 28.75,
+    "improve_pct": 26.16,
+    "predicted": 27.8,
+    "distributions": "non-overlapping"
+   },
+   "r3": {
+    "base": 80.77,
+    "p4": 63.17,
+    "improve_pct": 21.8,
+    "predicted": 23.0,
+    "distributions": "non-overlapping"
+   },
+   "c7": {
+    "base": 47.39,
+    "p4": 36.19,
+    "improve_pct": 23.62,
+    "predicted": "19.0 est",
+    "distributions": "non-overlapping"
+   },
+   "r1_guard": {
+    "base": 20.17,
+    "p4": 20.39,
+    "improve_pct": -1.09,
+    "distributions": "overlapping"
+   },
+   "r5_guard": {
+    "base": 146.51,
+    "p4": 146.5,
+    "improve_pct": 0.01,
+    "distributions": "overlapping"
+   },
+   "c19_guard": {
+    "base": 50.14,
+    "p4": 50.01,
+    "improve_pct": 0.26,
+    "distributions": "overlapping"
+   },
+   "c8_guard": {
+    "base": 800.61,
+    "p4": 797.88,
+    "improve_pct": 0.34,
+    "distributions": "overlapping"
+   }
+  },
+  "tqkv_elimination": "5/5 covered shapes: p4-arm chain instances = [main] ONLY; base tqkv r2 10.09 / r4 27.83 / r6 10.84 / r3 19.06 / c7 12.09us (c7 first direct measurement, closes the probe estimate)",
+  "main_cost": "r2 +0.32us(+1.23%) / r4 -0.93(-0.49%) / r6 +0.65(+2.33%) / r3 +1.45(+2.35%) / c7 +0.90(+2.55%) — max = 7.6% of the eliminated tqkv (tripwire 50% NOT tripped); benefit coverage 92.4-103.3%",
+  "waitid_gate": "5/5 PASS (MANDATORY): SUM(wait) inflation +0.08..+0.79us vs eliminated tqkv 10.1-27.8us (max 7.8% of benefit, veto threshold 100%); pacing mirrors V-id3 -1.8%..+3.8%, C-id1 +0.4%..+6.5% FLAT => no iter4-style cadence migration despite K/V loads living inside the paced steady-state loop",
+  "anchors": "8/9 within band; r2 base -3.83% vs the 37.55 iter9 anchor DISCLOSED (small-shape cross-session drift, iter8-r1 precedent; base spread 6.3% incl. one 37.48 outlier; same-session A/B criterion unaffected; primary distributions non-overlapping)",
+  "model_transfer": "probe economics (full-tqkv-benefit model, wave-1 calibrated) predicted all five covered shapes within -1.6..+0.5pp WITHOUT a dedicated rate microbenchmark"
+ },
+ "gate3": {
+  "backup": "history_version/gqa_impl_s3_iter10.py + perf_tuning/gqa_impl_iter10_before.py, both md5 606b07ff474ec42b8244f0831327d75b",
+  "integration": "integrate_iter10_p4.py: 22 line-anchored asserted edits, bottom-up, dry-run first; +217/-60 lines, 18 hunks; AST OK; new md5 f59b561212e60a50b78a51671999ef7c",
+  "ruff": "0.15.14 + 0.16.7 (user-site binary) four gates (check + format --check) ALL exit 0; longest line 140 = repo limit",
+  "full_suite": "test_gqa.py --level all: 18 PRECISION_PASS + 6 BOUNDARY_PASS = 24/24, exit 0, ZERO fallback (the shipped fallback print never fired); covered-domain direct verification inside the suite: l0_prefill_causal_fp16(=c1), l0_prefill_noncausal_fp16(=c2), l0_prefill_g16_causal_bf16(=c3), l0_prefill_noncausal_bf16(=c4), l0_cross_noncausal_bf16(=c7), l1_mqa, non-aligned tails x3",
+  "self_check": "python3 examples/gqa/gqa.py -> Test Passed! (prefill_causal = bench c1 = covered domain, viol=0; decode_noncausal = c11)",
+  "bitwise_pre_post": "13/13 PASS (5 p4-covered: final raw-bit identical + tqkv census 1->0; 8 out-of-domain >= 5 required: per-head x2 / prexpert / g2stack / padrow_s100 / padcol_skv200 / decode x2 — final identical, chosen identical, tqkv census identical)",
+  "msprof_bottom_line": "INTEGRATED file, ZERO monkeypatch: r2/c7 chains = main ONLY (tqkv ABSENT; e2e 26.91/35.83 within +2.1%/+1.0% of the Gate-2 p4 band); skv200 non-aligned gate: tqkv STILL PRESENT (tail mode); r1 excluded domain: tqkv + main + tout blk=16 (P1 retile live, e2e 20.58 in band); r5 decode main-only 146.71 in anchor band",
+  "instrumentation": "grep T.printf/T.dump_tensor = 0 (the print at :4454 is the shipped compile-fallback notice, present in the backup)",
+  "health": "npu-smi Health OK x2, AICore 0%, zero residual processes"
+ },
+ "framework_findings": [
+  "GM->L1 strided reads are a FIRST-CLASS expert-mode citizen, symmetric to the iter8 UB->GM strided writes: src/op/ascend.cc compute_strideN automatically folds trailing singleton region dims into realSrcN, so a BSND box X[bz, rows, head, :] lowers to ONE copy_gm_to_l1 with realSrcN = D*N (no UB staging, no instruction-count change, ND->NZ is an MTE2 on-the-fly transform via Catlass TileCopyTla). Measured cost on the prefill paced loop: +0.3..+1.5us per main invocation (0.5-2.6%), fully absorbed by the K/V double-buffer prefetch — the decode production kernel (strided K/V at 87-94% of the MTE2 roof) was the correct prior.",
+  "Eliminating transpose_qkv makes the covered chains SINGLE-KERNEL (BSND in -> BSND out): 7/20 bench cases now launch exactly one kernel per call. The full-tqkv-benefit economic model (benefit = eliminated TaskDur in full, e2e=SUM-TaskDur口径) transferred from wave-1 calibration to the READ side within -1.6..+0.5pp on all five measured shapes — aux-kernel elimination is the highest-certainty lever family in this operator (three consecutive rounds: P1 retile, P2 output wave-1/2, P4 input).",
+  "The in_bsnd capability pattern required ONE structural adapter change beyond the iter8 out_bsnd template: kernel resolution had to move ABOVE the input transpose (the capability flag decides whether transpose_qkv runs). Pure host reordering (gqa_expert depends only on shapes; NPU launch order unchanged), but it is the general shape of any INPUT-side skip: resolve-then-supply, with a single gate variable (in_bsnd_eff) driving BOTH the spec-builder kwarg and the adapter skip — dual-driven gates silently corrupt non-aligned shapes (Gate-0 harness defect caught by the isolation cases; tilelang does NOT validate input tensor shapes against declarations).",
+  "The dual-alignment gate (S%64==0 AND S_kv%128==0) is strictly stronger than out_bsnd's: S_kv non-alignment needs transpose_qkv's in-kernel zero-fill columns (padcol semantics + use_mask), which a strided direct read cannot synthesize without invading the paced loop. Non-aligned shapes keep the shipped chain bit-identically (padcol_skv200 + padrow_s100 isolation evidence).",
+  "AUTO vid-reduction applicability (iter9 finding 1) declared for the READ side: the demonstrated defect is on UB->GM strided WRITES under AUTO threads=2; GM->L1 strided READS under AUTO vid-splitting are UNTESTED (probe never touched AUTO kernels) — per-head domain conservatively EXCLUDED, same treatment as iter9. g2stack/prefill_expert (expert manual-flag) are mechanism-compatible and remain for a next wave (c19 = 33% tqkv share, the largest single remaining aux item on the bench)."
+ ],
+ "antipattern_check": "performance-antipatterns.md re-checked on the new code: launch-count concern — P4 REMOVES one launch per call on 7 more bench cases (7/20 now single-kernel chains); tile-size — load-box geometry byte-identical ([64,128]/[128,128], 256B strided bursts = decode production pattern); pure-AIV memory-bound — strongest form (whole aux kernel eliminated); redundant global sync — zero flag-line change (generator-audited); ws/L2 — one fewer BSND-read+BHSD-write+re-read pass per call (r4 ~-50MB L2 traffic). ZERO new violations; retained items unchanged (per-head AUTO ladder + its tqkv/tout, iter1 §7.2 + iter9 records).",
+ "adopted": {
+  "gqa_py_md5_pre": "606b07ff474ec42b8244f0831327d75b",
+  "gqa_py_md5_post": "f59b561212e60a50b78a51671999ef7c",
+  "test_gqa_py_md5": "3e2d08881cb7b6f36d5c89b2fd37a146 (untouched)",
+  "scope": "flat kv1 + flat kv2 aligned dual-gate domain (bench c1/c2/c3/c4/c7/c18/c20)"
+ }
+}

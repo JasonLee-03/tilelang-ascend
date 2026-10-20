@@ -1,0 +1,44 @@
+/opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/utils/_path_manager.py:66: UserWarning: Permission mismatch: The owner of /opt/buildtools/python-3.12.9/lib/python3.12/site-packages/torch_npu/lib/libop_plugin_atb.so does not match.
+  warnings.warn(f"Permission mismatch: The owner of {path} does not match.")
+[PASS] fp16 B2S128Nq32Nkv8D128 noncausal fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv8D128 noncausal nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv8D128 noncausal inf mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+[PASS] fp16 B2S128Nq32Nkv8D128 causal fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv8D128 causal nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv8D128 causal inf mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+[PASS] bf16 B2S128Nq32Nkv8D128 noncausal fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=7.8e-03
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=bfloat16)
+[PASS] bf16 B2S128Nq32Nkv8D128 noncausal nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=7.8e-03
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=bfloat16)
+[PASS] bf16 B2S128Nq32Nkv8D128 noncausal inf mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=7.8e-03
+[PASS] bf16 B2S128Nq32Nkv8D128 causal fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=7.8e-03
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=bfloat16)
+[PASS] bf16 B2S128Nq32Nkv8D128 causal nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=7.8e-03
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=bfloat16)
+[PASS] bf16 B2S128Nq32Nkv8D128 causal inf mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=7.8e-03
+[PASS] fp16 B2S128Nq32Nkv32D128 MHA noncausal fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+[PASS] fp16 B2S128Nq32Nkv32D128 MHA causal fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv32D128 MHA noncausal nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv32D128 MHA causal nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv32D128 MHA noncausal inf mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=1048576, dtype=float16)
+[PASS] fp16 B2S128Nq32Nkv32D128 MHA causal inf mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+[PASS] fp16 B16S1Skv2048Nq32Nkv8D128 decode fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+[PASS] fp16 B60S2Skv2048Nq32Nkv8D128 decode-causal fullrange mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=65536, dtype=float16)
+[PASS] fp16 B16S1Skv2048Nq32Nkv8D128 decode nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+compare: 所有有效位置均为 NaN/Inf 且匹配；两个算子均输出 NaN 的极端情况可能掩盖独立的数值 bug，请人工核查 case 输入分布。 (total=491520, dtype=float16)
+[PASS] fp16 B60S2Skv2048Nq32Nkv8D128 decode-causal nan mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=9.8e-04
+[PASS] fp16 B16S1Skv2048Nq32Nkv8D128 decode inf mere=6.636e-05 mare=9.747e-04 maxdiff=3.052e-05 thr=9.8e-04
+[PASS] fp16 B60S2Skv2048Nq32Nkv8D128 decode-causal inf mere=5.717e-05 mare=9.766e-04 maxdiff=3.052e-05 thr=9.8e-04
+[FAIL] bf16 B2S128Nq32Nkv8D128 causal fullrange_bf16max mere=0.000e+00 mare=0.000e+00 maxdiff=0.000e+00 thr=7.8e-03 | nan_out=1048576 nan_gold=0 nan_pos_match=False inf_out=0 inf_gold=0
+  (informational only — dtype-true bf16 range is outside the eval variant set; not counted)
+
+=== 24/24 passed ===
